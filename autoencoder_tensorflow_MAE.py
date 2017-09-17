@@ -1,7 +1,7 @@
 # Draft MAE Model in tensorflow based on Dr.Cesar Cadena
 # this code is developed by Yi Liu 
-#run the code under the folder /Desktop/project
-#be carful this version works but not converged yet !!!
+#run the code under the folder ~/project
+#this version works but not converged yet !!!
 
 import tensorflow as tf
 import numpy as np
