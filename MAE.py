@@ -1,3 +1,5 @@
+# model based on 'Multi-modal Auto-Encoders as Joint Estimators for Robotics Scene Understanding' by Cadena et al.
+# code developed by Silvan Weder
 
 
 import tensorflow as tf
@@ -25,14 +27,22 @@ class MAE:
         self.size_input = self.height*self.width
         self.size_coding = 1024
 
-        self.n_training_data = 800
+        self.n_training_data = 1000 # max 15301
 
         # prepare data
         self.prepare_data()
 
         # placeholder definition
-        self.x = tf.placeholder('float',[None,9*self.size_input])
-        self.y = tf.placeholder('float',[None,9*self.size_input])
+        self.imr_input = tf.placeholder('float',[None,self.size_input])
+        self.img_input = tf.placeholder('float',[None,self.size_input])
+        self.imb_input = tf.placeholder('float',[None,self.size_input])
+        self.depth_input = tf.placeholder('float',[None,self.size_input])
+        self.gnd_input = tf.placeholder('float',[None,self.size_input])
+        self.obj_input = tf.placeholder('float',[None,self.size_input])
+        self.bld_input = tf.placeholder('float',[None,self.size_input])
+        self.veg_input = tf.placeholder('float',[None,self.size_input])
+        self.sky_input = tf.placeholder('float',[None,self.size_input])
+
 
 
         # training options
@@ -40,35 +50,55 @@ class MAE:
         self.n_batches = int(len(self.training_frames)/self.batch_size)
 
         self.learning_rate = 1e-06
-        self.n_training_epochs = 100
+        self.n_training_epochs = 1000
+
+        # model saving
+        self.saving = True
+        self.folder_model = 'models'
+
+        self.project_dir ='/Users/silvanadrianweder/Polybox/Master/02-semester/01-semester-project/02-code/mae_tensorflow'
+        self.model_dir = self.project_dir + '/models'
+
+        tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
+        self.FLAGS = tf.app.flags.FLAGS
 
     def prepare_data(self):
 
-        training_frames = []
+        self.imr_train = []
+        self.img_train = []
+        self.imb_train = []
+        self.depth_train = []
+        self.gnd_train = []
+        self.obj_train = []
+        self.bld_train = []
+        self.veg_train = []
+        self.sky_train = []
+
+        t_iterator = 0
 
         for i in self.data_train:
             for j in i:
-                imr = j['xcr1']
-                img = j['xcg1']
-                imb = j['xcb1']
-                depth = j['xid1']
-                gnd = (j['sem1']==1).astype(int)
-                obj = (j['sem1']==2).astype(int)
-                bld = (j['sem1']==3).astype(int)
-                veg = (j['sem1']==4).astype(int)
-                sky = (j['sem1']==5).astype(int)
 
-                frame = np.hstack((imr,img,imb,depth,gnd,obj,bld,veg,sky))
-                training_frames.append(frame)
+                if t_iterator == self.n_training_data:
+                    break
+                self.imr_train.append(j['xcr1'])
+                self.img_train.append(j['xcg1'])
+                self.imb_train.append(j['xcb1'])
+                self.depth_train.append(j['xid1'])
+                self.gnd_train.append((j['sem1']==1).astype(int))
+                self.obj_train.append((j['sem1']==2).astype(int))
+                self.bld_train.append((j['sem1']==3).astype(int))
+                self.veg_train.append((j['sem1']==4).astype(int))
+                self.sky_train.append((j['sem1']==5).astype(int))
 
-        self.training_frames = training_frames[0:self.n_training_data]
+                t_iterator += 1
 
 
 
-    def neural_model(self,x):
+    def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky):
 
         # split input vector into all different modalities
-        imr,img,imb,depth,gnd,obj,bld,veg,sky = tf.split(x,9,axis=1)
+        #imr,img,imb,depth,gnd,obj,bld,veg,sky = tf.split(x,9,axis=1)
 
         # semantics weights
         self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
@@ -276,20 +306,11 @@ class MAE:
                                  self.sky_dc_layer['bias'])
         self.sky_output = tf.sigmoid(self.sky_output)
 
-        output = tf.concat([self.red_output,
-                            self.green_output,
-                            self.blue_output,
-                            self.depth_output,
-                            self.gnd_output,
-                            self.obj_output,
-                            self.bld_output,
-                            self.veg_output,
-                            self.sky_output],
-                           axis=1)
 
-        return output
+        return self.red_output,self.green_output,self.blue_output,self.depth_output,self.gnd_output,self.obj_output,self.bld_output,self.veg_output,self.sky_output
 
     def collect_variables(self):
+
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_ec_layer['weights'])
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_ec_layer['bias'])
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.obj_ec_layer['weights'])
@@ -347,15 +368,31 @@ class MAE:
 
     def train_model(self):
 
-        predictions = self.neural_model(self.x)
-
+        imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out = self.neural_model(self.imr_input,
+                                                                                                      self.img_input,
+                                                                                                      self.imb_input,
+                                                                                                      self.depth_input,
+                                                                                                      self.gnd_input,
+                                                                                                      self.obj_input,
+                                                                                                      self.bld_input,
+                                                                                                      self.veg_input,
+                                                                                                      self.sky_input)
         self.collect_variables()
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
-        cost = tf.nn.l2_loss(self.y-predictions) + reg_term
+        cost = tf.nn.l2_loss(imr_out-self.imr_input) + \
+                      tf.nn.l2_loss(img_out-self.img_input) + \
+                      tf.nn.l2_loss(imb_out-self.imb_input) + \
+                      tf.nn.l2_loss(depth_out-self.depth_input) + \
+                      tf.nn.l2_loss(gnd_out-self.gnd_input) + \
+                      tf.nn.l2_loss(obj_out-self.obj_input) + \
+                      tf.nn.l2_loss(bld_out-self.bld_input) + \
+                      tf.nn.l2_loss(veg_out-self.veg_input) + \
+                      tf.nn.l2_loss(sky_out-self.sky_input) + \
+                      reg_term
 
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         hm_epochs = self.n_training_epochs
@@ -367,14 +404,27 @@ class MAE:
             for epoch in range(hm_epochs):
                 epoch_loss = 0
                 for _ in range(self.n_batches):
-                    epoch_frames = self.training_frames[_*self.batch_size:_*self.batch_size+self.batch_size]
-                    _, c = sess.run([optimizer, cost], feed_dict={self.x:epoch_frames,self.y:epoch_frames})
+
+                    feed_dict = {self.imr_input:self.imr_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.img_input:self.img_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.imb_input:self.imb_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.depth_input:self.depth_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.gnd_input:self.gnd_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.obj_input:self.obj_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.bld_input:self.bld_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.veg_input:self.veg_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.sky_input:self.sky_train[_*self.n_batches:(_+1)*self.n_batches]}
+
+                    _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
                     epoch_loss += c
 
-                print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+                print('Epoch', epoch+1, 'completed out of', hm_epochs, 'loss:', epoch_loss)
 
 
-
+            if self.saving == True:
+                saver = tf.train.Saver()
+                saver.save(sess,self.FLAGS.train_dir+'/models.ckpt')
+                print('SAVED MODEL')
 
 
 
