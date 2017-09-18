@@ -1,3 +1,5 @@
+
+
 import tensorflow as tf
 import numpy as np
 
@@ -33,9 +35,12 @@ class MAE:
         self.y = tf.placeholder('float',[None,9*self.size_input])
 
 
-
+        # training options
         self.batch_size = 60
         self.n_batches = int(len(self.training_frames)/self.batch_size)
+
+        self.learning_rate = 1e-06
+        self.n_training_epochs = 100
 
     def prepare_data(self):
 
@@ -66,20 +71,20 @@ class MAE:
         imr,img,imb,depth,gnd,obj,bld,veg,sky = tf.split(x,9,axis=1)
 
         # semantics weights
-        self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
 
         # semantics neurons (relu activation)
@@ -112,8 +117,8 @@ class MAE:
                                     axis=1)
 
         # semantics encoding
-        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding])),
-                             'bias' : tf.Variable(tf.random_normal([self.size_coding]))}
+        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01)),
+                             'bias' : tf.Variable(tf.zeros([self.size_coding]))}
 
         # semantics neuron (relu activation)
         self.sem_encoding = tf.add(tf.matmul(self.sem_concat,self.sem_ec_layer['weights']),
@@ -122,17 +127,17 @@ class MAE:
 
 
         # depth and rgb encoding weights
-        self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                             'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                               'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                               'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                              'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                              'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
-        self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding])),
-                               'bias':tf.Variable(tf.random_normal([self.size_coding]))}
+        self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01)),
+                               'bias':tf.Variable(tf.zeros([self.size_coding]))}
 
         # depth and rgb neurons (relu activation)
         self.red_encoding = tf.add(tf.matmul(imr,self.red_ec_layer['weights']),
@@ -157,8 +162,8 @@ class MAE:
 
         # full encoding
 
-        self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding])),
-                              'bias' : tf.Variable(tf.random_normal([self.size_coding]))}
+        self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01)),
+                              'bias' : tf.Variable(tf.zeros([self.size_coding]))}
 
         # full encoding neurons
 
@@ -168,8 +173,8 @@ class MAE:
 
         # full decoding
 
-        self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding])),
-                              'bias':tf.Variable(tf.random_normal([5*self.size_coding]))}
+        self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01)),
+                              'bias':tf.Variable(tf.zeros([5*self.size_coding]))}
 
         # full decoding neurons
 
@@ -184,17 +189,17 @@ class MAE:
 
         # decoding layers depth and rgb
 
-        self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                               'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                               'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                              'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                              'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                               'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                               'bias':tf.Variable(tf.zeros([self.size_input]))}
 
         # decoding neurons
 
@@ -217,8 +222,8 @@ class MAE:
 
         # decoding layer full semantics
 
-        self.full_sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding])),
-                                  'bias':tf.Variable(tf.random_normal([5*self.size_coding]))}
+        self.full_sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01)),
+                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]))}
 
         # decoding neurons full semantics
 
@@ -233,20 +238,21 @@ class MAE:
 
         # decoding layers semantics
 
-        self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
 
-        self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input])),
-                             'bias':tf.Variable(tf.random_normal([self.size_input]))}
+        self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01)),
+                             'bias':tf.Variable(tf.zeros([self.size_input]))}
+
 
         # decoding neurons semantics
 
@@ -283,13 +289,76 @@ class MAE:
 
         return output
 
+    def collect_variables(self):
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.obj_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.obj_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.bld_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.bld_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.veg_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.veg_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sky_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sky_ec_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sem_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sem_ec_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.red_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.red_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.green_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.green_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.blue_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.blue_ec_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.depth_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.depth_ec_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_ec_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_ec_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_dc_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.red_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.red_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.green_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.green_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.blue_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.blue_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.depth_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.depth_dc_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_sem_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.full_sem_dc_layer['bias'])
+
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.gnd_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.obj_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.obj_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.bld_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.bld_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.veg_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.veg_dc_layer['bias'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sky_dc_layer['weights'])
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.sky_dc_layer['bias'])
+
+
+
+
     def train_model(self):
 
         predictions = self.neural_model(self.x)
-        cost = tf.reduce_mean(tf.pow((predictions-self.y),2))
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.00001).minimize(cost)
-        hm_epochs = 100
+        self.collect_variables()
+
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+        reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
+
+        cost = tf.nn.l2_loss(self.y-predictions) + reg_term
+
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        hm_epochs = self.n_training_epochs
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -309,7 +378,7 @@ class MAE:
 
 
 
-
+# running model
 
 mae = MAE(data_train,data_validate,data_test)
 mae.train_model()
