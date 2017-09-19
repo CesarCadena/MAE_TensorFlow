@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 def load_data():
-    with open('../03-data/MAE_KITTI/kitti_split.txt') as file:
+    with open('../MAE_KITTI/kitti_split.txt') as file:
         datatext = file.readlines()
 
     data_train = []
@@ -42,7 +42,7 @@ def load_data():
             continue
         data_val.append(i.replace('\n',''))
 
-    basedir = '../03-data/MAE_KITTI/data_18x60/'
+    basedir = '../MAE_KITTI/data_18x60/'
     basefile = 'data_kitti_'
     filetypes = ['im02','im03','InvDepth02','InvDepth03','seg02','seg03']
 

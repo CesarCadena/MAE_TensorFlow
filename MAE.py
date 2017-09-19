@@ -59,7 +59,7 @@ class MAE:
         self.saving = True
         self.folder_model = 'models'
 
-        self.project_dir ='/Users/silvanadrianweder/Polybox/Master/02-semester/01-semester-project/02-code/mae_tensorflow'
+        self.project_dir ='./'
         self.model_dir = self.project_dir + '/models'
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
@@ -87,9 +87,9 @@ class MAE:
                 if t_iterator == self.n_training_data:
                     #show_frame = display_frame(j,(self.height,self.width))
                     break
-                self.imr_train.append(j['xcr1'])
-                self.img_train.append(j['xcg1'])
-                self.imb_train.append(j['xcb1'])
+                self.imr_train.append(j['xcr1']/255.)
+                self.img_train.append(j['xcg1']/255.)
+                self.imb_train.append(j['xcb1']/255.)
                 self.depth_train.append(j['xid1'])
                 self.depth_mask_train.append(j['xmask1'])
                 self.gnd_train.append((j['sem1']==1).astype(int))
@@ -254,7 +254,7 @@ class MAE:
 
         self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
                                    self.depth_dc_layer['bias'])
-        self.depth_output = tf.sigmoid(self.depth_output)
+        self.depth_output = tf.nn.relu(self.depth_output)
 
 
         # decoding layer full semantics

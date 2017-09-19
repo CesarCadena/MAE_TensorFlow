@@ -51,7 +51,7 @@ def plot_training_loss(losses,saving=True):
 
     if saving == True:
         plot_name = 'training_losses'
-        plot_folder = 'plots/'
+        plot_folder = './plots/'
         plot_path = plot_folder + plot_name + '.png'
         plt.savefig(plot_path)
 
