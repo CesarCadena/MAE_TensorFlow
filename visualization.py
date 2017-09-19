@@ -42,7 +42,7 @@ def display_frame(frame,shape):
 
 
 
-def plot_training_loss(losses,saving=True):
+def plot_training_loss(losses,name,saving=True,):
 
     plt.plot(losses)
     plt.title('Training Losses')
@@ -50,7 +50,7 @@ def plot_training_loss(losses,saving=True):
     plt.ylabel('Loss')
 
     if saving == True:
-        plot_name = 'training_losses'
+        plot_name = name
         plot_folder = 'plots/'
         plot_path = plot_folder + plot_name + '.png'
         plt.savefig(plot_path)

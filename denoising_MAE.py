@@ -4,6 +4,7 @@
 
 import tensorflow as tf
 import numpy as np
+import copy
 
 
 from load_data import load_data
@@ -14,7 +15,7 @@ from visualization import display_frame,plot_training_loss
 data_train, data_validate, data_test = load_data()
 
 
-class MAE:
+class MAE_denoising:
 
     def __init__(self,data_train,data_validate,data_test,resolution=(18,60)):
 
@@ -29,6 +30,7 @@ class MAE:
         self.size_coding = 1024
 
         self.n_training_data = 1000 # max 15301
+        self.n_corrupted = int(self.size_input*0.1)
 
         # prepare data
         self.prepare_data()
@@ -44,6 +46,17 @@ class MAE:
         self.veg_input = tf.placeholder('float',[None,self.size_input])
         self.sky_input = tf.placeholder('float',[None,self.size_input])
 
+        self.imr_out = tf.placeholder('float',[None,self.size_input])
+        self.img_out = tf.placeholder('float',[None,self.size_input])
+        self.imb_out = tf.placeholder('float',[None,self.size_input])
+        self.depth_out = tf.placeholder('float',[None,self.size_input])
+        self.gnd_out = tf.placeholder('float',[None,self.size_input])
+        self.obj_out = tf.placeholder('float',[None,self.size_input])
+        self.bld_out = tf.placeholder('float',[None,self.size_input])
+        self.veg_out = tf.placeholder('float',[None,self.size_input])
+        self.sky_out = tf.placeholder('float',[None,self.size_input])
+
+
         self.depth_mask = tf.placeholder('float',[None,self.size_input])
 
 
@@ -51,6 +64,7 @@ class MAE:
         # training options
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
+
 
         self.learning_rate = 1e-06
         self.n_training_epochs = 100
@@ -103,6 +117,31 @@ class MAE:
                 self.sky_train.append((j['sem1']==5).astype(int))
 
                 t_iterator += 1
+
+
+        self.imr_noisy = copy.copy(self.imr_train)
+        self.img_noisy = copy.copy(self.img_train)
+        self.imb_noisy = copy.copy(self.imb_train)
+        self.depth_noisy = copy.copy(self.depth_train)
+        self.gnd_noisy = copy.copy(self.gnd_train)
+        self.obj_noisy = copy.copy(self.obj_train)
+        self.bld_noisy = copy.copy(self.bld_train)
+        self.veg_noisy = copy.copy(self.veg_train)
+        self.sky_noisy = copy.copy(self.sky_train)
+
+        for i in range(0,len(self.imr_noisy)):
+            indices = np.random.randint(0,self.size_input-1,(1,self.n_corrupted),dtype=int)
+            self.imr_noisy[i][indices]=0
+            self.img_noisy[i][indices]=0
+            self.imb_noisy[i][indices]=0
+            self.depth_noisy[i][indices]=0
+            self.gnd_noisy[i][indices]=0
+            self.obj_noisy[i][indices]=0
+            self.bld_noisy[i][indices]=0
+            self.veg_noisy[i][indices]=0
+            self.sky_noisy[i][indices]=0
+
+
 
 
 
@@ -365,7 +404,7 @@ class MAE:
 
     def train_model(self):
 
-        imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out = self.neural_model(self.imr_input,
+        imr_pred,img_pred,imb_pred,depth_pred,gnd_pred,obj_pred,bld_pred,veg_pred,sky_pred = self.neural_model(self.imr_input,
                                                                                                       self.img_input,
                                                                                                       self.imb_input,
                                                                                                       self.depth_input,
@@ -380,17 +419,17 @@ class MAE:
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
-        cost = tf.nn.l2_loss(imr_out-self.imr_input) + \
-                      tf.nn.l2_loss(img_out-self.img_input) + \
-                      tf.nn.l2_loss(imb_out-self.imb_input) + \
-                      tf.nn.l2_loss(gnd_out-self.gnd_input) + \
-                      tf.nn.l2_loss(obj_out-self.obj_input) + \
-                      tf.nn.l2_loss(bld_out-self.bld_input) + \
-                      tf.nn.l2_loss(veg_out-self.veg_input) + \
-                      tf.nn.l2_loss(sky_out-self.sky_input) + \
+        cost = tf.nn.l2_loss(imr_pred-self.imr_out) + \
+                      tf.nn.l2_loss(img_pred-self.img_out) + \
+                      tf.nn.l2_loss(imb_pred-self.imb_out) + \
+                      tf.nn.l2_loss(gnd_pred-self.gnd_out) + \
+                      tf.nn.l2_loss(obj_pred-self.obj_out) + \
+                      tf.nn.l2_loss(bld_pred-self.bld_out) + \
+                      tf.nn.l2_loss(veg_pred-self.veg_out) + \
+                      tf.nn.l2_loss(sky_pred-self.sky_out) + \
                       reg_term
 
-        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,depth_out)-tf.multiply(self.depth_mask,self.depth_input)) # depth mask for loss computation
+        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,depth_pred)-tf.multiply(self.depth_mask,self.depth_input)) # depth mask for loss computation
 
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         hm_epochs = self.n_training_epochs
@@ -403,16 +442,27 @@ class MAE:
                 epoch_loss = 0
                 for _ in range(self.n_batches):
 
-                    feed_dict = {self.imr_input:self.imr_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.img_input:self.img_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.imb_input:self.imb_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.depth_input:self.depth_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.gnd_input:self.gnd_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.obj_input:self.obj_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.bld_input:self.bld_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.veg_input:self.veg_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.sky_input:self.sky_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.depth_mask:self.depth_mask_train[_*self.n_batches:(_+1)*self.n_batches]}
+                    feed_dict = {self.imr_input:self.imr_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.img_input:self.img_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.imb_input:self.imb_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.depth_input:self.depth_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.gnd_input:self.gnd_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.obj_input:self.obj_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.bld_input:self.bld_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.veg_input:self.veg_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.sky_input:self.sky_noisy[_*self.n_batches:(_+1)*self.n_batches],
+
+                                 self.depth_mask:self.depth_mask_train[_*self.n_batches:(_+1)*self.n_batches],
+
+                                 self.imr_out:self.imr_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.img_out:self.img_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.imb_out:self.imb_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.depth_out:self.depth_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.gnd_out:self.gnd_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.obj_out:self.obj_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.bld_out:self.bld_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.veg_out:self.veg_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.sky_out:self.sky_train[_*self.n_batches:(_+1)*self.n_batches]}
 
                     _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
                     epoch_loss += c
@@ -423,7 +473,7 @@ class MAE:
 
 
             if self.saving == True:
-                plot_training_loss(epoch_losses,name='training_loss_MAE')
+                plot_training_loss(epoch_losses,name='training_loss_denoising_MAE')
                 saver = tf.train.Saver()
                 saver.save(sess,self.FLAGS.train_dir+'/models.ckpt')
                 print('SAVED MODEL')
@@ -432,7 +482,7 @@ class MAE:
 
 # running model
 
-mae = MAE(data_train,data_validate,data_test)
+mae = MAE_denoising(data_train, data_validate, data_test)
 mae.train_model()
 
 
