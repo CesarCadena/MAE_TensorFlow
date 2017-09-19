@@ -42,7 +42,7 @@ def display_frame(frame,shape):
 
 
 
-def plot_training_loss(losses,saving=True):
+def plot_training_loss(losses,name,saving=True,):
 
     plt.plot(losses)
     plt.title('Training Losses')
