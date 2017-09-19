@@ -91,9 +91,9 @@ class MAE:
                 if t_iterator == self.n_training_data:
                     #show_frame = display_frame(j,(self.height,self.width))
                     break
-                self.imr_train.append(j['xcr1'])
-                self.img_train.append(j['xcg1'])
-                self.imb_train.append(j['xcb1'])
+                self.imr_train.append(j['xcr1']/255.)
+                self.img_train.append(j['xcg1']/255.)
+                self.imb_train.append(j['xcb1']/255.)
                 self.depth_train.append(j['xid1'])
                 self.depth_mask_train.append(j['xmask1'])
                 self.gnd_train.append((j['sem1']==1).astype(int))
@@ -290,7 +290,7 @@ class MAE:
 
         self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
                                    self.depth_dc_layer['bias'])
-        self.depth_output = tf.sigmoid(self.depth_output)
+        self.depth_output = tf.nn.relu(self.depth_output)
 
 
         # decoding layer full semantics

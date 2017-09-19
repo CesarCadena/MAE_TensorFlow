@@ -30,10 +30,12 @@ class MAE_denoising:
         self.size_coding = 1024
 
         self.n_training_data = 1000 # max 15301
+        self.n_validation_data = 10
         self.n_corrupted = int(self.size_input*0.1)
 
         # prepare data
-        self.prepare_data()
+        self.prepare_training_data()
+        self.prepare_validation_data()
 
         # placeholder definition
         self.imr_input = tf.placeholder('float',[None,self.size_input])
@@ -79,7 +81,7 @@ class MAE_denoising:
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
         self.FLAGS = tf.app.flags.FLAGS
 
-    def prepare_data(self):
+    def prepare_training_data(self):
         '''
         Function for bringing the training data into a form that suits the training process
         :return:
@@ -105,9 +107,9 @@ class MAE_denoising:
                 if t_iterator == self.n_training_data:
                     #show_frame = display_frame(j,(self.height,self.width))
                     break
-                self.imr_train.append(j['xcr1'])
-                self.img_train.append(j['xcg1'])
-                self.imb_train.append(j['xcb1'])
+                self.imr_train.append(j['xcr1']/255.)
+                self.img_train.append(j['xcg1']/255.)
+                self.imb_train.append(j['xcb1']/255.)
                 self.depth_train.append(j['xid1'])
                 self.depth_mask_train.append(j['xmask1'])
                 self.gnd_train.append((j['sem1']==1).astype(int))
@@ -119,27 +121,84 @@ class MAE_denoising:
                 t_iterator += 1
 
 
-        self.imr_noisy = copy.copy(self.imr_train)
-        self.img_noisy = copy.copy(self.img_train)
-        self.imb_noisy = copy.copy(self.imb_train)
-        self.depth_noisy = copy.copy(self.depth_train)
-        self.gnd_noisy = copy.copy(self.gnd_train)
-        self.obj_noisy = copy.copy(self.obj_train)
-        self.bld_noisy = copy.copy(self.bld_train)
-        self.veg_noisy = copy.copy(self.veg_train)
-        self.sky_noisy = copy.copy(self.sky_train)
+        self.imr_train_noisy = copy.copy(self.imr_train)
+        self.img_train_noisy = copy.copy(self.img_train)
+        self.imb_train_noisy = copy.copy(self.imb_train)
+        self.depth_train_noisy = copy.copy(self.depth_train)
+        self.gnd_train_noisy = copy.copy(self.gnd_train)
+        self.obj_train_noisy = copy.copy(self.obj_train)
+        self.bld_train_noisy = copy.copy(self.bld_train)
+        self.veg_train_noisy = copy.copy(self.veg_train)
+        self.sky_train_noisy = copy.copy(self.sky_train)
 
-        for i in range(0,len(self.imr_noisy)):
+        for i in range(0, len(self.imr_val_noisy)):
             indices = np.random.randint(0,self.size_input-1,(1,self.n_corrupted),dtype=int)
-            self.imr_noisy[i][indices]=0
-            self.img_noisy[i][indices]=0
-            self.imb_noisy[i][indices]=0
-            self.depth_noisy[i][indices]=0
-            self.gnd_noisy[i][indices]=0
-            self.obj_noisy[i][indices]=0
-            self.bld_noisy[i][indices]=0
-            self.veg_noisy[i][indices]=0
-            self.sky_noisy[i][indices]=0
+            self.imr_train_noisy[i][indices]=0
+            self.img_train_noisy[i][indices]=0
+            self.imb_train_noisy[i][indices]=0
+            self.depth_train_noisy[i][indices]=0
+            self.gnd_train_noisy[i][indices]=0
+            self.obj_train_noisy[i][indices]=0
+            self.bld_train_noisy[i][indices]=0
+            self.veg_train_noisy[i][indices]=0
+            self.sky_train_noisy[i][indices]=0
+
+    def prepare_validation_data(self):
+
+        self.imr_validate = []
+        self.img_validate = []
+        self.imb_validate = []
+        self.depth_validate = []
+        self.gnd_validate = []
+        self.obj_validate = []
+        self.bld_validate = []
+        self.veg_validate = []
+        self.sky_validate = []
+
+        self.depth_mask_validate = []
+
+        t_iterator = 0
+
+        for i in self.data_validate:
+            for j in i:
+
+                if t_iterator == self.n_validation_data:
+                    #show_frame = display_frame(j,(self.height,self.width))
+                    break
+                self.imr_validate.append(j['xcr1']/255.)
+                self.img_validate.append(j['xcg1']/255.)
+                self.imb_validate.append(j['xcb1']/255.)
+                self.depth_validate.append(j['xid1'])
+                self.depth_mask_validate.append(j['xmask1'])
+                self.gnd_validate.append((j['sem1']==1).astype(int))
+                self.obj_validate.append((j['sem1']==2).astype(int))
+                self.bld_validate.append((j['sem1']==3).astype(int))
+                self.veg_validate.append((j['sem1']==4).astype(int))
+                self.sky_validate.append((j['sem1']==5).astype(int))
+
+                t_iterator += 1
+
+        self.imr_val_noisy = copy.copy(self.imr_validate)
+        self.img_val_noisy = copy.copy(self.img_validate)
+        self.imb_val_noisy = copy.copy(self.imb_validate)
+        self.depth_val_noisy = copy.copy(self.depth_validate)
+        self.gnd_val_noisy = copy.copy(self.gnd_validate)
+        self.obj_val_noisy = copy.copy(self.obj_validate)
+        self.bld_val_noisy = copy.copy(self.bld_validate)
+        self.veg_val_noisy = copy.copy(self.veg_validate)
+        self.sky_val_noisy = copy.copy(self.sky_validate)
+
+        for i in range(0, len(self.imr_val_noisy)):
+            indices = np.random.randint(0,self.size_input-1,(1,self.n_corrupted),dtype=int)
+            self.imr_val_noisy[i][indices]=0
+            self.img_val_noisy[i][indices]=0
+            self.imb_val_noisy[i][indices]=0
+            self.depth_val_noisy[i][indices]=0
+            self.gnd_val_noisy[i][indices]=0
+            self.obj_val_noisy[i][indices]=0
+            self.bld_val_noisy[i][indices]=0
+            self.veg_val_noisy[i][indices]=0
+            self.sky_val_noisy[i][indices]=0
 
 
 
@@ -329,7 +388,7 @@ class MAE_denoising:
 
         self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
                                    self.depth_dc_layer['bias'])
-        self.depth_output = tf.sigmoid(self.depth_output)
+        self.depth_output = tf.nn.relu(self.depth_output)
 
 
         # decoding layer full semantics
@@ -442,15 +501,15 @@ class MAE_denoising:
                 epoch_loss = 0
                 for _ in range(self.n_batches):
 
-                    feed_dict = {self.imr_input:self.imr_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.img_input:self.img_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.imb_input:self.imb_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.depth_input:self.depth_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.gnd_input:self.gnd_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.obj_input:self.obj_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.bld_input:self.bld_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.veg_input:self.veg_noisy[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.sky_input:self.sky_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                    feed_dict = {self.imr_input: self.imr_train_noisy[_ * self.n_batches:(_ + 1) * self.n_batches],
+                                 self.img_input: self.img_train_noisy[_ * self.n_batches:(_ + 1) * self.n_batches],
+                                 self.imb_input: self.imb_train_noisy[_ * self.n_batches:(_ + 1) * self.n_batches],
+                                 self.depth_input:self.depth_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.gnd_input:self.gnd_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.obj_input:self.obj_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.bld_input:self.bld_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.veg_input:self.veg_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.sky_input:self.sky_train_noisy[_*self.n_batches:(_+1)*self.n_batches],
 
                                  self.depth_mask:self.depth_mask_train[_*self.n_batches:(_+1)*self.n_batches],
 
@@ -477,6 +536,21 @@ class MAE_denoising:
                 saver = tf.train.Saver()
                 saver.save(sess,self.FLAGS.train_dir+'/models.ckpt')
                 print('SAVED MODEL')
+
+
+    def validate_model(self,load_model):
+
+        saver = tf.train.Saver()
+
+        with tf.Session as sess:
+
+            if load_model==True:
+                saver.restore
+
+
+
+
+
 
 
 
