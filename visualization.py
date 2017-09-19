@@ -39,3 +39,21 @@ def display_frame(frame,shape):
     plt.close()
 
     return 0
+
+
+
+def plot_training_loss(losses,saving=True):
+
+    plt.plot(losses)
+    plt.title('Training Losses')
+    plt.xlabel('# Epochs')
+    plt.ylabel('Loss')
+
+    if saving == True:
+        plot_name = 'training_losses'
+        plot_folder = 'plots/'
+        plot_path = plot_folder + plot_name + '.png'
+        plt.savefig(plot_path)
+
+    plt.show()
+    plt.close()

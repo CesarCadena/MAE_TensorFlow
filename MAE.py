@@ -7,7 +7,7 @@ import numpy as np
 
 
 from load_data import load_data
-from visualization import display_frame
+from visualization import display_frame,plot_training_loss
 
 # LOAD DATA
 
@@ -53,7 +53,7 @@ class MAE:
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
         self.learning_rate = 1e-06
-        self.n_training_epochs = 1000
+        self.n_training_epochs = 100
 
         # model saving
         self.saving = True
@@ -408,7 +408,7 @@ class MAE:
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
 
-                                                                                                                     
+            epoch_losses = []
             for epoch in range(hm_epochs):
                 epoch_loss = 0
                 for _ in range(self.n_batches):
@@ -427,10 +427,13 @@ class MAE:
                     _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
                     epoch_loss += c
 
+                epoch_losses.append(epoch_loss)
                 print('Epoch', epoch+1, 'completed out of', hm_epochs, 'loss:', epoch_loss)
 
 
+
             if self.saving == True:
+                plot_training_loss(epoch_losses)
                 saver = tf.train.Saver()
                 saver.save(sess,self.FLAGS.train_dir+'/models.ckpt')
                 print('SAVED MODEL')
