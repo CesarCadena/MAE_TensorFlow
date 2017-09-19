@@ -7,6 +7,7 @@ import numpy as np
 
 
 from load_data import load_data
+from visualization import display_frame
 
 # LOAD DATA
 
@@ -43,11 +44,13 @@ class MAE:
         self.veg_input = tf.placeholder('float',[None,self.size_input])
         self.sky_input = tf.placeholder('float',[None,self.size_input])
 
+        self.depth_mask = tf.placeholder('float',[None,self.size_input])
+
 
 
         # training options
         self.batch_size = 60
-        self.n_batches = int(len(self.training_frames)/self.batch_size)
+        self.n_batches = int(len(self.imr_train)/self.batch_size)
 
         self.learning_rate = 1e-06
         self.n_training_epochs = 1000
@@ -74,17 +77,21 @@ class MAE:
         self.veg_train = []
         self.sky_train = []
 
+        self.depth_mask_train = []
+
         t_iterator = 0
 
         for i in self.data_train:
             for j in i:
 
                 if t_iterator == self.n_training_data:
+                    #show_frame = display_frame(j,(self.height,self.width))
                     break
                 self.imr_train.append(j['xcr1'])
                 self.img_train.append(j['xcg1'])
                 self.imb_train.append(j['xcb1'])
                 self.depth_train.append(j['xid1'])
+                self.depth_mask_train.append(j['xmask1'])
                 self.gnd_train.append((j['sem1']==1).astype(int))
                 self.obj_train.append((j['sem1']==2).astype(int))
                 self.bld_train.append((j['sem1']==3).astype(int))
@@ -386,7 +393,6 @@ class MAE:
         cost = tf.nn.l2_loss(imr_out-self.imr_input) + \
                       tf.nn.l2_loss(img_out-self.img_input) + \
                       tf.nn.l2_loss(imb_out-self.imb_input) + \
-                      tf.nn.l2_loss(depth_out-self.depth_input) + \
                       tf.nn.l2_loss(gnd_out-self.gnd_input) + \
                       tf.nn.l2_loss(obj_out-self.obj_input) + \
                       tf.nn.l2_loss(bld_out-self.bld_input) + \
@@ -394,13 +400,15 @@ class MAE:
                       tf.nn.l2_loss(sky_out-self.sky_input) + \
                       reg_term
 
+        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,depth_out)-tf.multiply(self.depth_mask,self.depth_input)) # depth mask for loss computation
+
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         hm_epochs = self.n_training_epochs
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
 
-
+                                                                                                                     
             for epoch in range(hm_epochs):
                 epoch_loss = 0
                 for _ in range(self.n_batches):
@@ -413,7 +421,8 @@ class MAE:
                                  self.obj_input:self.obj_train[_*self.n_batches:(_+1)*self.n_batches],
                                  self.bld_input:self.bld_train[_*self.n_batches:(_+1)*self.n_batches],
                                  self.veg_input:self.veg_train[_*self.n_batches:(_+1)*self.n_batches],
-                                 self.sky_input:self.sky_train[_*self.n_batches:(_+1)*self.n_batches]}
+                                 self.sky_input:self.sky_train[_*self.n_batches:(_+1)*self.n_batches],
+                                 self.depth_mask:self.depth_mask_train[_*self.n_batches:(_+1)*self.n_batches]}
 
                     _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
                     epoch_loss += c
