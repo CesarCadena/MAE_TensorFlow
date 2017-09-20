@@ -30,6 +30,21 @@ class MAE:
 
         self.n_training_data = 1000 # max 15301
 
+
+        # options
+        self.mode = 'denoising' # standard for non denoising training or denoising for training a denoising MAE
+
+        # noise values for the different modalities (min 0, max 1)
+        self.imr_noise = 0.1
+        self.img_noise = 0.1
+        self.imb_noise = 0.1
+        self.depth_noise = 0.1
+        self.gnd_noise = 0.1
+        self.obj_noise = 0.1
+        self.bld_noise = 0.1
+        self.veg_noise = 0.1
+        self.sky_noise = 0.1
+
         # prepare data
         self.prepare_training_data()
 
@@ -104,11 +119,90 @@ class MAE:
 
                 t_iterator += 1
 
+        # randomly shuffle input frames
+        rand_indices = np.arange(self.n_training_data).astype(int)
+        np.random.shuffle(rand_indices)
+
+        self.imr_train = np.asarray(self.imr_train)[rand_indices].tolist()
+        self.img_train = np.asarray(self.img_train)[rand_indices].tolist()
+        self.imb_train = np.asarray(self.imb_train)[rand_indices].tolist()
+        self.depth_train = np.asarray(self.depth_train)[rand_indices].tolist()
+        self.gnd_train = np.asarray(self.gnd_train)[rand_indices].tolist()
+        self.obj_train = np.asarray(self.obj_train)[rand_indices].tolist()
+        self.bld_train = np.asarray(self.bld_train)[rand_indices].tolist()
+        self.veg_train = np.asarray(self.veg_train)[rand_indices].tolist()
+        self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
+
+    def true_function_1(self):
+
+                imr_input = tf.nn.dropout(self.imr_input, (1 - self.imr_noise))
+                img_input = tf.nn.dropout(self.img_input, (1 - self.imr_noise))
+                imb_input = tf.nn.dropout(self.imb_input, (1 - self.imr_noise))
+                depth_input = tf.nn.dropout(self.depth_input, (1 - self.imr_noise))
+                gnd_input = tf.nn.dropout(self.gnd_input, (1 - self.imr_noise))
+                obj_input = tf.nn.dropout(self.obj_input, (1 - self.imr_noise))
+                bld_input = tf.nn.dropout(self.bld_input, (1 - self.imr_noise))
+                veg_input = tf.nn.dropout(self.veg_input, (1 - self.imr_noise))
+                sky_input = tf.nn.dropout(self.sky_input, (1 - self.imr_noise))
+                return imr_input,img_input,imb_input,depth_input,gnd_input,obj_input,bld_input,veg_input,sky_input
+
+    def true_function_2(self):
+                shape_input = tf.shape(self.depth_input)
+
+                imr_input = self.imr_input
+                img_input = self.img_input
+                imb_input = self.imb_input
+                depth_input = tf.zeros(shape_input,dtype='float')
+                gnd_input = tf.zeros(shape_input,dtype='float')
+                obj_input = tf.zeros(shape_input,dtype='float')
+                bld_input = tf.zeros(shape_input,dtype='float')
+                veg_input = tf.zeros(shape_input,dtype='float')
+                sky_input = tf.zeros(shape_input,dtype='float')
+                return imr_input,img_input,imb_input,depth_input,gnd_input,obj_input,bld_input,veg_input,sky_input
+
+    def false_function(self):
+                imr_input = self.imr_input
+                img_input = self.img_input
+                imb_input = self.imb_input
+                depth_input = self.depth_input
+                gnd_input = self.gnd_input
+                obj_input = self.obj_input
+                bld_input = self.bld_input
+                veg_input = self.veg_input
+                sky_input = self.sky_input
+                return imr_input,img_input,imb_input,depth_input,gnd_input,obj_input,bld_input,veg_input,sky_input
+
+    def input_distortion(self):
+
+        if self.mode == 'denoising':
+            u = tf.random_uniform([],0,1)
+            tf.Print(u,[u])
+
+            border1 = tf.constant(0.2)
+            border2 = tf.constant(0.5)
+
+            imr_input,img_input,imb_input,depth_input,gnd_input,obj_input,bld_input,veg_input,sky_input = tf.cond(tf.less(u,border1),
+                                                                                                                  lambda:self.true_function_1(),
+                                                                                                                  lambda:tf.cond(tf.logical_and(tf.greater_equal(u,border1),tf.less(u,border2)),
+                                                                                                                                   lambda:self.true_function_2(),
+                                                                                                                                   lambda:self.false_function()))
+        else:
+            imr_input = self.imr_input
+            img_input = self.img_input
+            imb_input = self.imb_input
+            depth_input = self.depth_input
+            gnd_input = self.gnd_input
+            obj_input = self.obj_input
+            bld_input = self.bld_input
+            veg_input = self.veg_input
+            sky_input = self.sky_input
+
+        return imr_input,img_input,imb_input,depth_input,gnd_input,obj_input,bld_input,veg_input,sky_input
 
 
-    def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky):
+    def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky,mode='training'):
+
         '''
-
         :param imr: red channel of rgb image
         :param img: green channel of rgb image
         :param imb: blue channel of rgb image
@@ -120,6 +214,11 @@ class MAE:
         :param sky: binary image for class sky in image semantics
         :return: reconstructed images for all input modalities
         '''
+
+        if mode == 'training':
+            imr,img,imb,depth,gnd,obj,bld,veg,sky = self.input_distortion()
+
+
 
         # list to store all layers of the MAE neural network
         self.layers = []
@@ -365,6 +464,7 @@ class MAE:
 
     def train_model(self):
 
+
         imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out = self.neural_model(self.imr_input,
                                                                                                       self.img_input,
                                                                                                       self.imb_input,
@@ -373,7 +473,9 @@ class MAE:
                                                                                                       self.obj_input,
                                                                                                       self.bld_input,
                                                                                                       self.veg_input,
-                                                                                                      self.sky_input)
+                                                                                                      self.sky_input,
+                                                                                                      mode='training')
+
         self.collect_variables()
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
