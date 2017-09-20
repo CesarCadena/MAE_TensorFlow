@@ -31,7 +31,7 @@ class MAE:
         self.n_training_data = 1000 # max 15301
 
         # prepare data
-        self.prepare_data()
+        self.prepare_training_data()
 
         # placeholder definition
         self.imr_input = tf.placeholder('float',[None,self.size_input])
@@ -65,7 +65,7 @@ class MAE:
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
         self.FLAGS = tf.app.flags.FLAGS
 
-    def prepare_data(self):
+    def prepare_training_data(self):
         '''
         Function for bringing the training data into a form that suits the training process
         :return:
