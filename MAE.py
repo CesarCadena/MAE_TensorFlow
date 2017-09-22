@@ -29,7 +29,7 @@ class MAE:
         self.size_input = self.height*self.width
         self.size_coding = 1024
 
-        self.n_training_data = 1000 # max 15301
+        self.n_training_data = 100 # max 15301
         self.n_validation_data = 1
 
 
@@ -80,6 +80,9 @@ class MAE:
 
         self.learning_rate = 1e-06
         self.n_training_epochs = 100
+
+        # validation options
+        self.n_validation_steps = 1
 
         # model saving
         self.saving = True
@@ -176,11 +179,6 @@ class MAE:
                 self.sky_val.append((j['sem1']==5).astype(int))
 
                 v_iterator += 1
-
-
-
-
-
 
 
 
@@ -437,7 +435,7 @@ class MAE:
         self.sky_output = tf.sigmoid(self.sky_output)
 
 
-        return self.red_output,self.green_output,self.blue_output,self.depth_output,self.gnd_output,self.obj_output,self.bld_output,self.veg_output,self.sky_output
+        return [self.red_output,self.green_output,self.blue_output,self.depth_output,self.gnd_output,self.obj_output,self.bld_output,self.veg_output,self.sky_output]
 
     def collect_variables(self):
 
@@ -447,17 +445,17 @@ class MAE:
 
     def train_model(self):
 
+        prediction = self.neural_model(self.imr_input,
+                                       self.img_input,
+                                       self.imb_input,
+                                       self.depth_input,
+                                       self.gnd_input,
+                                       self.obj_input,
+                                       self.bld_input,
+                                       self.veg_input,
+                                       self.sky_input,
+                                       mode='training')
 
-        imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out = self.neural_model(self.imr_input,
-                                                                                                      self.img_input,
-                                                                                                      self.imb_input,
-                                                                                                      self.depth_input,
-                                                                                                      self.gnd_input,
-                                                                                                      self.obj_input,
-                                                                                                      self.bld_input,
-                                                                                                      self.veg_input,
-                                                                                                      self.sky_input,
-                                                                                                      mode='training')
 
         self.collect_variables()
 
@@ -465,17 +463,17 @@ class MAE:
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
-        cost = tf.nn.l2_loss(imr_out-self.imr_label) + \
-                      tf.nn.l2_loss(img_out-self.img_label) + \
-                      tf.nn.l2_loss(imb_out-self.imb_label) + \
-                      tf.nn.l2_loss(gnd_out-self.gnd_label) + \
-                      tf.nn.l2_loss(obj_out-self.obj_label) + \
-                      tf.nn.l2_loss(bld_out-self.bld_label) + \
-                      tf.nn.l2_loss(veg_out-self.veg_label) + \
-                      tf.nn.l2_loss(sky_out-self.sky_label) + \
+        cost = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
+                      tf.nn.l2_loss(prediction[1]-self.img_label) + \
+                      tf.nn.l2_loss(prediction[2]-self.imb_label) + \
+                      tf.nn.l2_loss(prediction[3]-self.gnd_label) + \
+                      tf.nn.l2_loss(prediction[5]-self.obj_label) + \
+                      tf.nn.l2_loss(prediction[6]-self.bld_label) + \
+                      tf.nn.l2_loss(prediction[7]-self.veg_label) + \
+                      tf.nn.l2_loss(prediction[8]-self.sky_label) + \
                       reg_term
 
-        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,depth_out)-tf.multiply(self.depth_mask,self.depth_label)) # depth mask for loss computation
+        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label)) # depth mask for loss computation
 
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         hm_epochs = self.n_training_epochs
@@ -552,58 +550,73 @@ class MAE:
                 print('SAVED MODEL')
 
 
-    def validate_model(self,n_validations,mode='standard',loadmodel=True):
+    def validate_model(self,n_validations,loadmodel=True):
 
-        imr_input = tf.placeholder([None,self.size_input])
-        img_input = tf.placeholder([None,self.size_input])
-        imb_input = tf.placeholder([None,self.size_input])
-        depth_input = tf.placeholder([None,self.size_input])
-        gnd_input = tf.placeholder([None,self.size_input])
-        obj_input = tf.placeholder([None,self.size_input])
-        bld_input = tf.placeholder([None,self.size_input])
-        sky_input = tf.placeholder([None,self.size_input])
+        with tf.Session() as sess:
 
+            prediction = self.neural_model(self.imr_input,
+                                       self.img_input,
+                                       self.imb_input,
+                                       self.depth_input,
+                                       self.gnd_input,
+                                       self.obj_input,
+                                       self.bld_input,
+                                       self.veg_input,
+                                       self.sky_input,
+                                       mode='training')
 
+            #init_op = tf.initialize_all_variables()
+            saver = tf.train.Saver()
+            if loadmodel == True:
+                saver.restore(sess,self.FLAGS.train_dir+'/models.ckpt')
 
-        for i in range(0,n_validations):
-            if mode=='noisy':
-                imr_input = tf.nn.dropout(self.imr_val[i],(1-self.imr_noise))
-                img_input = tf.nn.dropout(self.img_val[i],(1-self.img_noise))
-                imb_input = tf.nn.dropout(self.imb_val[i],(1-self.imb_noise))
-                depth_input = tf.nn.dropout(self.depth_val[i],(1-self.depth_noise))
-                gnd_input = tf.nn.dropout(self.gnd_val[i],(1-self.gnd_noise))
-                obj_input = tf.nn.dropout(self.obj_val[i],(1-self.obj_noise))
-                bld_input = tf.nn.dropout(self.bld_val[i],(1-self.bld_noise))
-                veg_input = tf.nn.dropout(self.veg_val[i],(1-self.veg_noise))
-                sky_input = tf.nn.dropout(self.sky_val[i],(1-self.sky_noise))
+            #sess.run(init_op)
 
-            if mode == 'onlyrgb':
-                imr_input = self.imr_val[i]
-                img_input = self.img_val[i]
-                imb_input = self.imb_val[i]
-                depth_input = np.zeros((1,self.size_input)).aslist()
-                gnd_input = np.zeros((1,self.size_input)).aslist()
-                obj_input = np.zeros((1,self.size_input)).aslist()
-                bld_input = np.zeros((1,self.size_input)).aslist()
-                veg_input = np.zeros((1,self.size_input)).aslist()
-                sky_input = np.zeros((1,self.size_input)).aslist()
+            for i in range(0,n_validations):
+                imr_out = self.imr_val[i]
+                img_out = self.img_val[i]
+                imb_out = self.imb_val[i]
+                depth_out = self.depth_val[i]
+                gnd_out = self.gnd_val[i]
+                obj_out = self.obj_val[i]
+                bld_out = self.bld_val[i]
+                veg_out = self.veg_val[i]
+                sky_out = self.sky_val[i]
 
 
-            imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out = self.neural_model(imr_input,
-                                                                                                          img_input,
-                                                                                                          imb_input,
-                                                                                                          depth_input,
-                                                                                                          gnd_input,
-                                                                                                          obj_input,
-                                                                                                          bld_input,
-                                                                                                          veg_input,
-                                                                                                          sky_input,
-                                                                                                          mode='validation')
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_out,
+                                                                                                    img_out,
+                                                                                                    imb_out,
+                                                                                                    depth_out,
+                                                                                                    gnd_out,
+                                                                                                    obj_out,
+                                                                                                    bld_out,
+                                                                                                    veg_out,
+                                                                                                    sky_out,
+                                                                                                    border1=0.4,
+                                                                                                    border2=0.8,
+                                                                                                    resolution=(18,60),
+                                                                                                    singleframe=True)
 
-            with tf.Session() as sess:
-                        if loadmodel == True:
-                            saver = tf.train.Saver()
-                            saver.restore(sess,self.FLAGS.train_dir+'/models.ckpt')
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in}
+
+                prediction = sess.run(prediction,feed_dict=feed_dict)
+
+
+
+
+
+
+
 
 
 
@@ -618,7 +631,7 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-mae.train_model()
+#mae.train_model()
 mae.validate_model(n_validations=1,loadmodel=True)
 
 
