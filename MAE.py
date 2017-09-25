@@ -29,7 +29,7 @@ class MAE:
         self.size_input = self.height*self.width
         self.size_coding = 1024
 
-        self.n_training_data = 100 # max 15301
+        self.n_training_data = 300 # max 15301
         self.n_validation_data = 1
 
 
@@ -487,6 +487,11 @@ class MAE:
 
 
         with tf.Session() as sess:
+
+            sess.run(tf.initialize_variables([self.full_ec_layer['weights'],
+                                              self.full_ec_layer['bias'],
+                                              self.full_dc_layer['weights'],
+                                              self.full_dc_layer['bias']]))
             sess.run(tf.global_variables_initializer())
 
             epoch_losses = []
@@ -553,6 +558,9 @@ class MAE:
 
                 epoch_losses.append(epoch_loss)
                 print('Epoch', epoch+1, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+
+                if epoch%10==0:
+                    plot_training_loss(epoch_losses,n_epochs=self.n_training_epochs,name='training_loss_MAE')
 
 
             if self.saving == True:
