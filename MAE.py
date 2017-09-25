@@ -475,7 +475,14 @@ class MAE:
 
         cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label)) # depth mask for loss computation
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=[self.full_ec_layer['weights'],
+                                                                                                      self.full_ec_layer['bias'],
+                                                                                                      self.full_dc_layer['weights'],
+                                                                                                      self.full_dc_layer['bias']])
+
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+
+
         hm_epochs = self.n_training_epochs
 
 
@@ -536,7 +543,12 @@ class MAE:
                                  self.veg_label:veg_batch,
                                  self.sky_label:sky_batch}
 
-                    _, c = sess.run([optimizer, cost], feed_dict=feed_dict)
+                    # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
+                    if epoch < 10:
+                        _ , c = sess.run([optimizer1, cost], feed_dict=feed_dict)
+                    else:
+                        _ ,c = sess.run([optimizer2,cost],feed_dict=feed_dict)
+
                     epoch_loss += c
 
                 epoch_losses.append(epoch_loss)
@@ -631,7 +643,7 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-#mae.train_model()
+mae.train_model()
 mae.validate_model(n_validations=1,loadmodel=True)
 
 
