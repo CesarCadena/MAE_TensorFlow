@@ -88,7 +88,7 @@ class MAE:
         self.saving = True
         self.folder_model = 'models'
 
-        self.project_dir ='/Users/silvanadrianweder/Polybox/Master/02-semester/01-semester-project/02-code/mae_tensorflow'
+        self.project_dir ='.'
         self.model_dir = self.project_dir + '/models'
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
@@ -146,6 +146,8 @@ class MAE:
         self.bld_train = np.asarray(self.bld_train)[rand_indices].tolist()
         self.veg_train = np.asarray(self.veg_train)[rand_indices].tolist()
         self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
+
+        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
 
     def prepare_validation_data(self):
 
@@ -259,12 +261,12 @@ class MAE:
                                     axis=1)
 
         # semantics encoding
-        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01),name='sem_ec_layer_weights'),
+        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5 * self.size_coding, self.size_coding], stddev=0.01), name='sem_ec_layer_weights'),
                              'bias' : tf.Variable(tf.zeros([self.size_coding]),name='sem_ec_layer_bias')}
         self.layers.append(self.sem_ec_layer)
 
         # semantics neuron (relu activation)
-        self.sem_encoding = tf.add(tf.matmul(self.sem_concat,self.sem_ec_layer['weights']),
+        self.sem_encoding = tf.add(tf.matmul(self.sem_concat, self.sem_ec_layer['weights']),
                                    self.sem_ec_layer['bias'])
         self.sem_encoding = tf.nn.relu(self.sem_encoding)
 
@@ -375,14 +377,14 @@ class MAE:
 
         # decoding layer full semantics
 
-        self.full_sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01),name='full_sem_dc_layer_weights'),
+        self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
                                   'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
-        self.layers.append(self.full_sem_dc_layer)
+        self.layers.append(self.sem_dc_layer)
 
         # decoding neurons full semantics
 
-        self.full_sem = tf.add(tf.matmul(self.sem_full_dc,self.full_sem_dc_layer['weights']),
-                               self.full_sem_dc_layer['bias'])
+        self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
+                               self.sem_dc_layer['bias'])
         self.full_sem = tf.nn.relu(self.full_sem)
 
         # splitting full semantics
@@ -485,14 +487,55 @@ class MAE:
 
         hm_epochs = self.n_training_epochs
 
+        saver_pretrained1 = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
+                                            'red_ec_layer_bias':self.red_ec_layer['bias'],
+                                            'green_ec_layer_weights':self.green_ec_layer['weights'],
+                                            'green_ec_layer_bias':self.green_ec_layer['bias'],
+                                            'blue_ec_layer_weights':self.blue_ec_layer['weights'],
+                                            'blue_ec_layer_bias':self.blue_ec_layer['bias'],
+                                            'depth_ec_layer_weights':self.depth_ec_layer['weights'],
+                                            'depth_ec_layer_bias':self.depth_ec_layer['bias'],
+                                            'red_dc_layer_weights':self.red_dc_layer['weights'],
+                                            'red_dc_layer_bias':self.red_dc_layer['bias'],
+                                            'green_dc_layer_weights':self.green_dc_layer['weights'],
+                                            'green_dc_layer_bias':self.green_dc_layer['bias'],
+                                            'blue_dc_layer_weights':self.blue_dc_layer['weights'],
+                                            'blue_dc_layer_bias':self.blue_dc_layer['bias'],
+                                            'depth_dc_layer_weights':self.depth_dc_layer['weights'],
+                                            'depth_dc_layer_bias':self.depth_dc_layer['bias']})
+
+
+        saver_pretrained2 = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
+                                            'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
+                                            'obj_ec_layer_weights':self.obj_ec_layer['weights'],
+                                            'obj_ec_layer_bias':self.obj_ec_layer['bias'],
+                                            'bld_ec_layer_weights':self.bld_ec_layer['weights'],
+                                            'bld_ec_layer_bias':self.bld_ec_layer['bias'],
+                                            'veg_ec_layer_weights':self.veg_ec_layer['weights'],
+                                            'veg_ec_layer_bias':self.veg_ec_layer['bias'],
+                                            'sky_ec_layer_weights':self.sky_ec_layer['weights'],
+                                            'sky_ec_layer_bias':self.sky_ec_layer['bias'],
+                                            'sem_ec_layer_weights':self.sem_ec_layer['weights'],
+                                            'sem_ec_layer_bias':self.sem_ec_layer['bias'],
+                                            'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
+                                            'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
+                                            'obj_dc_layer_weights':self.obj_dc_layer['weights'],
+                                            'obj_dc_layer_bias':self.obj_dc_layer['bias'],
+                                            'bld_dc_layer_weights':self.bld_dc_layer['weights'],
+                                            'bld_dc_layer_bias':self.bld_dc_layer['bias'],
+                                            'veg_dc_layer_weights':self.veg_dc_layer['weights'],
+                                            'veg_dc_layer_bias':self.veg_dc_layer['bias'],
+                                            'sky_dc_layer_weights':self.sky_dc_layer['weights'],
+                                            'sky_dc_layer_bias':self.sky_dc_layer['bias'],
+                                            'sem_dc_layer_weights':self.sem_dc_layer['weights'],
+                                            'sem_dc_layer_bias':self.sem_dc_layer['bias']})
+
 
         with tf.Session() as sess:
 
-            sess.run(tf.initialize_variables([self.full_ec_layer['weights'],
-                                              self.full_ec_layer['bias'],
-                                              self.full_dc_layer['weights'],
-                                              self.full_dc_layer['bias']]))
             sess.run(tf.global_variables_initializer())
+            saver_pretrained1.restore(sess,'models/pretrained1.ckpt')
+            saver_pretrained2.restore(sess,'models/pretrained2.ckpt')
 
             epoch_losses = []
             for epoch in range(hm_epochs):
@@ -521,11 +564,6 @@ class MAE:
                                                                                                         border1=0.4,
                                                                                                         border2=0.8,
                                                                                                         resolution=(18,60))
-
-
-
-
-
 
 
                     feed_dict = {self.imr_input:imr_in,
@@ -588,7 +626,7 @@ class MAE:
             #init_op = tf.initialize_all_variables()
             saver = tf.train.Saver()
             if loadmodel == True:
-                saver.restore(sess,self.FLAGS.train_dir+'/models.ckpt')
+                saver.restore(sess,self.FLAGS.train_dir+'/MAE.ckpt')
 
             #sess.run(init_op)
 
