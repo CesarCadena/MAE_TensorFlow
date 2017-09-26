@@ -23,7 +23,7 @@ def input_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,border1,border2,resol
     for i in range(0,n_frames):
         u = np.random.uniform(0,1,1)
 
-        if u < border1:
+        if u <= border1:
             if singleframe == False:
                 c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = random_distortion(imr[i],img[i],imb[i],depth[i],gnd[i],obj[i],bld[i],veg[i],sky[i],resolution)
             if singleframe == True:
@@ -32,7 +32,7 @@ def input_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,border1,border2,resol
             for j in range(0,len(c_distorted)):
                 distorted_outputs[j].append(c_distorted[j])
 
-        if u >= border1 and u < border2:
+        if u > border1 and u < border2:
             if singleframe == False:
                 c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = only_rgb(imr[i],img[i],imb[i],depth[i],gnd[i],obj[i],bld[i],veg[i],sky[i],resolution)
             if singleframe == True:

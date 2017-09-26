@@ -30,7 +30,7 @@ class PretrainingMAE():
         self.hidden_size = 1024
 
         self.saving = True
-        self.n_training_data = 200
+        self.n_training_data = 'all'
 
         self.prepare_training_data()
 
@@ -106,6 +106,8 @@ class PretrainingMAE():
                 self.veg_train.append((j['sem1']==4).astype(int))
                 self.sky_train.append((j['sem1']==5).astype(int))
 
+
+
                 t_iterator += 1
 
         t_iterator = 0
@@ -140,6 +142,8 @@ class PretrainingMAE():
         self.veg_train = np.asarray(self.veg_train)[rand_indices].tolist()
         self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
+
+        print(len(self.obj_train))
 
 
     def AE_red(self,input):
@@ -441,7 +445,7 @@ class PretrainingMAE():
                                                                                                         bld_batch,
                                                                                                         veg_batch,
                                                                                                         sky_batch,
-                                                                                                        border1=0.8,
+                                                                                                        border1=1,
                                                                                                         border2=1,
                                                                                                         resolution=(18,60))
 
@@ -622,7 +626,7 @@ class PretrainingMAE():
                                                                                                         bld_batch,
                                                                                                         veg_batch,
                                                                                                         sky_batch,
-                                                                                                        border1=0.8,
+                                                                                                        border1=1,
                                                                                                         border2=1,
                                                                                                         resolution=(18,60))
 
