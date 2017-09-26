@@ -4,6 +4,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+from copy import copy
+
 
 def load_data():
     with open('../MAE_KITTI/kitti_split.txt') as file:
@@ -81,9 +83,9 @@ def load_data():
               'xcr2': 0,
               'xcg2': 0,
               'xcb2': 0,
-              'xidspars1': 0,
+              'xidsparse1': 0,
               'xid1': 0,
-              'xmaks1': 0,
+              'xmask1': 0,
               'xidsparse2': 0,
               'xid2': 0,
               'xmask2': 0,
@@ -93,27 +95,30 @@ def load_data():
     for i in range(0,n_training):
         seq = []
         for j in range(0,data_training[i]['xcr'].shape[1]):
-            frame['xcr1'] = data_training[i]['xcr'][:,j]
-            frame['xcg1'] = data_training[i]['xcg'][:,j]
-            frame['xcb1'] = data_training[i]['xcb'][:,j]
+            frame['xcr1'] = copy(data_training[i]['xcr'][:,j])
+            frame['xcg1'] = copy(data_training[i]['xcg'][:,j])
+            frame['xcb1'] = copy(data_training[i]['xcb'][:,j])
 
-            frame['xcr2'] = data_training[i+n_training]['xcr'][:,j]
-            frame['xcg2'] = data_training[i+n_training]['xcg'][:,j]
-            frame['xcb2'] = data_training[i+n_training]['xcb'][:,j]
+            frame['xcr2'] = copy(data_training[i+n_training]['xcr'][:,j])
+            frame['xcg2'] = copy(data_training[i+n_training]['xcg'][:,j])
+            frame['xcb2'] = copy(data_training[i+n_training]['xcb'][:,j])
 
-            frame['xidsparse1'] = data_training[i+2*n_training]['xidsparse'][:,j]
-            frame['xid1'] = data_training[i+2*n_training]['xid'][:,j]
-            frame['xmask1'] = data_training[i+2*n_training]['xmask'][:,j]
+            frame['xidsparse1'] = copy(data_training[i+2*n_training]['xidsparse'][:,j])
+            frame['xid1'] = copy(data_training[i+2*n_training]['xid'][:,j])
+            frame['xmask1'] = copy(data_training[i+2*n_training]['xmask'][:,j])
 
-            frame['xidsparse2'] = data_training[i+3*n_training]['xidsparse'][:,j]
-            frame['xid2'] = data_training[i+3*n_training]['xid'][:,j]
-            frame['xmask2'] = data_training[i+3*n_training]['xmask'][:,j]
+            frame['xidsparse2'] = copy(data_training[i+3*n_training]['xidsparse'][:,j])
+            frame['xid2'] = copy(data_training[i+3*n_training]['xid'][:,j])
+            frame['xmask2'] = copy(data_training[i+3*n_training]['xmask'][:,j])
 
-            frame['sem1'] = data_training[i+4*n_training]['xss'][:,j]
-            frame['sem2'] = data_training[i+5*n_training]['xss'][:,j]
+            frame['sem1'] = copy(data_training[i+4*n_training]['xss'][:,j])
+            frame['sem2'] = copy(data_training[i+5*n_training]['xss'][:,j])
 
-            seq.append(frame)
-        training.append(seq)
+            frame1 = copy(frame)
+            seq.append(frame1)
+        seq1 = copy(seq)
+        training.append(seq1)
+
 
 
     validation = []
@@ -123,28 +128,29 @@ def load_data():
         seq = []
 
         for j in range(0,data_validation[i]['xcr'].shape[1]):
-            frame['xcr1'] = data_validation[i]['xcr'][:,j]
-            frame['xcg1'] = data_validation[i]['xcg'][:,j]
-            frame['xcb1'] = data_validation[i]['xcb'][:,j]
+            frame['xcr1'] = copy(data_validation[i]['xcr'][:,j])
+            frame['xcg1'] = copy(data_validation[i]['xcg'][:,j])
+            frame['xcb1'] = copy(data_validation[i]['xcb'][:,j])
 
-            frame['xcr2'] = data_validation[i+n_validation]['xcr'][:,j]
-            frame['xcg2'] = data_validation[i+n_validation]['xcg'][:,j]
-            frame['xcb2'] = data_validation[i+n_validation]['xcb'][:,j]
+            frame['xcr2'] = copy(data_validation[i+n_validation]['xcr'][:,j])
+            frame['xcg2'] = copy(data_validation[i+n_validation]['xcg'][:,j])
+            frame['xcb2'] = copy(data_validation[i+n_validation]['xcb'][:,j])
 
-            frame['xidsparse1'] = data_validation[i+2*n_validation]['xidsparse'][:,j]
-            frame['xid1'] = data_validation[i+2*n_validation]['xid'][:,j]
-            frame['xmask1'] = data_validation[i+2*n_validation]['xmask'][:,j]
+            frame['xidsparse1'] = copy(data_validation[i+2*n_validation]['xidsparse'][:,j])
+            frame['xid1'] = copy(data_validation[i+2*n_validation]['xid'][:,j])
+            frame['xmask1'] = copy(data_validation[i+2*n_validation]['xmask'][:,j])
 
-            frame['xidsparse2'] = data_validation[i+3*n_validation]['xidsparse'][:,j]
-            frame['xid2'] = data_validation[i+3*n_validation]['xid'][:,j]
-            frame['xmask2'] = data_validation[i+3*n_validation]['xmask'][:,j]
+            frame['xidsparse2'] = copy(data_validation[i+3*n_validation]['xidsparse'][:,j])
+            frame['xid2'] = copy(data_validation[i+3*n_validation]['xid'][:,j])
+            frame['xmask2'] = copy(data_validation[i+3*n_validation]['xmask'][:,j])
 
-            frame['sem1'] = data_validation[i+4*n_validation]['xss'][:,j]
-            frame['sem2'] = data_validation[i+5*n_validation]['xss'][:,j]
+            frame['sem1'] = copy(data_validation[i+4*n_validation]['xss'][:,j])
+            frame['sem2'] = copy(data_validation[i+5*n_validation]['xss'][:,j])
+            frame1 = copy(frame)
+            seq.append(frame1)
 
-            seq.append(frame)
-
-        validation.append(seq)
+        seq1 = copy(seq)
+        validation.append(seq1)
 
 
     testing = []
@@ -164,29 +170,31 @@ def load_data():
 
         min_seq_length = min(seq_length)
         for j in range(0,min_seq_length):
-            frame['xcr1'] = data_testing[i]['xcr'][:,j]
-            frame['xcg1'] = data_testing[i]['xcg'][:,j]
-            frame['xcb1'] = data_testing[i]['xcb'][:,j]
+            frame['xcr1'] = copy(data_testing[i]['xcr'][:,j])
+            frame['xcg1'] = copy(data_testing[i]['xcg'][:,j])
+            frame['xcb1'] = copy(data_testing[i]['xcb'][:,j])
 
-            frame['xcr2'] = data_testing[i+n_testing]['xcr'][:,j]
-            frame['xcg2'] = data_testing[i+n_testing]['xcg'][:,j]
-            frame['xcb2'] = data_testing[i+n_testing]['xcb'][:,j]
+            frame['xcr2'] = copy(data_testing[i+n_testing]['xcr'][:,j])
+            frame['xcg2'] = copy(data_testing[i+n_testing]['xcg'][:,j])
+            frame['xcb2'] = copy(data_testing[i+n_testing]['xcb'][:,j])
 
-            frame['xidsparse1'] = data_testing[i+2*n_testing]['xidsparse'][:,j]
-            frame['xid1'] = data_testing[i+2*n_testing]['xid'][:,j]
-            frame['xmask1'] = data_testing[i+2*n_testing]['xmask'][:,j]
+            frame['xidsparse1'] = copy(data_testing[i+2*n_testing]['xidsparse'][:,j])
+            frame['xid1'] = copy(data_testing[i+2*n_testing]['xid'][:,j])
+            frame['xmask1'] = copy(data_testing[i+2*n_testing]['xmask'][:,j])
 
-            frame['xidsparse2'] = data_testing[i+3*n_testing]['xidsparse'][:,j]
-            frame['xid2'] = data_testing[i+3*n_testing]['xid'][:,j]
-            frame['xmask2'] = data_testing[i+3*n_testing]['xmask'][:,j]
+            frame['xidsparse2'] = copy(data_testing[i+3*n_testing]['xidsparse'][:,j])
+            frame['xid2'] = copy(data_testing[i+3*n_testing]['xid'][:,j])
+            frame['xmask2'] = copy(data_testing[i+3*n_testing]['xmask'][:,j])
 
-            frame['sem1'] = data_testing[i+4*n_testing]['xss'][:,j]
-            frame['sem2'] = data_testing[i+5*n_testing]['xss'][:,j]
+            frame['sem1'] = copy(data_testing[i+4*n_testing]['xss'][:,j])
+            frame['sem2'] = copy(data_testing[i+5*n_testing]['xss'][:,j])
 
-            seq.append(frame)
+            frame1 = copy(frame)
 
-        testing.append(seq)
+            seq.append(frame1)
 
+        seq1 = copy(seq)
+        testing.append(seq1)
 
     return training,validation,testing
 

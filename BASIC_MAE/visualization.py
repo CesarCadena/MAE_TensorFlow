@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib.style as style
 import tensorflow as tf
 
 
@@ -42,12 +44,14 @@ def display_frame(frame,shape):
 
 
 
-def plot_training_loss(losses,name,saving=True,):
+def plot_training_loss(losses,n_epochs,name,saving=True):
 
     plt.plot(losses)
     plt.title('Training Losses')
     plt.xlabel('# Epochs')
     plt.ylabel('Loss')
+    plt.xlim([0,n_epochs])
+    plt.ylim([0,losses[0]+20000])
 
     if saving == True:
         plot_name = 'training_losses'
@@ -55,5 +59,12 @@ def plot_training_loss(losses,name,saving=True,):
         plot_path = plot_folder + plot_name + '.png'
         plt.savefig(plot_path)
 
+    plt.ion()
     plt.show()
-    plt.close()
+    plt.pause(0.005)
+    plt.close('all')
+
+
+
+
+
