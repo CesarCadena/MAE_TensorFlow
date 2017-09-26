@@ -143,7 +143,6 @@ class PretrainingMAE():
         self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
 
-        print(len(self.obj_train))
 
 
     def AE_red(self,input):
