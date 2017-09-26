@@ -88,8 +88,10 @@ class MAE:
         self.saving = True
         self.folder_model = 'models'
 
-        self.project_dir ='.'
-        self.model_dir = self.project_dir + '/models'
+
+        self.project_dir ='./'
+
+        self.model_dir = self.project_dir + self.folder_model
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
         self.FLAGS = tf.app.flags.FLAGS
@@ -551,6 +553,7 @@ class MAE:
                     bld_batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size]
                     veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
+                    depth_mask_batch = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_batch,
                                                                                                         img_batch,
@@ -575,7 +578,7 @@ class MAE:
                                  self.bld_input:bld_in,
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
-                                 self.depth_mask:self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size],
+                                 self.depth_mask:depth_mask_batch,
                                  self.imr_label:imr_batch,
                                  self.img_label:img_batch,
                                  self.imb_label:imb_batch,
