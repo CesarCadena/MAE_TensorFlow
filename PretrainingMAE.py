@@ -566,7 +566,7 @@ class PretrainingMAE():
         #base_lr = 0.01
         #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9995, staircase=True)
 
-        opt_red = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost_red)
+        opt_red = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(cost_red)
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
