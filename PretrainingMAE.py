@@ -562,13 +562,16 @@ class PretrainingMAE():
 
         summary_red = tf.summary.scalar('cost_red',cost_red)
 
-        #global_step = tf.Variable(0, trainable=False)
-        #base_lr = 0.01
-        #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9995, staircase=True)
+        global_step = tf.Variable(0, trainable=False)
+        base_lr = 0.01
+        learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9995, staircase=True)
 
-        opt_red = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(cost_red)
+        opt_red = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost_red)
 
-        with tf.Session() as sess:
+        config = tf.ConfigProto(log_device_placement=True)
+        config.gpu_options.per_process_gpu_memory_fraction = 0.4
+
+        with tf.Session(config=config) as sess:
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
