@@ -623,7 +623,7 @@ class PretrainingMAE():
                         output_frame = {'xcr1':imr_output}
                         label_frame = {'xcr1':imr_batch[0]}
 
-                        print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
+                        #print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
 
 
                     i += 1
