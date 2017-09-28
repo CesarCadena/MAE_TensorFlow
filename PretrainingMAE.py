@@ -242,7 +242,7 @@ class PretrainingMAE():
                              'bias':tf.Variable(tf.zeros([self.input_size]), name="depth_dc_layer_bias")}
         self.layers.append(self.depth_dc_layer)
 
-        output = tf.nn.relu(tf.add(tf.matmul(hidden_depth, self.depth_dc_layer['weights']),self.depth_dc_layer['bias']))
+        output = tf.add(tf.matmul(hidden_depth, self.depth_dc_layer['weights']),self.depth_dc_layer['bias'])
 
         return output
 
@@ -586,7 +586,7 @@ class PretrainingMAE():
                                                                                    self.red_dc_layer['weights'],
                                                                                    self.red_ec_layer['bias'],
                                                                                    self.red_dc_layer['bias']])
-        cost_red += 10e-05*reg_red
+        cost_red += 1e-05*reg_red
 
         summary_red = tf.summary.scalar('cost_red',cost_red)
 
@@ -1383,26 +1383,26 @@ class PretrainingMAE():
             #sess.run(init_op)
 
             for i in range(0,n_validations):
-                imr_out = self.imr_val[i]
-                img_out = self.img_val[i]
-                imb_out = self.imb_val[i]
-                depth_out = self.depth_val[i]
-                gnd_out = self.gnd_val[i]
-                obj_out = self.obj_val[i]
-                bld_out = self.bld_val[i]
-                veg_out = self.veg_val[i]
-                sky_out = self.sky_val[i]
+                imr_label = self.imr_val[i]
+                img_label = self.img_val[i]
+                imb_label = self.imb_val[i]
+                depth_label = self.depth_val[i]
+                gnd_label = self.gnd_val[i]
+                obj_label = self.obj_val[i]
+                bld_label = self.bld_val[i]
+                veg_label = self.veg_val[i]
+                sky_label = self.sky_val[i]
 
 
-                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_out),
-                                                                                                                img_out,
-                                                                                                                imb_out,
-                                                                                                                depth_out,
-                                                                                                                gnd_out,
-                                                                                                                obj_out,
-                                                                                                                bld_out,
-                                                                                                                veg_out,
-                                                                                                                sky_out,                                                                             resolution=(18,60),
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_label),
+                                                                                                                img_label,
+                                                                                                                imb_label,
+                                                                                                                depth_label,
+                                                                                                                gnd_label,
+                                                                                                                obj_label,
+                                                                                                                bld_label,
+                                                                                                                veg_label,
+                                                                                                                sky_label,                                                                             resolution=(18,60),
                                                                                                                 singleframe=True)
 
                 feed_dict_val = {self.input_red:imr_in}
@@ -1411,19 +1411,23 @@ class PretrainingMAE():
 
                 input_frame = {'xcr1':imr_in}
                 output_frame = {'xcr1':pred}
-                label_frame = {'xcr1':imr_out}
+                label_frame = {'xcr1':imr_label}
 
                 print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red',savefig=True,i=i)
 
 
                 # print validation loss
-                imr_label = tf.placeholder('float',[None,self.input_size])
+                imr_l = tf.placeholder('float',[None,self.input_size])
                 imr_pred = tf.placeholder('float',[None,self.input_size])
 
-                val_loss = tf.nn.l2_loss(imr_label-imr_pred)
-                c = sess.run([val_loss],feed_dict={imr_label:[imr_out],
-                                                   imr_pred:pred})
-                print('Loss per Frame: ', c[0])
+                val_loss1 = tf.norm((imr_l-imr_pred),ord='euclidean')
+                val_loss2 = tf.nn.l2_loss(imr_l-imr_pred)
+                val_loss3 = tf.sqrt(tf.reduce_sum(tf.square(imr_l - imr_pred)))
+
+
+                c1,c2,c3 = sess.run([val_loss1,val_loss2,val_loss3],feed_dict={imr_l:[imr_label],imr_pred:pred})
+
+                print('Loss per Frame: ', c1,c2,c3)
 
 
 
@@ -1434,7 +1438,7 @@ class PretrainingMAE():
 
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
-#pretraining.pretrain_red_channel()
+pretraining.pretrain_red_channel()
 #pretraining.pretrain_seperate_channels()
 #pretraining.pretrain_shared_semantics()
-pretraining.validate_red_channel(n_validations=20)
+#pretraining.validate_red_channel(n_validations=20)
