@@ -642,7 +642,7 @@ class PretrainingMAE():
                     sum_red, _, c_red = sess.run([summary_red, opt_red, cost_red], feed_dict=feed_dict_red)
                     epoch_loss += c_red
 
-                    if i%250==0 and epoch > 50:
+                    if i%250==0:
 
                         feed_dict = {self.input_red:[imr_in[0]]}
                         imr_output = sess.run([red_pred],feed_dict=feed_dict)
@@ -651,7 +651,7 @@ class PretrainingMAE():
                         output_frame = {'xcr1':imr_output}
                         label_frame = {'xcr1':imr_batch[0]}
 
-                        #print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
+                        print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
 
 
                     i += 1
@@ -1413,7 +1413,7 @@ class PretrainingMAE():
                 output_frame = {'xcr1':pred}
                 label_frame = {'xcr1':imr_out}
 
-                print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
+                print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red',savefig=True,i=i)
 
 
                 # print validation loss
@@ -1423,7 +1423,7 @@ class PretrainingMAE():
                 val_loss = tf.nn.l2_loss(imr_label-imr_pred)
                 c = sess.run([val_loss],feed_dict={imr_label:[imr_out],
                                                    imr_pred:pred})
-                print(c)
+                print('Loss per Frame: ', c[0])
 
 
 
@@ -1434,7 +1434,7 @@ class PretrainingMAE():
 
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
-pretraining.pretrain_red_channel()
+#pretraining.pretrain_red_channel()
 #pretraining.pretrain_seperate_channels()
 #pretraining.pretrain_shared_semantics()
-#pretraining.validate_red_channel(n_validations=10)
+pretraining.validate_red_channel(n_validations=20)

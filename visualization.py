@@ -65,7 +65,7 @@ def plot_training_loss(losses,n_epochs,name,saving=True):
     plt.close('all')
 
 
-def print_training_frames(input_frame,output_frame,label_frame,shape,channel='all'):
+def print_training_frames(input_frame,output_frame,label_frame,shape,channel='all',savefig=False,i=0):
 
     if channel=='red':
         im_shape = (shape[0],shape[1])
@@ -86,6 +86,9 @@ def print_training_frames(input_frame,output_frame,label_frame,shape,channel='al
 
         axes[2].imshow(im_r_label)
         axes[2].set_title('Red Channel Label')
+
+        if savefig==True:
+            plt.savefig('plots/fig_val' + str(i) +'.png')
 
         plt.ion()
         plt.show()
