@@ -553,12 +553,12 @@ class PretrainingMAE():
         red_pred = self.AE_red(self.input_red)
         cost_red = tf.nn.l2_loss(red_pred-self.label_red)
 
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.00005)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
         reg_red = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.red_ec_layer['weights'],
                                                                                    self.red_dc_layer['weights'],
                                                                                    self.red_ec_layer['bias'],
                                                                                    self.red_dc_layer['bias']])
-        cost_red += reg_red
+        cost_red += 10e-05*reg_red
 
         summary_red = tf.summary.scalar('cost_red',cost_red)
 
