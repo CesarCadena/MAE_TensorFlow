@@ -8,6 +8,7 @@ import numpy as np
 from load_data import load_data
 from input_distortion import input_distortion,pretraining_input_distortion
 from visualization import print_training_frames
+from copy import copy
 
 
 data_train,data_validate,data_test = load_data()
@@ -167,12 +168,8 @@ class PretrainingMAE():
 
             v_iterator = 0
 
-            for i in self.data_validate:
+            for i in self.data_val:
                 for j in i:
-
-                    if v_iterator == self.n_validation_data:
-                        #show_frame = display_frame(j,(self.height,self.width))
-                        break
                     self.imr_val.append(j['xcr1']/255.)
                     self.img_val.append(j['xcg1']/255.)
                     self.imb_val.append(j['xcb1']/255.)
@@ -626,15 +623,15 @@ class PretrainingMAE():
                     sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
                     depth_mask = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(imr_batch,
-                                                                                                                    img_batch,
-                                                                                                                    imb_batch,
-                                                                                                                    depth_batch,
-                                                                                                                    gnd_batch,
-                                                                                                                    obj_batch,
-                                                                                                                    bld_batch,
-                                                                                                                    veg_batch,
-                                                                                                                    sky_batch,
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_batch),
+                                                                                                                    copy(img_batch),
+                                                                                                                    copy(imb_batch),
+                                                                                                                    copy(depth_batch),
+                                                                                                                    copy(gnd_batch),
+                                                                                                                    copy(obj_batch),
+                                                                                                                    copy(bld_batch),
+                                                                                                                    copy(veg_batch),
+                                                                                                                    copy(sky_batch),
                                                                                                                     resolution=(18,60))
 
                     feed_dict_red = {self.input_red:imr_in,
@@ -1397,7 +1394,7 @@ class PretrainingMAE():
                 sky_out = self.sky_val[i]
 
 
-                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(imr_out,
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_out),
                                                                                                                 img_out,
                                                                                                                 imb_out,
                                                                                                                 depth_out,
@@ -1405,22 +1402,28 @@ class PretrainingMAE():
                                                                                                                 obj_out,
                                                                                                                 bld_out,
                                                                                                                 veg_out,
-                                                                                                                sky_out,
-                                                                                                                resolution=(18,60),
+                                                                                                                sky_out,                                                                             resolution=(18,60),
                                                                                                                 singleframe=True)
 
+                feed_dict_val = {self.input_red:imr_in}
 
-                feed_dict = {self.imr_input:imr_in}
-
-                prediction = sess.run(prediction,feed_dict=feed_dict)
+                pred = sess.run(prediction,feed_dict=feed_dict_val)
 
                 input_frame = {'xcr1':imr_in}
-                output_frame = {'xcr1':prediction}
+                output_frame = {'xcr1':pred}
                 label_frame = {'xcr1':imr_out}
 
                 print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
 
-                val_loss = tf.train.l2_loss(imr_out-prediction)
+
+                # print validation loss
+                imr_label = tf.placeholder('float',[None,self.input_size])
+                imr_pred = tf.placeholder('float',[None,self.input_size])
+
+                val_loss = tf.nn.l2_loss(imr_label-imr_pred)
+                c = sess.run([val_loss],feed_dict={imr_label:[imr_out],
+                                                   imr_pred:pred})
+                print(c)
 
 
 
@@ -1434,3 +1437,4 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 pretraining.pretrain_red_channel()
 #pretraining.pretrain_seperate_channels()
 #pretraining.pretrain_shared_semantics()
+#pretraining.validate_red_channel(n_validations=10)

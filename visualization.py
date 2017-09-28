@@ -92,6 +92,38 @@ def print_training_frames(input_frame,output_frame,label_frame,shape,channel='al
         plt.pause(0.0001)
         plt.close('all')
 
+def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='all'):
+
+    if channel=='red':
+        im_shape = (shape[0],shape[1])
+
+        im_r_input = np.reshape(input_frame['xcr1'],im_shape).T
+        im_r_output = np.reshape(output_frame['xcr1'],im_shape).T
+        im_r_label = np.reshape(label_frame['xcr1'],im_shape).T
+
+
+
+
+        fig,axes = plt.subplots(1,3)
+
+        axes[0].imshow(im_r_input)
+        axes[0].set_title('Red Channel Input')
+
+        axes[1].imshow(im_r_output)
+        axes[1].set_title('Red Channel Output')
+
+        axes[2].imshow(im_r_label)
+        axes[2].set_title('Red Channel Label')
+
+        plt.savefig()
+
+        plt.ion()
+        plt.show()
+        plt.pause(0.0001)
+        plt.close('all')
+
+
+
 
 
 
