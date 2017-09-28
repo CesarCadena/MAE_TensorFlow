@@ -34,6 +34,7 @@ class PretrainingMAE():
         self.n_training_data = 'all'
 
         self.prepare_training_data()
+        self.prepare_validation_data()
 
         self.input_red =tf.placeholder('float', shape=[None, self.input_size])
         self.input_green = tf.placeholder('float',shape=[None,self.input_size])
@@ -151,8 +152,38 @@ class PretrainingMAE():
         self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
 
+    def prepare_validation_data(self):
 
+            # prepare validation data containers
+            self.imr_val = []
+            self.img_val = []
+            self.imb_val = []
+            self.depth_val = []
+            self.gnd_val = []
+            self.obj_val = []
+            self.bld_val = []
+            self.veg_val = []
+            self.sky_val = []
 
+            v_iterator = 0
+
+            for i in self.data_validate:
+                for j in i:
+
+                    if v_iterator == self.n_validation_data:
+                        #show_frame = display_frame(j,(self.height,self.width))
+                        break
+                    self.imr_val.append(j['xcr1']/255.)
+                    self.img_val.append(j['xcg1']/255.)
+                    self.imb_val.append(j['xcb1']/255.)
+                    self.depth_val.append(j['xid1'])
+                    self.gnd_val.append((j['sem1']==1).astype(int))
+                    self.obj_val.append((j['sem1']==2).astype(int))
+                    self.bld_val.append((j['sem1']==3).astype(int))
+                    self.veg_val.append((j['sem1']==4).astype(int))
+                    self.sky_val.append((j['sem1']==5).astype(int))
+
+                    v_iterator += 1
 
     def AE_red(self,input):
 
@@ -1339,6 +1370,62 @@ class PretrainingMAE():
                 saver_save = tf.train.Saver()
                 saver_save.save(sess,self.FLAGS.train_dir+'/pretrained2.ckpt')
                 print('SAVED MODEL')
+
+
+    def validate_red_channel(self,n_validations,loadmodel=True):
+
+        with tf.Session() as sess:
+
+            prediction = self.AE_red(self.input_red)
+
+            #init_op = tf.initialize_all_variables()
+            saver = tf.train.Saver()
+            if loadmodel == True:
+                saver.restore(sess,self.FLAGS.train_dir+'/pretrained_red.ckpt')
+
+            #sess.run(init_op)
+
+            for i in range(0,n_validations):
+                imr_out = self.imr_val[i]
+                img_out = self.img_val[i]
+                imb_out = self.imb_val[i]
+                depth_out = self.depth_val[i]
+                gnd_out = self.gnd_val[i]
+                obj_out = self.obj_val[i]
+                bld_out = self.bld_val[i]
+                veg_out = self.veg_val[i]
+                sky_out = self.sky_val[i]
+
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(imr_out,
+                                                                                                                img_out,
+                                                                                                                imb_out,
+                                                                                                                depth_out,
+                                                                                                                gnd_out,
+                                                                                                                obj_out,
+                                                                                                                bld_out,
+                                                                                                                veg_out,
+                                                                                                                sky_out,
+                                                                                                                resolution=(18,60),
+                                                                                                                singleframe=True)
+
+
+                feed_dict = {self.imr_input:imr_in}
+
+                prediction = sess.run(prediction,feed_dict=feed_dict)
+
+                input_frame = {'xcr1':imr_in}
+                output_frame = {'xcr1':prediction}
+                label_frame = {'xcr1':imr_out}
+
+                print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
+
+                val_loss = tf.train.l2_loss(imr_out-prediction)
+
+
+
+
+
 
 
 

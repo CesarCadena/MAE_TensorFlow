@@ -20,7 +20,11 @@ def pretraining_input_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolutio
                          []] # create a list with empty lists for every channel
 
     for i in range(0,n_frames):
-        c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = random_distortion(imr[i],img[i],imb[i],depth[i],gnd[i],obj[i],bld[i],veg[i],sky[i],resolution)
+        if singleframe == False:
+                c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = random_distortion(imr[i],img[i],imb[i],depth[i],gnd[i],obj[i],bld[i],veg[i],sky[i],resolution)
+        if singleframe == True:
+                c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = random_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolution)
+
         c_distorted = [c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9]
         c_distorted = copy(c_distorted)
         for j in range(0,len(c_distorted)):
