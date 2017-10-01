@@ -37,6 +37,9 @@ class PretrainingMAE():
         self.prepare_training_data()
         self.prepare_validation_data()
 
+        self.n_validation_data = len(self.imr_val)
+        self.n_training_validations = 50
+
         self.input_red =tf.placeholder('float', shape=[None, self.input_size])
         self.input_green = tf.placeholder('float',shape=[None,self.input_size])
         self.input_blue = tf.placeholder('float',shape=[None,self.input_size])
@@ -59,6 +62,8 @@ class PretrainingMAE():
         self.label_veg = tf.placeholder('float',shape=[None,self.input_size])
         self.label_sky = tf.placeholder('float',shape=[None,self.input_size])
 
+        # loss options
+
 
         # layers container
 
@@ -77,9 +82,6 @@ class PretrainingMAE():
         tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the summaries')
 
         self.FLAGS = tf.app.flags.FLAGS
-
-
-
 
     def prepare_training_data(self):
         '''
@@ -326,7 +328,6 @@ class PretrainingMAE():
         output = tf.nn.sigmoid(tf.add(tf.matmul(hidden_sky, self.sky_dc_layer['weights']),self.sky_dc_layer['bias']))
 
         return output
-
 
     def AE_sem(self,gnd,obj,bld,veg,sky):
 
@@ -588,13 +589,25 @@ class PretrainingMAE():
                                                                                    self.red_dc_layer['bias']])
         cost_red += 1e-05*reg_red
 
-        summary_red = tf.summary.scalar('cost_red',cost_red)
+        epoch_loss = tf.Variable(0.0,name='epoch_loss')
+        val_loss = tf.Variable(0.0,name='val_loss')
+        sum_epoch_loss = tf.summary.scalar('Epoch Loss Red Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
+
+
 
         #global_step = tf.Variable(0, trainable=False)
         #base_lr = 0.01
         #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9995, staircase=True)
 
         opt_red = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(cost_red)
+
+        # validation objects
+        validations = np.arange(0,self.n_validation_data)
+        set_val = np.random.choice(validations,self.n_training_validations,replace=False)
+
+
+
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
@@ -605,10 +618,11 @@ class PretrainingMAE():
             sess.run(tf.global_variables_initializer())
 
             n_batches = int(len(self.imr_train)/self.batch_size)
-            epoch_losses = []
 
             for epoch in range(0,self.hm_epochs):
-                epoch_loss = 0
+                epoch_loss_reset = epoch_loss.assign(0)
+                sess.run(epoch_loss_reset)
+
                 i = 0
                 for _ in range(0,n_batches):
 
@@ -639,8 +653,9 @@ class PretrainingMAE():
 
 
 
-                    sum_red, _, c_red = sess.run([summary_red, opt_red, cost_red], feed_dict=feed_dict_red)
-                    epoch_loss += c_red
+                    _, c_red = sess.run([opt_red, cost_red], feed_dict=feed_dict_red)
+                    epoch_loss_update = epoch_loss.assign_add(c_red)
+                    sess.run(epoch_loss_update)
 
                     if i%250==0:
 
@@ -653,22 +668,51 @@ class PretrainingMAE():
 
                         #print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
 
-
                     i += 1
 
+                sum_train = sess.run(sum_epoch_loss)
+                train_writer1.add_summary(sum_train,epoch)
+                print('Epoch', epoch, 'completed out of', self.hm_epochs)
+                print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
+                loss = tf.nn.l2_loss(red_pred-self.label_red)
+                loss_val_reset = val_loss.assign(0)
+                sess.run(loss_val_reset)
 
+                for i in set_val:
+                    imr_label = self.imr_val[i]
+                    img_label = self.img_val[i]
+                    imb_label = self.imb_val[i]
+                    depth_label = self.depth_val[i]
+                    gnd_label = self.gnd_val[i]
+                    obj_label = self.obj_val[i]
+                    bld_label = self.bld_val[i]
+                    veg_label = self.veg_val[i]
+                    sky_label = self.sky_val[i]
 
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_label),
+                                                                                                                    copy(img_label),
+                                                                                                                    copy(imb_label),
+                                                                                                                    copy(depth_label),
+                                                                                                                    copy(gnd_label),
+                                                                                                                    copy(obj_label),
+                                                                                                                    copy(bld_label),
+                                                                                                                    copy(veg_label),
+                                                                                                                    copy(sky_label),                                                                             resolution=(18,60),
+                                                                                                                    singleframe=True)
 
+                    feed_dict_val = {self.input_red:imr_in,
+                                     self.label_red:[imr_label]}
 
+                    im_pred,c_val = sess.run([red_pred,loss],feed_dict=feed_dict_val)
+                    c_val = c_val/1080.
+                    loss_val_update = val_loss.assign_add(c_val)
+                    sess.run(loss_val_update)
 
+                sum_val = sess.run(sum_val_loss)
+                train_writer1.add_summary(sum_val,epoch)
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
 
-
-
-                epoch_losses.append(epoch_loss)
-
-                train_writer1.add_summary(sum_red,epoch)
-                print('Epoch', epoch, 'completed out of', self.hm_epochs, 'Loss: ', epoch_loss)
 
             if self.saving == True:
                 saver = tf.train.Saver()
@@ -1089,7 +1133,6 @@ class PretrainingMAE():
                 saver.save(sess,self.FLAGS.train_dir+'/pretrained_bld.ckpt')
                 print('SAVED MODEL')
 
-
     def pretrain_veg_channel(self):
 
         pred = self.AE_veg(self.input_veg)
@@ -1368,8 +1411,67 @@ class PretrainingMAE():
                 saver_save.save(sess,self.FLAGS.train_dir+'/pretrained2.ckpt')
                 print('SAVED MODEL')
 
+    def training_epoch_validation(self,set,epoch,channel=False):
 
-    def validate_red_channel(self,n_validations,loadmodel=True):
+        with tf.Session()as sess:
+
+            if channel=='red':
+                prediction = self.AE_red(self.input_red)
+            if channel==False:
+                raise ValueError
+
+            loss = tf.nn.l2_loss(prediction-self.label_red)
+            loss_val = tf.Variable(0,'Validation Loss')
+
+            sess.run(tf.variables_initializer([loss_val]))
+
+            for i in set:
+                imr_label = self.imr_val[i]
+                img_label = self.img_val[i]
+                imb_label = self.imb_val[i]
+                depth_label = self.depth_val[i]
+                gnd_label = self.gnd_val[i]
+                obj_label = self.obj_val[i]
+                bld_label = self.bld_val[i]
+                veg_label = self.veg_val[i]
+                sky_label = self.sky_val[i]
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_label),
+                                                                                                                copy(img_label),
+                                                                                                                copy(imb_label),
+                                                                                                                copy(depth_label),
+                                                                                                                copy(gnd_label),
+                                                                                                                copy(obj_label),
+                                                                                                                copy(bld_label),
+                                                                                                                copy(veg_label),
+                                                                                                                copy(sky_label),                                                                             resolution=(18,60),
+                                                                                                                singleframe=True)
+                if channel=='red':
+                    feed_dict_val = {self.input_red:imr_in,
+                                     self.label_red:[imr_label]}
+
+                im_pred,c_val = sess.run([prediction,loss],feed_dict=feed_dict_val)
+                update_val_loss = loss_val.assign_add(c_val/1080)
+                sess.run(update_val_loss)
+
+            print('Epoch', epoch, 'of epochs', self.hm_epochs, 'Normalized Validation Loss: ', sess.run(loss_val.value())/set.shape[0])
+
+
+
+
+
+
+
+
+
+
+    def validate_red_channel(self,n_validations,set=False,loadmodel=True):
+
+        if set == False:
+            val_indices = np.arange(0,n_validations)
+        else:
+            val_indices = set
+
 
         with tf.Session() as sess:
 
@@ -1382,7 +1484,7 @@ class PretrainingMAE():
 
             #sess.run(init_op)
 
-            for i in range(0,n_validations):
+            for i in val_indices:
                 imr_label = self.imr_val[i]
                 img_label = self.img_val[i]
                 imb_label = self.imb_val[i]
@@ -1406,7 +1508,6 @@ class PretrainingMAE():
                                                                                                                 singleframe=True)
 
                 feed_dict_val = {self.input_red:imr_in}
-
                 pred = sess.run(prediction,feed_dict=feed_dict_val)
 
                 input_frame = {'xcr1':imr_in}
@@ -1426,8 +1527,11 @@ class PretrainingMAE():
 
 
                 c1,c2,c3 = sess.run([val_loss1,val_loss2,val_loss3],feed_dict={imr_l:[imr_label],imr_pred:pred})
+                c1 = c1/1080
+                c2 = c2/1080
+                c3 = c3/1080
 
-                print('Loss per Frame: ', c1,c2,c3)
+                print('Average Loss per Pixel: ', c1,c2,c3)
 
 
 
@@ -1441,4 +1545,4 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 pretraining.pretrain_red_channel()
 #pretraining.pretrain_seperate_channels()
 #pretraining.pretrain_shared_semantics()
-#pretraining.validate_red_channel(n_validations=20)
+pretraining.validate_red_channel(n_validations=20)
