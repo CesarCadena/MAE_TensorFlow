@@ -38,7 +38,7 @@ class PretrainingMAE():
         self.prepare_validation_data()
 
         self.n_validation_data = len(self.imr_val)
-        self.n_training_validations = 50
+        self.n_training_validations = 10
 
         self.input_red =tf.placeholder('float', shape=[None, self.input_size])
         self.input_green = tf.placeholder('float',shape=[None,self.input_size])
@@ -591,14 +591,15 @@ class PretrainingMAE():
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss')
         val_loss = tf.Variable(0.0,name='val_loss')
+
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Red Channel',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
 
 
 
         #global_step = tf.Variable(0, trainable=False)
-        #base_lr = 0.01
-        #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9995, staircase=True)
+        #base_lr = 0.1
+        #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9, staircase=True)
 
         opt_red = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(cost_red)
 
