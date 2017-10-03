@@ -600,7 +600,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.00001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
