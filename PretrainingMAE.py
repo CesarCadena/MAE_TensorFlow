@@ -34,6 +34,7 @@ class PretrainingMAE():
 
         self.saving = True
         self.n_training_data = 'all'
+
         self.decay = 'piecewise'
 
         self.prepare_training_data()
@@ -601,7 +602,7 @@ class PretrainingMAE():
         if self.decay == 'constant':
             learning_rate = 0.01
 
-        if self.decay == 'piecewiese':
+        if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
             boundaries = [10000,100000,1000000]
             rates = [0.01,0.001,0.0001,0.00001]
