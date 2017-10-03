@@ -41,7 +41,7 @@ class PretrainingMAE():
         self.prepare_validation_data()
 
         self.n_validation_data = len(self.imr_val)
-        self.n_training_validations = 10
+        self.n_training_validations = 100
 
         self.input_red =tf.placeholder('float', shape=[None, self.input_size])
         self.input_green = tf.placeholder('float',shape=[None,self.input_size])
@@ -631,9 +631,11 @@ class PretrainingMAE():
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
-        saver = tf.train.Saver()
+
 
         with tf.Session(config=config) as sess:
+
+            saver = tf.train.Saver()
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
