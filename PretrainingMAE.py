@@ -26,7 +26,7 @@ class PretrainingMAE():
         # training options
 
         self.batch_size = 100
-        self.hm_epochs = 50
+        self.hm_epochs = 150
 
         self.input_size = 1080
         self.hidden_size = 1024
@@ -144,16 +144,16 @@ class PretrainingMAE():
         rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
 
-        self.imr_train = np.asarray(self.imr_train)[rand_indices].tolist()
-        self.img_train = np.asarray(self.img_train)[rand_indices].tolist()
-        self.imb_train = np.asarray(self.imb_train)[rand_indices].tolist()
-        self.depth_train = np.asarray(self.depth_train)[rand_indices].tolist()
-        self.gnd_train = np.asarray(self.gnd_train)[rand_indices].tolist()
-        self.obj_train = np.asarray(self.obj_train)[rand_indices].tolist()
-        self.bld_train = np.asarray(self.bld_train)[rand_indices].tolist()
-        self.veg_train = np.asarray(self.veg_train)[rand_indices].tolist()
-        self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
-        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
+        self.imr_train = np.asarray(self.imr_train)[rand_indices]
+        self.img_train = np.asarray(self.img_train)[rand_indices]
+        self.imb_train = np.asarray(self.imb_train)[rand_indices]
+        self.depth_train = np.asarray(self.depth_train)[rand_indices]
+        self.gnd_train = np.asarray(self.gnd_train)[rand_indices]
+        self.obj_train = np.asarray(self.obj_train)[rand_indices]
+        self.bld_train = np.asarray(self.bld_train)[rand_indices]
+        self.veg_train = np.asarray(self.veg_train)[rand_indices]
+        self.sky_train = np.asarray(self.sky_train)[rand_indices]
+        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
 
     def prepare_validation_data(self):
 
@@ -588,21 +588,16 @@ class PretrainingMAE():
                                                                                    self.red_dc_layer['weights'],
                                                                                    self.red_ec_layer['bias'],
                                                                                    self.red_dc_layer['bias']])
-        cost_red += reg_red
+        #cost_red += reg_red
 
-        epoch_loss = tf.Variable(0.0,name='epoch_loss')
-        val_loss = tf.Variable(0.0,name='val_loss')
+        epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
+        val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Red Channel',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
 
-
-
-        #global_step = tf.Variable(0, trainable=False)
-        #base_lr = 0.1
-        #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9, staircase=True)
-
-        opt_red = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost_red)
+        learning_rate = tf.Variable(0.001,name='learning_rate',trainable=False)
+        opt_red = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost_red)
 
         # validation objects
         validations = np.arange(0,self.n_validation_data)
@@ -625,17 +620,18 @@ class PretrainingMAE():
                 epoch_loss_reset = epoch_loss.assign(0)
                 sess.run(epoch_loss_reset)
 
+                if epoch == 100:
+                    learning_rate_update = learning_rate.assign(0.0001)
+                    sess.run(learning_rate_update)
+
                 for _ in range(0,n_batches):
 
-                    imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
-
+                    imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     imr_in = pretraining_input_distortion(copy(imr_batch))
 
                     feed_dict_red = {self.input_red:imr_in,
                                      self.label_red:imr_batch}
-
-
 
                     _, c_red = sess.run([opt_red, cost_red], feed_dict=feed_dict_red)
                     epoch_loss_update = epoch_loss.assign_add(c_red)
