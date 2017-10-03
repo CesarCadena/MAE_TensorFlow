@@ -587,7 +587,7 @@ class PretrainingMAE():
                                                                                    self.red_dc_layer['weights'],
                                                                                    self.red_ec_layer['bias'],
                                                                                    self.red_dc_layer['bias']])
-        cost_red += 1e-05*reg_red
+        cost_red += reg_red
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss')
         val_loss = tf.Variable(0.0,name='val_loss')
@@ -624,30 +624,12 @@ class PretrainingMAE():
                 epoch_loss_reset = epoch_loss.assign(0)
                 sess.run(epoch_loss_reset)
 
-                i = 0
                 for _ in range(0,n_batches):
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
-                    img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size]
-                    imb_batch = self.imb_train[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_batch = self.depth_train[_*self.batch_size:(_+1)*self.batch_size]
-                    gnd_batch = self.gnd_train[_*self.batch_size:(_+1)*self.batch_size]
-                    obj_batch = self.obj_train[_*self.batch_size:(_+1)*self.batch_size]
-                    bld_batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size]
-                    veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
-                    sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_mask = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_batch),
-                                                                                                                    copy(img_batch),
-                                                                                                                    copy(imb_batch),
-                                                                                                                    copy(depth_batch),
-                                                                                                                    copy(gnd_batch),
-                                                                                                                    copy(obj_batch),
-                                                                                                                    copy(bld_batch),
-                                                                                                                    copy(veg_batch),
-                                                                                                                    copy(sky_batch),
-                                                                                                                    resolution=(18,60))
+
+                    imr_in = pretraining_input_distortion(copy(imr_batch))
 
                     feed_dict_red = {self.input_red:imr_in,
                                      self.label_red:imr_batch}
@@ -658,21 +640,10 @@ class PretrainingMAE():
                     epoch_loss_update = epoch_loss.assign_add(c_red)
                     sess.run(epoch_loss_update)
 
-                    if i%250==0:
-
-                        feed_dict = {self.input_red:[imr_in[0]]}
-                        imr_output = sess.run([red_pred],feed_dict=feed_dict)
-
-                        input_frame = {'xcr1':imr_in[0]}
-                        output_frame = {'xcr1':imr_output}
-                        label_frame = {'xcr1':imr_batch[0]}
-
-                        #print_training_frames(input_frame,output_frame,label_frame,shape=(60,18),channel='red')
-
-                    i += 1
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
+
                 print('Epoch', epoch, 'completed out of', self.hm_epochs)
                 print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
@@ -682,25 +653,8 @@ class PretrainingMAE():
 
                 for i in set_val:
                     imr_label = self.imr_val[i]
-                    img_label = self.img_val[i]
-                    imb_label = self.imb_val[i]
-                    depth_label = self.depth_val[i]
-                    gnd_label = self.gnd_val[i]
-                    obj_label = self.obj_val[i]
-                    bld_label = self.bld_val[i]
-                    veg_label = self.veg_val[i]
-                    sky_label = self.sky_val[i]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_label),
-                                                                                                                    copy(img_label),
-                                                                                                                    copy(imb_label),
-                                                                                                                    copy(depth_label),
-                                                                                                                    copy(gnd_label),
-                                                                                                                    copy(obj_label),
-                                                                                                                    copy(bld_label),
-                                                                                                                    copy(veg_label),
-                                                                                                                    copy(sky_label),                                                                             resolution=(18,60),
-                                                                                                                    singleframe=True)
+                    imr_in = pretraining_input_distortion(copy(imr_label),singleframe=True)
 
                     feed_dict_val = {self.input_red:imr_in,
                                      self.label_red:[imr_label]}
