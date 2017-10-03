@@ -25,8 +25,8 @@ class PretrainingMAE():
 
         # training options
 
-        self.batch_size = 60
-        self.hm_epochs = 100
+        self.batch_size = 100
+        self.hm_epochs = 50
 
         self.input_size = 1080
         self.hidden_size = 1024
