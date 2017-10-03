@@ -10,6 +10,7 @@ from input_distortion import input_distortion,pretraining_input_distortion
 from visualization import print_training_frames
 from copy import copy
 
+import datetime
 
 data_train,data_validate,data_test = load_data()
 
@@ -603,7 +604,14 @@ class PretrainingMAE():
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
 
+        epoch_loss_reset = epoch_loss.assign(0)
+        epoch_loss_update = epoch_loss.assign_add(cost_red)
 
+        loss_val_reset = val_loss.assign(0)
+        loss_val_update = val_loss.assign_add(loss/1080.)
+
+
+        learning_rate_update = learning_rate.assign(0.0001)
 
 
         config = tf.ConfigProto(log_device_placement=False)
@@ -616,12 +624,13 @@ class PretrainingMAE():
 
             n_batches = int(len(self.imr_train)/self.batch_size)
 
+            tf.get_default_graph().finalize()
+
             for epoch in range(0,self.hm_epochs):
-                epoch_loss_reset = epoch_loss.assign(0)
                 sess.run(epoch_loss_reset)
+                time1 = datetime.datetime.now()
 
                 if epoch == 100:
-                    learning_rate_update = learning_rate.assign(0.0001)
                     sess.run(learning_rate_update)
 
                 for _ in range(0,n_batches):
@@ -633,37 +642,34 @@ class PretrainingMAE():
                     feed_dict_red = {self.input_red:imr_in,
                                      self.label_red:imr_batch}
 
-                    _, c_red = sess.run([opt_red, cost_red], feed_dict=feed_dict_red)
-                    epoch_loss_update = epoch_loss.assign_add(c_red)
-                    sess.run(epoch_loss_update)
+                    _, loss = sess.run([opt_red, epoch_loss_update], feed_dict=feed_dict_red)
 
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
 
+                print('----------------------------------------------------------------')
                 print('Epoch', epoch, 'completed out of', self.hm_epochs)
                 print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
-
-                loss_val_reset = val_loss.assign(0)
                 sess.run(loss_val_reset)
 
                 for i in set_val:
                     imr_label = self.imr_val[i]
-
                     imr_in = pretraining_input_distortion(copy(imr_label),singleframe=True)
 
                     feed_dict_val = {self.input_red:imr_in,
                                      self.label_red:[imr_label]}
 
-                    im_pred,c_val = sess.run([red_pred,loss],feed_dict=feed_dict_val)
-                    c_val = c_val/1080.
-                    loss_val_update = val_loss.assign_add(c_val)
-                    sess.run(loss_val_update)
+                    im_pred,c_val = sess.run([red_pred,loss_val_update],feed_dict=feed_dict_val)
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
+                time2 = datetime.datetime.now()
+                delta = time2-time1
+                print('Epoch Time [seconds]:', delta.seconds)
+                print('-----------------------------------------------------------------')
 
 
             if self.saving == True:
@@ -1402,9 +1408,8 @@ class PretrainingMAE():
                     feed_dict_val = {self.input_red:imr_in,
                                      self.label_red:[imr_label]}
 
-                im_pred,c_val = sess.run([prediction,loss],feed_dict=feed_dict_val)
-                update_val_loss = loss_val.assign_add(c_val/1080)
-                sess.run(update_val_loss)
+                im_pred,c_val = sess.run([prediction,update_val_loss],feed_dict=feed_dict_val)
+
 
             print('Epoch', epoch, 'of epochs', self.hm_epochs, 'Normalized Validation Loss: ', sess.run(loss_val.value())/set.shape[0])
 
