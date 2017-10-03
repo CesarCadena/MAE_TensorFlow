@@ -34,6 +34,7 @@ class PretrainingMAE():
 
         self.saving = True
         self.n_training_data = 'all'
+        self.decay = 'piecewise'
 
         self.prepare_training_data()
         self.prepare_validation_data()
@@ -597,7 +598,18 @@ class PretrainingMAE():
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Red Channel',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
 
-        learning_rate = tf.Variable(0.001,name='learning_rate',trainable=False)
+        if self.decay == 'constant':
+            learning_rate = 0.01
+
+        if self.decay == 'piecewiese':
+            global_step = tf.Variable(0,trainable=False)
+            boundaries = [10000,100000,1000000]
+            rates = [0.01,0.001,0.0001,0.00001]
+            learning_rate = tf.train.piecewise_constant(global_step,boundaries,rates)
+
+        if self.decay == 'exponential':
+            global_step = tf.Variable(0,trainable=False)
+
         opt_red = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost_red)
 
         # validation objects
@@ -611,11 +623,12 @@ class PretrainingMAE():
         loss_val_update = val_loss.assign_add(loss/1080.)
 
 
-        learning_rate_update = learning_rate.assign(0.0001)
 
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
+
+        saver = tf.train.Saver()
 
         with tf.Session(config=config) as sess:
 
@@ -673,7 +686,6 @@ class PretrainingMAE():
 
 
             if self.saving == True:
-                saver = tf.train.Saver()
                 saver.save(sess,self.FLAGS.train_dir+'/pretrained_red.ckpt')
                 print('SAVED MODEL')
 
