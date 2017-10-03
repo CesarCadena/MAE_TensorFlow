@@ -27,7 +27,7 @@ class PretrainingMAE():
         # training options
 
         self.batch_size = 100
-        self.hm_epochs = 300
+        self.hm_epochs = 150
 
         self.input_size = 1080
         self.hidden_size = 1024
@@ -712,7 +712,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation Loss Green Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.01
+            learning_rate = 0.0001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -820,7 +820,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation Loss Blue Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.01
+            learning_rate = 0.0001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -1594,5 +1594,5 @@ class PretrainingMAE():
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
 pretraining.pretrain_red_channel()
-#pretraining.pretrain_green_channel()
-
+pretraining.pretrain_green_channel()
+pretraining.pretrain_blue_channel()
