@@ -646,9 +646,6 @@ class PretrainingMAE():
                 sess.run(epoch_loss_reset)
                 time1 = datetime.datetime.now()
 
-                if epoch == 100:
-                    sess.run(learning_rate_update)
-
                 for _ in range(0,n_batches):
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size,:]
