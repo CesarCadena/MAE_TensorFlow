@@ -27,7 +27,7 @@ class PretrainingMAE():
         # training options
 
         self.batch_size = 100
-        self.hm_epochs = 150
+        self.hm_epochs = 300
 
         self.input_size = 1080
         self.hidden_size = 1024
@@ -600,7 +600,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.00001
+            learning_rate = 0.0001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
