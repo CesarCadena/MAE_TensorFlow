@@ -35,7 +35,7 @@ class PretrainingMAE():
         self.saving = True
         self.n_training_data = 'all'
 
-        self.decay = 'exponential'
+        self.decay = 'piecewise'
 
         self.prepare_training_data()
         self.prepare_validation_data()
