@@ -589,7 +589,7 @@ class PretrainingMAE():
                                                                                    self.red_dc_layer['weights'],
                                                                                    self.red_ec_layer['bias'],
                                                                                    self.red_dc_layer['bias']])
-        #cost_red += reg_red
+        cost_red += reg_red
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
