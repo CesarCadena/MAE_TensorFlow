@@ -581,6 +581,7 @@ class PretrainingMAE():
 
         red_pred = self.AE_red(self.input_red)
         cost_red = tf.nn.l2_loss(red_pred-self.label_red)
+        loss = tf.nn.l2_loss(red_pred-self.label_red)
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
         reg_red = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.red_ec_layer['weights'],
@@ -601,7 +602,7 @@ class PretrainingMAE():
         #base_lr = 0.1
         #learning_rate = tf.train.exponential_decay(base_lr, global_step,100000,0.9, staircase=True)
 
-        opt_red = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(cost_red)
+        opt_red = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost_red)
 
         # validation objects
         validations = np.arange(0,self.n_validation_data)
@@ -647,7 +648,7 @@ class PretrainingMAE():
                 print('Epoch', epoch, 'completed out of', self.hm_epochs)
                 print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
-                loss = tf.nn.l2_loss(red_pred-self.label_red)
+
                 loss_val_reset = val_loss.assign(0)
                 sess.run(loss_val_reset)
 
