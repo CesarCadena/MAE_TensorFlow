@@ -35,7 +35,7 @@ class PretrainingMAE():
         self.saving = True
         self.n_training_data = 'all'
 
-        self.decay = 'piecewise'
+        self.decay = 'exponential'
 
         self.prepare_training_data()
         self.prepare_validation_data()
@@ -605,11 +605,13 @@ class PretrainingMAE():
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
             boundaries = [10000,100000,1000000]
-            rates = [0.01,0.001,0.0001,0.00001]
+            rates = [0.001,0.0001,0.00001,0.000001]
             learning_rate = tf.train.piecewise_constant(global_step,boundaries,rates)
 
         if self.decay == 'exponential':
             global_step = tf.Variable(0,trainable=False)
+            base_lr = 0.01
+            learning_rate = tf.train.exponential_decay(base_lr,global_step,1000,0.9)
 
         opt_red = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost_red)
 
