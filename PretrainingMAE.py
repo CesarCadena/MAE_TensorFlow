@@ -740,7 +740,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -847,7 +847,7 @@ class PretrainingMAE():
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
             saver = tf.train.Saver()
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
@@ -1024,7 +1024,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -1132,7 +1132,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -1240,7 +1240,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -1348,7 +1348,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -1456,7 +1456,7 @@ class PretrainingMAE():
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
 
             saver = tf.train.Saver()
 
@@ -1528,11 +1528,18 @@ class PretrainingMAE():
                                                                    self.input_veg,
                                                                    self.input_sky)
 
-        cost_sem = tf.nn.l2_loss(gnd_pred-self.label_gnd) + \
-                   tf.nn.l2_loss(obj_pred-self.label_obj) + \
-                   tf.nn.l2_loss(bld_pred-self.label_bld) + \
-                   tf.nn.l2_loss(veg_pred-self.label_veg) + \
-                   tf.nn.l2_loss(sky_pred-self.label_sky)
+        cost = tf.nn.l2_loss(gnd_pred-self.label_gnd) + \
+               tf.nn.l2_loss(obj_pred-self.label_obj) + \
+               tf.nn.l2_loss(bld_pred-self.label_bld) + \
+               tf.nn.l2_loss(veg_pred-self.label_veg) + \
+               tf.nn.l2_loss(sky_pred-self.label_sky)
+
+
+        loss = tf.nn.l2_loss(gnd_pred-self.label_gnd) + \
+               tf.nn.l2_loss(obj_pred-self.label_obj) + \
+               tf.nn.l2_loss(bld_pred-self.label_bld) + \
+               tf.nn.l2_loss(veg_pred-self.label_veg) + \
+               tf.nn.l2_loss(sky_pred-self.label_sky)
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001)
         reg_sem = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.gnd_ec_layer['weights'],
@@ -1559,16 +1566,35 @@ class PretrainingMAE():
                                                                                     self.veg_dc_layer['bias'],
                                                                                     self.sky_dc_layer['weights'],
                                                                                     self.sky_dc_layer['bias'],])
-        cost_sem += reg_sem
+        cost += reg_sem
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=0.000001)
-        opt_sem1 = optimizer1.minimize(cost_sem,var_list=[self.sem_ec_layer['weights'],
-                                                          self.sem_ec_layer['bias'],
-                                                          self.sem_dc_layer['weights'],
-                                                          self.sem_dc_layer['bias']])
+        epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
+        val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=0.000001)
-        opt_sem2 = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_sem)
+        sum_epoch_loss = tf.summary.scalar('Epoch Loss Shared Semantics',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation Loss Shared Semantics',val_loss)
+
+        if self.decay == 'constant':
+            learning_rate = 0.0001
+
+        if self.decay == 'piecewise':
+            global_step = tf.Variable(0,trainable=False)
+            boundaries = [10000,100000,1000000]
+            rates = [0.001,0.0001,0.00001,0.000001]
+            learning_rate = tf.train.piecewise_constant(global_step,boundaries,rates)
+
+        if self.decay == 'exponential':
+            global_step = tf.Variable(0,trainable=False)
+            base_lr = 0.01
+            learning_rate = tf.train.exponential_decay(base_lr,global_step,1000,0.9)
+
+        opt1 = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost,var_list=[self.sem_ec_layer['weights'],
+                                                                                           self.sem_ec_layer['bias'],
+                                                                                           self.sem_dc_layer['weights'],
+                                                                                           self.sem_dc_layer['bias']])
+        opt2 = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+
+
 
         saver_load = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
                                      'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
@@ -1591,7 +1617,9 @@ class PretrainingMAE():
                                      'sky_dc_layer_weights':self.sky_dc_layer['weights'],
                                      'sky_dc_layer_bias':self.sky_dc_layer['bias']})
 
-        with tf.Session() as sess:
+        saver_save = tf.train.Saver()
+
+        with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             saver_load.restore(sess,self.FLAGS.train_dir+'/pretrained1.ckpt')
 
@@ -1653,55 +1681,6 @@ class PretrainingMAE():
                 saver_save = tf.train.Saver()
                 saver_save.save(sess,self.FLAGS.train_dir+'/pretrained2.ckpt')
                 print('SAVED MODEL')
-
-    def training_epoch_validation(self,set,epoch,channel=False):
-
-        with tf.Session()as sess:
-
-            if channel=='red':
-                prediction = self.AE_red(self.input_red)
-            if channel==False:
-                raise ValueError
-
-            loss = tf.nn.l2_loss(prediction-self.label_red)
-            loss_val = tf.Variable(0,'Validation Loss')
-
-            sess.run(tf.variables_initializer([loss_val]))
-
-            for i in set:
-                imr_label = self.imr_val[i]
-                img_label = self.img_val[i]
-                imb_label = self.imb_val[i]
-                depth_label = self.depth_val[i]
-                gnd_label = self.gnd_val[i]
-                obj_label = self.obj_val[i]
-                bld_label = self.bld_val[i]
-                veg_label = self.veg_val[i]
-                sky_label = self.sky_val[i]
-
-                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(copy(imr_label),
-                                                                                                                copy(img_label),
-                                                                                                                copy(imb_label),
-                                                                                                                copy(depth_label),
-                                                                                                                copy(gnd_label),
-                                                                                                                copy(obj_label),
-                                                                                                                copy(bld_label),
-                                                                                                                copy(veg_label),
-                                                                                                                copy(sky_label),                                                                             resolution=(18,60),
-                                                                                                                singleframe=True)
-                if channel=='red':
-                    feed_dict_val = {self.input_red:imr_in,
-                                     self.label_red:[imr_label]}
-
-                im_pred,c_val = sess.run([prediction,update_val_loss],feed_dict=feed_dict_val)
-
-
-            print('Epoch', epoch, 'of epochs', self.hm_epochs, 'Normalized Validation Loss: ', sess.run(loss_val.value())/set.shape[0])
-
-
-
-
-
 
 
 
