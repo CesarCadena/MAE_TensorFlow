@@ -656,7 +656,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_red:imr_in,
                                  self.label_red:imr_batch}
 
-                    _, loss = sess.run([opt_red, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt_red, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -764,7 +764,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_green:img_in,
                                  self.label_green:img_batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -867,10 +867,10 @@ class PretrainingMAE():
 
                     imb_in = pretraining_input_distortion(copy(imb_batch))
 
-                    feed_dict = {self.input_green:imb_in,
-                                 self.label_green:imb_batch}
+                    feed_dict = {self.input_blue:imb_in,
+                                 self.label_blue:imb_batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1033,7 +1033,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.gnd_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1048,7 +1048,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_gnd:inp,
                                  self.label_gnd:batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1141,7 +1141,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.obj_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1156,7 +1156,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_obj:inp,
                                  self.label_obj:batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1249,7 +1249,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.bld_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1264,7 +1264,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_bld:inp,
                                  self.label_bld:batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1357,7 +1357,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.veg_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1372,7 +1372,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_veg:inp,
                                  self.label_veg:batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1465,7 +1465,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.sky_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1480,7 +1480,7 @@ class PretrainingMAE():
                     feed_dict = {self.input_sky:inp,
                                  self.label_sky:batch}
 
-                    _, loss = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
+                    _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
 
                 sum_train = sess.run(sum_epoch_loss)
@@ -1594,40 +1594,70 @@ class PretrainingMAE():
                                                                                            self.sem_dc_layer['bias']])
         opt2 = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        # validation objects
+        validations = np.arange(0,self.n_validation_data)
+        set_val = np.random.choice(validations,self.n_training_validations,replace=False)
+
+        epoch_loss_reset = epoch_loss.assign(0)
+        epoch_loss_update = epoch_loss.assign_add(cost)
+
+        loss_val_reset = val_loss.assign(0)
+        loss_val_update = val_loss.assign_add(loss/1080.)
 
 
-        saver_load = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
-                                     'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
-                                     'obj_ec_layer_weights':self.obj_ec_layer['weights'],
-                                     'obj_ec_layer_bias':self.obj_ec_layer['bias'],
-                                     'bld_ec_layer_weights':self.bld_ec_layer['weights'],
-                                     'bld_ec_layer_bias':self.bld_ec_layer['bias'],
-                                     'veg_ec_layer_weights':self.veg_ec_layer['weights'],
-                                     'veg_ec_layer_bias':self.veg_ec_layer['bias'],
-                                     'sky_ec_layer_weights':self.sky_ec_layer['weights'],
-                                     'sky_ec_layer_bias':self.sky_ec_layer['bias'],
-                                     'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
-                                     'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
-                                     'obj_dc_layer_weights':self.obj_dc_layer['weights'],
-                                     'obj_dc_layer_bias':self.obj_dc_layer['bias'],
-                                     'bld_dc_layer_weights':self.bld_dc_layer['weights'],
-                                     'bld_dc_layer_bias':self.bld_dc_layer['bias'],
-                                     'veg_dc_layer_weights':self.veg_dc_layer['weights'],
-                                     'veg_dc_layer_bias':self.veg_dc_layer['bias'],
-                                     'sky_dc_layer_weights':self.sky_dc_layer['weights'],
-                                     'sky_dc_layer_bias':self.sky_dc_layer['bias']})
+        config = tf.ConfigProto(log_device_placement=False)
+        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+
+
+
+        saver_load_gnd = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
+                                         'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
+                                         'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
+                                         'gnd_dc_layer_bias':self.gnd_dc_layer['bias']})
+
+        saver_load_obj = tf.train.Saver({'obj_ec_layer_weights':self.obj_ec_layer['weights'],
+                                         'obj_ec_layer_bias':self.obj_ec_layer['bias'],
+                                         'obj_dc_layer_weights':self.obj_dc_layer['weights'],
+                                         'obj_dc_layer_bias':self.obj_dc_layer['bias']})
+
+        saver_load_bld = tf.train.Saver({'bld_ec_layer_weights':self.bld_ec_layer['weights'],
+                                         'bld_ec_layer_bias':self.bld_ec_layer['bias'],
+                                         'bld_dc_layer_weights':self.bld_dc_layer['weights'],
+                                         'bld_dc_layer_bias':self.bld_dc_layer['bias']})
+
+        saver_load_veg = tf.train.Saver({'veg_ec_layer_weights':self.veg_ec_layer['weights'],
+                                         'veg_ec_layer_bias':self.veg_ec_layer['bias'],
+                                         'veg_dc_layer_weights':self.veg_dc_layer['weights'],
+                                         'veg_dc_layer_bias':self.veg_dc_layer['bias']})
+
+        saver_load_sky = tf.train.Saver({'sky_ec_layer_weights':self.sky_ec_layer['weights'],
+                                         'sky_ec_layer_bias':self.sky_ec_layer['bias'],
+                                         'sky_dc_layer_weights':self.sky_dc_layer['weights'],
+                                         'sky_dc_layer_bias':self.sky_dc_layer['bias']})
+
+
 
         saver_save = tf.train.Saver()
 
         with tf.Session(config=config) as sess:
-            sess.run(tf.global_variables_initializer())
-            saver_load.restore(sess,self.FLAGS.train_dir+'/pretrained1.ckpt')
 
-            n_batches = int(len(self.imr_train)/self.batch_size)
-            epoch_losses = []
+            sess.run(tf.global_variables_initializer())
+            saver_load_gnd.restore(sess,self.FLAGS.train_dir+'/pretrained_gnd.ckpt')
+            saver_load_obj.restore(sess,self.FLAGS.train_dir+'/pretrained_obj.ckpt')
+            saver_load_bld.restore(sess,self.FLAGS.train_dir+'/pretrained_bld.ckpt')
+            saver_load_veg.restore(sess,self.FLAGS.train_dir+'/pretrained_veg.ckpt')
+            saver_load_sky.restore(sess,self.FLAGS.train_dir+'/pretrained_sky.ckpt')
+
+            train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
+
+            n_batches = int(len(self.gnd_train)/self.batch_size)
+
+            tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
-                epoch_loss = 0
+                sess.run(epoch_loss_reset)
+                time1 = datetime.datetime.now()
+
                 for _ in range(0,n_batches):
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
@@ -1640,15 +1670,15 @@ class PretrainingMAE():
                     veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_batch,
-                                                                                                        img_batch,
-                                                                                                        imb_batch,
-                                                                                                        depth_batch,
-                                                                                                        gnd_batch,
-                                                                                                        obj_batch,
-                                                                                                        bld_batch,
-                                                                                                        veg_batch,
-                                                                                                        sky_batch,
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
+                                                                                                        copy(img_batch),
+                                                                                                        copy(imb_batch),
+                                                                                                        copy(depth_batch),
+                                                                                                        copy(gnd_batch),
+                                                                                                        copy(obj_batch),
+                                                                                                        copy(bld_batch),
+                                                                                                        copy(veg_batch),
+                                                                                                        copy(sky_batch),
                                                                                                         border1=1,
                                                                                                         border2=1,
                                                                                                         resolution=(18,60))
@@ -1665,21 +1695,72 @@ class PretrainingMAE():
                                      self.label_sky:sky_batch}
 
                     if epoch < 10:
-                        _, c = sess.run([opt_sem1,cost_sem],feed_dict=feed_dict_sem)
+                        _, c = sess.run([opt1,epoch_loss_update],feed_dict=feed_dict_sem)
                     else:
-                        _, c = sess.run([opt_sem2,cost_sem],feed_dict=feed_dict_sem)
+                        _, c = sess.run([opt2,epoch_loss_update],feed_dict=feed_dict_sem)
 
-                    epoch_loss += c
 
-                epoch_losses.append(epoch_loss)
-                print('Epoch', epoch, 'completed out of', self.hm_epochs, 'Loss: ', epoch_loss)
+                sum_train = sess.run(sum_epoch_loss)
+                train_writer1.add_summary(sum_train,epoch)
+                print('Epoch', epoch, 'completed out of', self.hm_epochs)
+                print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
+
+                sess.run(loss_val_reset)
+
+                for i in set_val:
+                    label_imr = self.imr_val[i]
+                    label_img = self.img_val[i]
+                    label_imb = self.imb_val[i]
+                    label_depth = self.depth_val[i]
+                    label_gnd = self.gnd_val[i]
+                    label_obj = self.obj_val[i]
+                    label_bld = self.bld_val[i]
+                    label_veg = self.veg_val[i]
+                    label_sky = self.sky_val[i]
+
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(label_imr),
+                                                                                                        copy(label_img),
+                                                                                                        copy(label_imb),
+                                                                                                        copy(label_depth),
+                                                                                                        copy(label_gnd),
+                                                                                                        copy(label_obj),
+                                                                                                        copy(label_bld),
+                                                                                                        copy(label_veg),
+                                                                                                        copy(label_sky),
+                                                                                                        border1=1,
+                                                                                                        border2=1,
+                                                                                                        resolution=(18,60),
+                                                                                                        singleframe=True)
+
+
+                    feed_dict_val = {self.input_gnd:gnd_in,
+                                     self.input_obj:obj_in,
+                                     self.input_bld:bld_in,
+                                     self.input_veg:veg_in,
+                                     self.input_sky:sky_in,
+                                     self.label_gnd:[label_gnd],
+                                     self.label_obj:[label_obj],
+                                     self.label_bld:[label_bld],
+                                     self.label_veg:[label_veg],
+                                     self.label_sky:[label_sky]}
+
+                    l,l_up = sess.run([loss,loss_val_update],feed_dict=feed_dict_val)
+
+                sum_val = sess.run(sum_val_loss)
+                train_writer1.add_summary(sum_val,epoch)
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
+                time2 = datetime.datetime.now()
+                delta = time2-time1
+                print('Epoch Time [seconds]:', delta.seconds)
+                print('-----------------------------------------------------------------')
+
+
 
 
 
 
             if self.saving==True:
-                saver_save = tf.train.Saver()
-                saver_save.save(sess,self.FLAGS.train_dir+'/pretrained2.ckpt')
+                saver_save.save(sess,self.FLAGS.train_dir+'/pretrained_shared_semantics.ckpt')
                 print('SAVED MODEL')
 
 
@@ -1763,11 +1844,15 @@ class PretrainingMAE():
 
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
+
 #pretraining.pretrain_red_channel()
 #pretraining.pretrain_green_channel()
 #pretraining.pretrain_blue_channel()
-pretraining.pretrain_gnd_channel()
-pretraining.pretrain_obj_channel()
-pretraining.pretrain_bld_channel()
-pretraining.pretrain_veg_channel()
-pretraining.pretrain_sky_channel()
+
+#pretraining.pretrain_gnd_channel()
+#pretraining.pretrain_obj_channel()
+#pretraining.pretrain_bld_channel()
+#pretraining.pretrain_veg_channel()
+#pretraining.pretrain_sky_channel()
+
+pretraining.pretrain_shared_semantics()
