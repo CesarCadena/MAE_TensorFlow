@@ -1873,6 +1873,6 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_shared_semantics()
 
-#pretraining.pretrain_depth_channel()
+pretraining.pretrain_depth_channel()
 
-pretraining.validate_depth()
+#pretraining.validate_depth()
