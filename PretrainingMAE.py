@@ -1010,7 +1010,7 @@ class PretrainingMAE():
 
 
                 if epoch%10==0:
-                     print_validation_frames(depth_in,im_pred,depth_label,channel='depth',shape=(60,18))
+                     #print_validation_frames(depth_in,im_pred,depth_label,channel='depth',shape=(60,18))
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
