@@ -139,13 +139,13 @@ def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='
 
         fig,axes = plt.subplots(1,3)
 
-        axes[0].imshow(im_depth_input,cmap='gist_ncar')
+        axes[0].imshow(im_depth_input,cmap='hsv')
         axes[0].set_title('Depth Channel Input')
 
-        axes[1].imshow(im_depth_output,cmap='gist_ncar')
+        axes[1].imshow(im_depth_output,cmap='hsv')
         axes[1].set_title('Depth Channel Output')
 
-        axes[2].imshow(im_depth_label,cmap='gist_ncar')
+        axes[2].imshow(im_depth_label,cmap='hsv')
         axes[2].set_title('Depth Channel Label')
 
 
