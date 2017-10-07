@@ -95,14 +95,16 @@ def print_training_frames(input_frame,output_frame,label_frame,shape,channel='al
         plt.pause(0.0001)
         plt.close('all')
 
+
+
 def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='all'):
 
     if channel=='red':
         im_shape = (shape[0],shape[1])
 
-        im_r_input = np.reshape(input_frame['xcr1'],im_shape).T
-        im_r_output = np.reshape(output_frame['xcr1'],im_shape).T
-        im_r_label = np.reshape(label_frame['xcr1'],im_shape).T
+        im_r_input = np.reshape(input_frame,im_shape).T
+        im_r_output = np.reshape(output_frame,im_shape).T
+        im_r_label = np.reshape(label_frame,im_shape).T
 
 
 
@@ -119,6 +121,33 @@ def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='
         axes[2].set_title('Red Channel Label')
 
         plt.savefig()
+
+        plt.ion()
+        plt.show()
+        plt.pause(0.0001)
+        plt.close('all')
+
+    if channel=='depth':
+        im_shape = (shape[0],shape[1])
+
+        im_depth_input = np.reshape(input_frame,im_shape).T
+        im_depth_output = np.reshape(output_frame,im_shape).T
+        im_depth_label = np.reshape(label_frame,im_shape).T
+
+
+
+
+        fig,axes = plt.subplots(1,3)
+
+        axes[0].imshow(im_depth_input,cmap='gist_ncar')
+        axes[0].set_title('Depth Channel Input')
+
+        axes[1].imshow(im_depth_output,cmap='gist_ncar')
+        axes[1].set_title('Depth Channel Output')
+
+        axes[2].imshow(im_depth_label,cmap='gist_ncar')
+        axes[2].set_title('Depth Channel Label')
+
 
         plt.ion()
         plt.show()
