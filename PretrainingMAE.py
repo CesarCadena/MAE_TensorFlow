@@ -912,10 +912,8 @@ class PretrainingMAE():
         print('Depth Pretraining')
 
         pred = self.AE_depth(self.input_depth)
-        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               10000*tf.losses.absolute_difference(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
-        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               10000*tf.losses.absolute_difference(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
+        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
+        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -1836,12 +1834,13 @@ class PretrainingMAE():
                 depth_input = pretraining_input_distortion(copy(depth_label),singleframe=True)
 
                 feed_dict = {self.input_depth:depth_input,
-                             self.label_depth:depth_label,
-                             self.depth_mask:depth_mask}
-                depth_pred, loss = sess.run([prediction,loss],feed_dict=feed_dict)
+                             self.label_depth:[depth_label],
+                             self.depth_mask:[depth_mask]}
+
+                depth_pred, l = sess.run([prediction,loss],feed_dict=feed_dict)
                 print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
 
-                print('Validation Loss:', loss)
+                print('Validation Loss:', l)
 
 
 
