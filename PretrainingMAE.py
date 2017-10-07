@@ -909,6 +909,8 @@ class PretrainingMAE():
 
     def pretrain_depth_channel(self):
 
+        print('Depth Pretraining')
+
         pred = self.AE_depth(self.input_depth)
         cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
                10000*tf.losses.absolute_difference(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
@@ -1814,6 +1816,34 @@ class PretrainingMAE():
 
 
 
+    def validate_depth(self):
+
+        prediction = self.AE_depth(self.input_depth)
+        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction)-tf.multiply(self.depth_mask,self.label_depth)) + \
+               10000*tf.losses.absolute_difference(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,prediction))
+
+        load_weights = tf.train.Saver()
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,self.FLAGS.train_dir+'/pretrained_depth.ckpt')
+
+            for i in range(0,self.n_validation_data):
+
+                depth_label = self.depth_val[i]
+                depth_mask = self.depth_mask_val[i]
+                depth_input = pretraining_input_distortion(copy(depth_label),singleframe=True)
+
+                feed_dict = {self.input_depth:depth_input,
+                             self.label_depth:depth_label,
+                             self.depth_mask:depth_mask}
+                depth_pred, loss = sess.run([prediction,loss],feed_dict=feed_dict)
+                print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
+
+                print('Validation Loss:', loss)
+
+
 
 
 
@@ -1822,7 +1852,7 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_red_channel()
 #pretraining.pretrain_green_channel()
-pretraining.pretrain_blue_channel()
+#pretraining.pretrain_blue_channel()
 
 #pretraining.pretrain_gnd_channel()
 #pretraining.pretrain_obj_channel()
@@ -1833,3 +1863,5 @@ pretraining.pretrain_blue_channel()
 #pretraining.pretrain_shared_semantics()
 
 pretraining.pretrain_depth_channel()
+
+#pretraining.validate_depth()
