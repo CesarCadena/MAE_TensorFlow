@@ -55,6 +55,7 @@ class PretrainingMAE():
         self.input_sky = tf.placeholder('float',shape=[None,self.input_size])
 
         self.depth_mask = tf.placeholder('float',shape=[None,self.input_size])
+        self.depth_loss_mask = tf.placeholder('float',shape=[None,self.input_size])
 
         self.label_red = tf.placeholder('float',shape=[None,self.input_size])
         self.label_green = tf.placeholder('float',shape=[None,self.input_size])
@@ -104,6 +105,7 @@ class PretrainingMAE():
         self.sky_train = []
 
         self.depth_mask_train = []
+        self.depth_loss_mask_train = []
 
         t_iterator = 0
 
@@ -116,6 +118,7 @@ class PretrainingMAE():
                 self.imb_train.append(j['xcb1']/255.)
                 self.depth_train.append(j['xid1'])
                 self.depth_mask_train.append(j['xmask1'])
+                self.depth_loss_mask_train.append((j['xid1']>0.15).astype(int))
                 self.gnd_train.append((j['sem1']==1).astype(int))
                 self.obj_train.append((j['sem1']==2).astype(int))
                 self.bld_train.append((j['sem1']==3).astype(int))
@@ -136,6 +139,7 @@ class PretrainingMAE():
                 self.imb_train.append(j['xcb2']/255.)
                 self.depth_train.append(j['xid2'])
                 self.depth_mask_train.append(j['xmask2'])
+                self.depth_loss_mask_train.append((j['xid2']>0.15).astype(int))
                 self.gnd_train.append((j['sem2']==1).astype(int))
                 self.obj_train.append((j['sem2']==2).astype(int))
                 self.bld_train.append((j['sem2']==3).astype(int))
@@ -158,6 +162,7 @@ class PretrainingMAE():
         self.veg_train = np.asarray(self.veg_train)[rand_indices]
         self.sky_train = np.asarray(self.sky_train)[rand_indices]
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
+        self.depth_loss_mask_train = np.asarray(self.depth_loss_mask_train)[rand_indices]
 
     def prepare_validation_data(self):
 
@@ -172,6 +177,7 @@ class PretrainingMAE():
             self.veg_val = []
             self.sky_val = []
             self.depth_mask_val = []
+            self.depth_loss_mask_val = []
 
             v_iterator = 0
 
@@ -181,6 +187,7 @@ class PretrainingMAE():
                     self.img_val.append(j['xcg1']/255.)
                     self.imb_val.append(j['xcb1']/255.)
                     self.depth_val.append(j['xid1'])
+                    self.depth_loss_mask_val.append((j['xid1']>0.15).astype(int))
                     self.gnd_val.append((j['sem1']==1).astype(int))
                     self.obj_val.append((j['sem1']==2).astype(int))
                     self.bld_val.append((j['sem1']==3).astype(int))
@@ -912,8 +919,10 @@ class PretrainingMAE():
         print('Depth Pretraining')
 
         pred = self.AE_depth(self.input_depth)
-        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
-        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
+        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
+               10*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
+        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
+               10*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -976,12 +985,14 @@ class PretrainingMAE():
 
                     batch = self.depth_train[_*self.batch_size:(_+1)*self.batch_size,:]
                     batch_mask = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size,:]
+                    batch_loss_mask = self.depth_loss_mask_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     depth_in = pretraining_input_distortion(copy(batch))
 
                     feed_dict = {self.input_depth:depth_in,
                                  self.label_depth:batch,
-                                 self.depth_mask:batch_mask}
+                                 self.depth_mask:batch_mask,
+                                 self.depth_loss_mask:batch_loss_mask}
 
                     _, l = sess.run([opt, epoch_loss_update], feed_dict=feed_dict)
 
@@ -998,11 +1009,13 @@ class PretrainingMAE():
                 for i in set_val:
                     depth_label = self.depth_val[i]
                     depth_mask = self.depth_mask_val[i]
+                    depth_loss_mask = self.depth_loss_mask_val[i]
                     depth_in = pretraining_input_distortion(copy(depth_label),singleframe=True)
 
                     feed_dict_val = {self.input_depth:depth_in,
                                      self.label_depth:[depth_label],
-                                     self.depth_mask:[depth_mask]}
+                                     self.depth_mask:[depth_mask],
+                                     self.depth_loss_mask:[depth_loss_mask]}
 
                     im_pred,c_val = sess.run([pred,loss_val_update],feed_dict=feed_dict_val)
 
