@@ -1008,8 +1008,8 @@ class PretrainingMAE():
 
                     im_pred,c_val = sess.run([pred,loss_val_update],feed_dict=feed_dict_val)
 
-
-                if epoch%10==0:
+                # uncomment when not running on gpu
+                #if epoch%10==0:
                      #print_validation_frames(depth_in,im_pred,depth_label,channel='depth',shape=(60,18))
 
                 sum_val = sess.run(sum_val_loss)
