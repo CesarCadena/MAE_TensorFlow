@@ -118,7 +118,7 @@ class PretrainingMAE():
                 self.imb_train.append(j['xcb1']/255.)
                 self.depth_train.append(j['xid1'])
                 self.depth_mask_train.append(j['xmask1'])
-                self.depth_loss_mask_train.append((j['xid1']>0.15).astype(int))
+                self.depth_loss_mask_train.append((j['xid1']>0.09).astype(int))
                 self.gnd_train.append((j['sem1']==1).astype(int))
                 self.obj_train.append((j['sem1']==2).astype(int))
                 self.bld_train.append((j['sem1']==3).astype(int))
@@ -139,7 +139,7 @@ class PretrainingMAE():
                 self.imb_train.append(j['xcb2']/255.)
                 self.depth_train.append(j['xid2'])
                 self.depth_mask_train.append(j['xmask2'])
-                self.depth_loss_mask_train.append((j['xid2']>0.1).astype(int))
+                self.depth_loss_mask_train.append((j['xid2']>0.09).astype(int))
                 self.gnd_train.append((j['sem2']==1).astype(int))
                 self.obj_train.append((j['sem2']==2).astype(int))
                 self.bld_train.append((j['sem2']==3).astype(int))
@@ -920,9 +920,9 @@ class PretrainingMAE():
 
         pred = self.AE_depth(self.input_depth)
         cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               100*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
+               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
         loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               100*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
+               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -1850,9 +1850,11 @@ class PretrainingMAE():
                              self.depth_mask:[depth_mask]}
 
                 depth_pred, l = sess.run([prediction,loss],feed_dict=feed_dict)
-                print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
+                #print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
+                print(np.reshape(depth_pred,(18,60)))
+                print(np.reshape(depth_label,(18,60)))
 
-                print('Validation Loss:', l)
+                print('Validation Loss:', l/1080.)
 
 
 
