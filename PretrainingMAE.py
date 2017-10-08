@@ -1,8 +1,4 @@
 
-# coding: utf-8
-
-# In[16]:
-
 import tensorflow as tf
 import numpy as np
 from load_data import load_data
@@ -74,13 +70,18 @@ class PretrainingMAE():
 
         self.layers = []
 
-        self.model_folder = 'models'
-        self.logs_folder = 'logs'
+        now = datetime.datetime.now()
+
+        self.model_folder = 'models/'
+        self.logs_folder = 'logs/'
+        self.run = now.strftime('%Y%m%d-%H%M%S')
 
         # directory definitions
+
+
         self.project_dir ='./'
-        self.model_dir = self.project_dir + self.model_folder
-        self.logs_dir = self.project_dir + self.logs_folder
+        self.model_dir = self.project_dir + self.model_folder + self.run
+        self.logs_dir = self.project_dir + self.logs_folder + self.run
 
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
@@ -920,9 +921,11 @@ class PretrainingMAE():
 
         pred = self.AE_depth(self.input_depth)
         cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
+               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth)) + \
+               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
         loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth))
+               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth)) + \
+               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -1850,7 +1853,7 @@ class PretrainingMAE():
                              self.depth_mask:[depth_mask]}
 
                 depth_pred, l = sess.run([prediction,loss],feed_dict=feed_dict)
-                #print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
+                print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
                 print(np.reshape(depth_pred,(18,60)))
                 print(np.reshape(depth_label,(18,60)))
 
