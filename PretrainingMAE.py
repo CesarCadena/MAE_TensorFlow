@@ -72,6 +72,8 @@ class PretrainingMAE():
 
         now = datetime.datetime.now()
 
+        self.mode = 'pretraining/'
+
         self.model_folder = 'models/'
         self.logs_folder = 'logs/'
         self.run = now.strftime('%Y%m%d-%H%M%S')
@@ -80,8 +82,8 @@ class PretrainingMAE():
 
 
         self.project_dir ='./'
-        self.model_dir = self.project_dir + self.model_folder + self.run
-        self.logs_dir = self.project_dir + self.logs_folder + self.run
+        self.model_dir = self.project_dir + self.model_folder + self.mode + self.run
+        self.logs_dir = self.project_dir + self.logs_folder + self.mode + self.run
 
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
@@ -921,11 +923,19 @@ class PretrainingMAE():
 
         pred = self.AE_depth(self.input_depth)
         cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth)) + \
-               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
+               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred)) + \
+               10*tf.nn.l2_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)) -
+                                tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth))) + \
+               10*tf.losses.huber_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth)),
+                                       tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)))
+
+
         loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               1000*tf.nn.l2_loss(tf.multiply(self.depth_loss_mask,pred)-tf.multiply(self.depth_loss_mask,self.label_depth)) + \
-               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred))
+               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred)) + \
+               10*tf.nn.l2_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)) -
+                                tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth))) + \
+               10*tf.losses.huber_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth)),
+                                       tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -1830,17 +1840,22 @@ class PretrainingMAE():
 
 
 
-    def validate_depth(self):
+    def validate_depth(self,run=False):
 
         prediction = self.AE_depth(self.input_depth)
         loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction)-tf.multiply(self.depth_mask,self.label_depth))
 
         load_weights = tf.train.Saver()
 
+        if run==False:
+            raise ValueError
+
+        dir = 'models/' + run
+
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,self.FLAGS.train_dir+'/pretrained_depth.ckpt')
+            load_weights.restore(sess,dir+'/pretrained_depth.ckpt')
 
             for i in range(0,self.n_validation_data):
 
@@ -1878,6 +1893,6 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_shared_semantics()
 
-pretraining.pretrain_depth_channel()
+#pretraining.pretrain_depth_channel()
 
-#pretraining.validate_depth()
+pretraining.validate_depth(run='20171009-084416')

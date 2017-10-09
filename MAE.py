@@ -9,6 +9,7 @@ import numpy as np
 from load_data import load_data
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion
+from datetime import datetime
 
 # LOAD DATA
 
@@ -30,7 +31,7 @@ class MAE:
         self.size_coding = 1024
 
         self.n_training_data = 300 # max 15301
-        self.n_validation_data = 1
+        self.n_training_validations = 50
 
 
         # options
@@ -79,21 +80,28 @@ class MAE:
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
         self.learning_rate = 1e-06
-        self.n_training_epochs = 100
+        self.hm_epochs = 100
 
         # validation options
         self.n_validation_steps = 1
 
         # model saving
         self.saving = True
-        self.folder_model = 'models'
+        now = datetime.now()
 
+        self.folder_model = 'models/'
+        self.folder_logs = 'logs/'
+
+        self.mode = 'full/'
+        self.run = now.strftime('%Y%m%d-%H%M%S') + '/'
 
         self.project_dir ='./'
+        self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
+        self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
 
-        self.model_dir = self.project_dir + self.folder_model
+        tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
+        tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
 
-        tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
         self.FLAGS = tf.app.flags.FLAGS
 
     def prepare_training_data(self):
@@ -114,14 +122,10 @@ class MAE:
 
         self.depth_mask_train = []
 
-        t_iterator = 0
+
 
         for i in self.data_train:
             for j in i:
-
-                if t_iterator == self.n_training_data:
-                    #show_frame = display_frame(j,(self.height,self.width))
-                    break
                 self.imr_train.append(j['xcr1']/255.)
                 self.img_train.append(j['xcg1']/255.)
                 self.imb_train.append(j['xcb1']/255.)
@@ -132,24 +136,34 @@ class MAE:
                 self.bld_train.append((j['sem1']==3).astype(int))
                 self.veg_train.append((j['sem1']==4).astype(int))
                 self.sky_train.append((j['sem1']==5).astype(int))
+                self.imr_train.append(j['xcr2']/255.)
+                self.img_train.append(j['xcg2']/255.)
+                self.imb_train.append(j['xcb2']/255.)
+                self.depth_train.append(j['xid2'])
+                self.depth_mask_train.append(j['xmask2'])
+                self.gnd_train.append((j['sem2']==1).astype(int))
+                self.obj_train.append((j['sem2']==2).astype(int))
+                self.bld_train.append((j['sem2']==3).astype(int))
+                self.veg_train.append((j['sem2']==4).astype(int))
+                self.sky_train.append((j['sem2']==5).astype(int))
 
-                t_iterator += 1
+
 
         # randomly shuffle input frames
-        rand_indices = np.arange(self.n_training_data).astype(int)
+        rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
 
-        self.imr_train = np.asarray(self.imr_train)[rand_indices].tolist()
-        self.img_train = np.asarray(self.img_train)[rand_indices].tolist()
-        self.imb_train = np.asarray(self.imb_train)[rand_indices].tolist()
-        self.depth_train = np.asarray(self.depth_train)[rand_indices].tolist()
-        self.gnd_train = np.asarray(self.gnd_train)[rand_indices].tolist()
-        self.obj_train = np.asarray(self.obj_train)[rand_indices].tolist()
-        self.bld_train = np.asarray(self.bld_train)[rand_indices].tolist()
-        self.veg_train = np.asarray(self.veg_train)[rand_indices].tolist()
-        self.sky_train = np.asarray(self.sky_train)[rand_indices].tolist()
+        self.imr_train = np.asarray(self.imr_train)[rand_indices]
+        self.img_train = np.asarray(self.img_train)[rand_indices]
+        self.imb_train = np.asarray(self.imb_train)[rand_indices]
+        self.depth_train = np.asarray(self.depth_train)[rand_indices]
+        self.gnd_train = np.asarray(self.gnd_train)[rand_indices]
+        self.obj_train = np.asarray(self.obj_train)[rand_indices]
+        self.bld_train = np.asarray(self.bld_train)[rand_indices]
+        self.veg_train = np.asarray(self.veg_train)[rand_indices]
+        self.sky_train = np.asarray(self.sky_train)[rand_indices]
 
-        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices].tolist()
+        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
 
     def prepare_validation_data(self):
 
@@ -158,6 +172,7 @@ class MAE:
         self.img_val = []
         self.imb_val = []
         self.depth_val = []
+        self.depth_mask_val = []
         self.gnd_val = []
         self.obj_val = []
         self.bld_val = []
@@ -168,24 +183,16 @@ class MAE:
 
         for i in self.data_validate:
             for j in i:
-
-                if v_iterator == self.n_validation_data:
-                    #show_frame = display_frame(j,(self.height,self.width))
-                    break
                 self.imr_val.append(j['xcr1']/255.)
                 self.img_val.append(j['xcg1']/255.)
                 self.imb_val.append(j['xcb1']/255.)
                 self.depth_val.append(j['xid1'])
+                self.depth_mask_val.append(j['xmask1'])
                 self.gnd_val.append((j['sem1']==1).astype(int))
                 self.obj_val.append((j['sem1']==2).astype(int))
                 self.bld_val.append((j['sem1']==3).astype(int))
                 self.veg_val.append((j['sem1']==4).astype(int))
                 self.sky_val.append((j['sem1']==5).astype(int))
-
-                v_iterator += 1
-
-
-
 
     def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky,mode='training'):
 
@@ -477,7 +484,32 @@ class MAE:
                       tf.nn.l2_loss(prediction[8]-self.sky_label) + \
                       reg_term
 
-        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label)) # depth mask for loss computation
+
+        # depth mask for loss computation
+        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+
+        loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
+                      tf.nn.l2_loss(prediction[1]-self.img_label) + \
+                      tf.nn.l2_loss(prediction[2]-self.imb_label) + \
+                      tf.nn.l2_loss(prediction[3]-self.gnd_label) + \
+                      tf.nn.l2_loss(prediction[5]-self.obj_label) + \
+                      tf.nn.l2_loss(prediction[6]-self.bld_label) + \
+                      tf.nn.l2_loss(prediction[7]-self.veg_label) + \
+                      tf.nn.l2_loss(prediction[8]-self.sky_label)
+
+        loss = loss + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+
+        epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
+        val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
+
+        epoch_loss_reset = epoch_loss.assign(0)
+        epoch_loss_update = epoch_loss.assign_add(cost)
+
+        loss_val_reset = val_loss.assign(0)
+        loss_val_update = val_loss.assign_add(loss/1080.)
+
+        sum_epoch_loss = tf.summary.scalar('Epoch Loss Depth Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation Loss Depth Channel',val_loss)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=[self.full_ec_layer['weights'],
                                                                                                       self.full_ec_layer['bias'],
@@ -486,28 +518,32 @@ class MAE:
 
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
 
-
-        hm_epochs = self.n_training_epochs
-
-        saver_pretrained1 = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
-                                            'red_ec_layer_bias':self.red_ec_layer['bias'],
-                                            'green_ec_layer_weights':self.green_ec_layer['weights'],
-                                            'green_ec_layer_bias':self.green_ec_layer['bias'],
-                                            'blue_ec_layer_weights':self.blue_ec_layer['weights'],
-                                            'blue_ec_layer_bias':self.blue_ec_layer['bias'],
-                                            'depth_ec_layer_weights':self.depth_ec_layer['weights'],
-                                            'depth_ec_layer_bias':self.depth_ec_layer['bias'],
-                                            'red_dc_layer_weights':self.red_dc_layer['weights'],
-                                            'red_dc_layer_bias':self.red_dc_layer['bias'],
-                                            'green_dc_layer_weights':self.green_dc_layer['weights'],
-                                            'green_dc_layer_bias':self.green_dc_layer['bias'],
-                                            'blue_dc_layer_weights':self.blue_dc_layer['weights'],
-                                            'blue_dc_layer_bias':self.blue_dc_layer['bias'],
-                                            'depth_dc_layer_weights':self.depth_dc_layer['weights'],
-                                            'depth_dc_layer_bias':self.depth_dc_layer['bias']})
+        validations = np.arange(0, self.n_training_validations)
+        set_val = np.random.choice(validations,self.n_training_validations,replace=False)
 
 
-        saver_pretrained2 = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
+        load_red = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
+                                   'red_ec_layer_bias':self.red_ec_layer['bias'],
+                                   'red_dc_layer_weights':self.red_dc_layer['weights'],
+                                   'red_dc_layer_bias':self.red_dc_layer['bias']})
+
+        load_green = tf.train.Saver({'green_ec_layer_weights':self.green_ec_layer['weights'],
+                                     'green_ec_layer_bias':self.green_ec_layer['bias'],
+                                     'green_dc_layer_weights':self.green_dc_layer['weights'],
+                                     'green_dc_layer_bias':self.green_dc_layer['bias']})
+
+        load_blue = tf.train.Saver({'blue_ec_layer_weights':self.blue_ec_layer['weights'],
+                                    'blue_ec_layer_bias':self.blue_ec_layer['bias'],
+                                    'blue_dc_layer_weights':self.blue_dc_layer['weights'],
+                                    'blue_dc_layer_bias':self.blue_dc_layer['bias'],})
+
+        load_depth = tf.train.Saver({'depth_ec_layer_weights':self.depth_ec_layer['weights'],
+                                     'depth_ec_layer_bias':self.depth_ec_layer['bias'],
+                                     'depth_dc_layer_weights':self.depth_dc_layer['weights'],
+                                     'depth_dc_layer_bias':self.depth_dc_layer['bias']})
+
+
+        load_shared_sem = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
                                             'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
                                             'obj_ec_layer_weights':self.obj_ec_layer['weights'],
                                             'obj_ec_layer_bias':self.obj_ec_layer['bias'],
@@ -532,16 +568,28 @@ class MAE:
                                             'sem_dc_layer_weights':self.sem_dc_layer['weights'],
                                             'sem_dc_layer_bias':self.sem_dc_layer['bias']})
 
+        saver = tf.train.Saver()
 
-        with tf.Session() as sess:
 
+        config = tf.ConfigProto(log_device_placement=False)
+        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        with tf.Session(config=config) as sess:
+
+            train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
-            saver_pretrained1.restore(sess,'models/pretrained1.ckpt')
-            saver_pretrained2.restore(sess,'models/pretrained2.ckpt')
 
-            epoch_losses = []
-            for epoch in range(hm_epochs):
-                epoch_loss = 0
+            load_red.restore(sess,'models/pretraining/pretrained_models/pretrained_red.ckpt')
+            load_green.restore(sess,'models/pretraining/pretrained_models/pretrained_green.ckpt')
+            load_blue.restore(sess,'models/pretraining/pretrained_models/pretrained_blue.ckpt')
+            load_depth.restore(sess,'models/pretraining/pretrained_models/pretrained_depth.ckpt')
+            load_shared_sem.restore(sess,'models/pretraining/pretrained_models/pretrained_shared_semantics.ckpt')
+
+            tf.get_default_graph().finalize()
+
+            for epoch in range(0,self.hm_epochs):
+                sess.run(epoch_loss_reset)
+                time1 = datetime.now()
+
                 for _ in range(self.n_batches):
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
@@ -591,23 +639,79 @@ class MAE:
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 10:
-                        _ , c = sess.run([optimizer1, cost], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
                     else:
-                        _ ,c = sess.run([optimizer2,cost],feed_dict=feed_dict)
+                        _ ,c, l = sess.run([optimizer2, cost, epoch_loss_update],feed_dict=feed_dict)
 
-                    epoch_loss += c
+                sum_train = sess.run(sum_epoch_loss)
+                train_writer1.add_summary(sum_train,epoch)
 
-                epoch_losses.append(epoch_loss)
-                print('Epoch', epoch+1, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+                print('----------------------------------------------------------------')
+                print('Epoch', epoch, 'completed out of', self.hm_epochs)
+                print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
-                if epoch%10==0:
-                    plot_training_loss(epoch_losses,n_epochs=self.n_training_epochs,name='training_loss_MAE')
+                sess.run(loss_val_reset)
+
+                for i in set_val:
+
+                    red_label = self.imr_val[i]
+                    green_label = self.img_val[i]
+                    blue_label = self.imb_val[i]
+                    depth_label = self.depth_val[i]
+                    depth_mask = self.depth_mask_val[i]
+                    gnd_label = self.gnd_val[i]
+                    obj_label = self.obj_val[i]
+                    bld_label = self.bld_val[i]
+                    veg_label = self.veg_val[i]
+                    sky_label = self.sky_val[i]
+
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(red_label,
+                                                                                                        green_label,
+                                                                                                        blue_label,
+                                                                                                        depth_label,
+                                                                                                        gnd_label,
+                                                                                                        obj_label,
+                                                                                                        bld_label,
+                                                                                                        veg_label,
+                                                                                                        sky_label,
+                                                                                                        border1=0.4,
+                                                                                                        border2=0.8,
+                                                                                                        resolution=(18,60),
+                                                                                                        singleframe=True)
+
+                    feed_dict = {self.imr_input:imr_in,
+                                 self.img_input:img_in,
+                                 self.imb_input:imb_in,
+                                 self.depth_input:depth_in,
+                                 self.gnd_input:gnd_in,
+                                 self.obj_input:obj_in,
+                                 self.bld_input:bld_in,
+                                 self.veg_input:veg_in,
+                                 self.sky_input:sky_in,
+                                 self.depth_mask:[depth_mask],
+                                 self.imr_label:[red_label],
+                                 self.img_label:[green_label],
+                                 self.imb_label:[blue_label],
+                                 self.depth_label:[depth_label],
+                                 self.gnd_label:[gnd_label],
+                                 self.obj_label:[obj_label],
+                                 self.bld_label:[bld_label],
+                                 self.veg_label:[veg_label],
+                                 self.sky_label:[sky_label]}
+
+                    im_pred,c_val = sess.run([prediction,loss_val_update],feed_dict=feed_dict)
+
+                sum_val = sess.run(sum_val_loss)
+                train_writer1.add_summary(sum_val,epoch)
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
+                time2 = datetime.now()
+                delta = time2-time1
+                print('Epoch Time [seconds]:', delta.seconds)
+                print('-----------------------------------------------------------------')
 
 
             if self.saving == True:
-                plot_training_loss(epoch_losses,name='training_loss_MAE')
-                saver = tf.train.Saver()
-                saver.save(sess,self.FLAGS.train_dir+'/models.ckpt')
+                saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
                 print('SAVED MODEL')
 
 
@@ -693,7 +797,7 @@ class MAE:
 
 mae = MAE(data_train,data_validate,data_test)
 mae.train_model()
-mae.validate_model(n_validations=1,loadmodel=True)
+#mae.validate_model(n_validations=1,loadmodel=True)
 
 
 
