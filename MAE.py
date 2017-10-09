@@ -470,7 +470,7 @@ class MAE:
 
         self.collect_variables()
 
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
