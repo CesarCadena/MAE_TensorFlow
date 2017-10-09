@@ -79,7 +79,7 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 0.01
+        self.learning_rate = 1e-06
         self.hm_epochs = 200
 
         # validation options
