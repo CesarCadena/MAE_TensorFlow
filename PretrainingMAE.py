@@ -1009,11 +1009,11 @@ class PretrainingMAE():
 
                 sess.run(loss_val_reset)
 
-                normalization = self.input_size*set_val.shape[0]
+                normalization = 0
                 for i in set_val:
                     depth_label = self.depth_val[i]
                     depth_mask = self.depth_mask_val[i]
-                    normalization = normalization - np.count_nonzero(depth_mask)
+                    normalization = normalization + np.count_nonzero(depth_mask)
                     depth_loss_mask = self.depth_loss_mask_val[i]
                     depth_in = pretraining_input_distortion(copy(depth_label),singleframe=True)
 
