@@ -81,7 +81,7 @@ class PretrainingMAE():
         # directory definitions
 
 
-        self.project_dir ='./'
+        self.project_dir =''
         self.model_dir = self.project_dir + self.model_folder + self.mode + self.run
         self.logs_dir = self.project_dir + self.logs_folder + self.mode + self.run
 
@@ -1829,8 +1829,6 @@ class PretrainingMAE():
             if self.saving==True:
                 saver_save.save(sess,self.FLAGS.train_dir+'/pretrained_shared_semantics.ckpt')
                 print('SAVED MODEL')
-
-
 
     def validate_depth(self,run=False):
 
