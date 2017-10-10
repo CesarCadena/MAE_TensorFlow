@@ -80,13 +80,13 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-06
+        self.learning_rate = 1e-3
         self.hm_epochs = 200
 
         # validation options
         self.n_validation_steps = 1
 
-        # model saving
+        # model savings
         self.saving = True
         now = datetime.now()
 
