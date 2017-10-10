@@ -4,6 +4,7 @@
 
 import tensorflow as tf
 import numpy as np
+import os
 
 
 from load_data import load_data
@@ -93,11 +94,14 @@ class MAE:
         self.folder_logs = 'logs/'
 
         self.mode = 'full/'
-        self.run = now.strftime('%Y%m%d-%H%M%S') + '/'
+        self.run = now.strftime('%Y%m%d-%H%M%S')
 
-        self.project_dir ='./'
+        self.project_dir = './'
         self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
         self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
+
+        os.mkdir(self.model_dir)
+        os.mkdir(self.logs_dir)
 
         tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
         tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')

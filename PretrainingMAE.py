@@ -1882,6 +1882,6 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_shared_semantics()
 
-#pretraining.pretrain_depth_channel()
+pretraining.pretrain_depth_channel()
 
-pretraining.validate_depth(run='20171010-115125')
+#pretraining.validate_depth(run='20171010-115125')
