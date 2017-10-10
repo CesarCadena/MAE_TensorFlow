@@ -8,6 +8,7 @@ from copy import copy
 import matplotlib.pyplot as plt
 
 import datetime
+import os
 
 data_train,data_validate,data_test = load_data()
 
@@ -85,9 +86,12 @@ class PretrainingMAE():
         self.model_dir = self.project_dir + self.model_folder + self.mode + self.run
         self.logs_dir = self.project_dir + self.logs_folder + self.mode + self.run
 
+        os.mkdir(self.model_dir)
+        os.mkdir(self.logs_dir)
 
         tf.app.flags.DEFINE_string('train_dir',self.model_dir,'where to store the trained model')
         tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the summaries')
+
 
         self.FLAGS = tf.app.flags.FLAGS
 
@@ -1847,11 +1851,16 @@ class PretrainingMAE():
             sess.run(tf.global_variables_initializer())
             load_weights.restore(sess,dir+'/pretrained_depth.ckpt')
 
+
+
             for i in range(0,self.n_validation_data):
+
 
                 depth_label = self.depth_val[i]
                 depth_mask = self.depth_mask_val[i]
                 depth_input = pretraining_input_distortion(copy(depth_label),singleframe=True)
+
+                normalization = np.count_nonzero(depth_mask)
 
                 feed_dict = {self.input_depth:depth_input,
                              self.label_depth:[depth_label],
@@ -1861,7 +1870,7 @@ class PretrainingMAE():
                 print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
 
 
-                print('Validation Loss:', l/1080.)
+                print('Validation Loss:', l/normalization)
 
 
 
