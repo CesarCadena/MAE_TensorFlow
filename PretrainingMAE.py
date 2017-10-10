@@ -82,7 +82,7 @@ class PretrainingMAE():
         # directory definitions
 
 
-        self.project_dir =''
+        self.project_dir ='./'
         self.model_dir = self.project_dir + self.model_folder + self.mode + self.run
         self.logs_dir = self.project_dir + self.logs_folder + self.mode + self.run
 
