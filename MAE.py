@@ -508,8 +508,8 @@ class MAE:
         loss_val_reset = val_loss.assign(0)
         loss_val_update = val_loss.assign_add(loss/1080.)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Depth Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Depth Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=[self.full_ec_layer['weights'],
                                                                                                       self.full_ec_layer['bias'],
@@ -715,7 +715,7 @@ class MAE:
                 print('SAVED MODEL')
 
 
-    def validate_model(self,n_validations,loadmodel=True):
+    def validate_model(self,n_validations,run,loadmodel=True):
 
         with tf.Session() as sess:
 
@@ -733,7 +733,8 @@ class MAE:
             #init_op = tf.initialize_all_variables()
             saver = tf.train.Saver()
             if loadmodel == True:
-                saver.restore(sess,self.FLAGS.train_dir+'/MAE.ckpt')
+                dir = self.project_dir + self.folder_model + self.mode + run +
+                saver.restore(sess,dir)
 
             #sess.run(init_op)
 

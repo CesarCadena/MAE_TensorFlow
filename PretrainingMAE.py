@@ -922,20 +922,10 @@ class PretrainingMAE():
         print('Depth Pretraining')
 
         pred = self.AE_depth(self.input_depth)
-        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred)) + \
-               10*tf.nn.l2_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)) -
-                                tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth))) + \
-               10*tf.losses.huber_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth)),
-                                       tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)))
+        cost = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
 
 
-        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth)) + \
-               tf.losses.huber_loss(tf.multiply(self.depth_mask,self.label_depth),tf.multiply(self.depth_mask,pred)) + \
-               10*tf.nn.l2_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)) -
-                                tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth))) + \
-               10*tf.losses.huber_loss(tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,self.label_depth)),
-                                       tf.multiply(self.depth_mask,tf.multiply(self.depth_loss_mask,pred)))
+        loss = tf.nn.l2_loss(tf.multiply(self.depth_mask,pred)-tf.multiply(self.depth_mask,self.label_depth))
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=1e-05)
         reg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
@@ -974,7 +964,7 @@ class PretrainingMAE():
         epoch_loss_update = epoch_loss.assign_add(cost)
 
         loss_val_reset = val_loss.assign(0)
-        loss_val_update = val_loss.assign_add(loss/1080.)
+        loss_val_update = val_loss.assign_add(loss)
 
 
         config = tf.ConfigProto(log_device_placement=False)
@@ -1019,9 +1009,11 @@ class PretrainingMAE():
 
                 sess.run(loss_val_reset)
 
+                normalization = self.input_size*set_val.shape[0]
                 for i in set_val:
                     depth_label = self.depth_val[i]
                     depth_mask = self.depth_mask_val[i]
+                    normalization = normalization - np.count_nonzero(depth_mask)
                     depth_loss_mask = self.depth_loss_mask_val[i]
                     depth_in = pretraining_input_distortion(copy(depth_label),singleframe=True)
 
@@ -1038,7 +1030,7 @@ class PretrainingMAE():
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
-                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/normalization)
                 time2 = datetime.datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)
@@ -1850,7 +1842,7 @@ class PretrainingMAE():
         if run==False:
             raise ValueError
 
-        dir = 'models/' + run
+        dir = 'models/pretraining/' + run
 
         with tf.Session() as sess:
 
@@ -1869,8 +1861,7 @@ class PretrainingMAE():
 
                 depth_pred, l = sess.run([prediction,loss],feed_dict=feed_dict)
                 print_validation_frames(depth_input,depth_pred,depth_label,channel='depth',shape=(60,18))
-                print(np.reshape(depth_pred,(18,60)))
-                print(np.reshape(depth_label,(18,60)))
+
 
                 print('Validation Loss:', l/1080.)
 
@@ -1893,6 +1884,6 @@ pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_shared_semantics()
 
-#pretraining.pretrain_depth_channel()
+pretraining.pretrain_depth_channel()
 
-pretraining.validate_depth(run='20171009-084416')
+#pretraining.validate_depth(run='20171009-084416')
