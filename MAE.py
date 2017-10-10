@@ -123,6 +123,18 @@ class MAE:
         self.depth_mask_train = []
 
 
+        self.imr_train_label = []
+        self.img_train_label = []
+        self.imb_train_label = []
+        self.depth_train_label = []
+        self.gnd_train_label = []
+        self.obj_train_label = []
+        self.bld_train_label = []
+        self.veg_train_label = []
+        self.sky_train_label = []
+
+
+
 
         for i in self.data_train:
             for j in i:
@@ -136,6 +148,18 @@ class MAE:
                 self.bld_train.append((j['sem1']==3).astype(int))
                 self.veg_train.append((j['sem1']==4).astype(int))
                 self.sky_train.append((j['sem1']==5).astype(int))
+
+                self.imr_train_label.append(j['xcr1']/255.)
+                self.img_train_label.append(j['xcg1']/255.)
+                self.imb_train_label.append(j['xcb1']/255.)
+                self.depth_train_label.append(j['xid1'])
+                self.gnd_train_label.append((j['sem1']==1).astype(int))
+                self.obj_train_label.append((j['sem1']==2).astype(int))
+                self.bld_train_label.append((j['sem1']==3).astype(int))
+                self.veg_train_label.append((j['sem1']==4).astype(int))
+                self.sky_train_label.append((j['sem1']==5).astype(int))
+
+
                 self.imr_train.append(j['xcr2']/255.)
                 self.img_train.append(j['xcg2']/255.)
                 self.imb_train.append(j['xcb2']/255.)
@@ -147,6 +171,57 @@ class MAE:
                 self.veg_train.append((j['sem2']==4).astype(int))
                 self.sky_train.append((j['sem2']==5).astype(int))
 
+                self.imr_train_label.append(j['xcr2']/255.)
+                self.img_train_label.append(j['xcg2']/255.)
+                self.imb_train_label.append(j['xcb2']/255.)
+                self.depth_train_label.append(j['xid2'])
+                self.gnd_train_label.append((j['sem2']==1).astype(int))
+                self.obj_train_label.append((j['sem2']==2).astype(int))
+                self.bld_train_label.append((j['sem2']==3).astype(int))
+                self.veg_train_label.append((j['sem2']==4).astype(int))
+                self.sky_train_label.append((j['sem2']==5).astype(int))
+
+                self.imr_train.append(j['xcr1']/255.)
+                self.img_train.append(j['xcg1']/255.)
+                self.imb_train.append(j['xcb1']/255.)
+                self.depth_mask_train.append(j['xmask1'])
+                self.depth_train.append([0]*self.size_input)
+                self.gnd_train.append([0]*self.size_input)
+                self.obj_train.append([0]*self.size_input)
+                self.bld_train.append([0]*self.size_input)
+                self.veg_train.append([0]*self.size_input)
+                self.sky_train.append([0]*self.size_input)
+
+                self.imr_train_label.append(j['xcr1']/255.)
+                self.img_train_label.append(j['xcg1']/255.)
+                self.imb_train_label.append(j['xcb1']/255.)
+                self.depth_train_label.append(j['xid1'])
+                self.gnd_train_label.append((j['sem1']==1).astype(int))
+                self.obj_train_label.append((j['sem1']==2).astype(int))
+                self.bld_train_label.append((j['sem1']==3).astype(int))
+                self.veg_train_label.append((j['sem1']==4).astype(int))
+                self.sky_train_label.append((j['sem1']==5).astype(int))
+
+                self.imr_train.append(j['xcr2']/255.)
+                self.img_train.append(j['xcg2']/255.)
+                self.imb_train.append(j['xcb2']/255.)
+                self.depth_mask_train.append(j['xmask2'])
+                self.depth_train.append([0]*self.size_input)
+                self.gnd_train.append([0]*self.size_input)
+                self.obj_train.append([0]*self.size_input)
+                self.bld_train.append([0]*self.size_input)
+                self.veg_train.append([0]*self.size_input)
+                self.sky_train.append([0]*self.size_input)
+
+                self.imr_train_label.append(j['xcr2']/255.)
+                self.img_train_label.append(j['xcg2']/255.)
+                self.imb_train_label.append(j['xcb2']/255.)
+                self.depth_train_label.append(j['xid2'])
+                self.gnd_train_label.append((j['sem2']==1).astype(int))
+                self.obj_train_label.append((j['sem2']==2).astype(int))
+                self.bld_train_label.append((j['sem2']==3).astype(int))
+                self.veg_train_label.append((j['sem2']==4).astype(int))
+                self.sky_train_label.append((j['sem2']==5).astype(int))
 
 
         # randomly shuffle input frames
@@ -162,6 +237,16 @@ class MAE:
         self.bld_train = np.asarray(self.bld_train)[rand_indices]
         self.veg_train = np.asarray(self.veg_train)[rand_indices]
         self.sky_train = np.asarray(self.sky_train)[rand_indices]
+
+        self.imr_train_label = np.asarray(self.imr_train_label)[rand_indices]
+        self.img_train_label = np.asarray(self.img_train_label)[rand_indices]
+        self.imb_train_label = np.asarray(self.imb_train_label)[rand_indices]
+        self.depth_train_label = np.asarray(self.depth_train_label)[rand_indices]
+        self.gnd_train_label = np.asarray(self.gnd_train_label)[rand_indices]
+        self.obj_train_label = np.asarray(self.obj_train_label)[rand_indices]
+        self.bld_train_label = np.asarray(self.bld_train_label)[rand_indices]
+        self.veg_train_label = np.asarray(self.veg_train_label)[rand_indices]
+        self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
 
@@ -486,7 +571,7 @@ class MAE:
 
 
         # depth mask for loss computation
-        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
 
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                       tf.nn.l2_loss(prediction[1]-self.img_label) + \
@@ -497,7 +582,7 @@ class MAE:
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label)
 
-        loss = loss + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        loss = loss + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
@@ -603,6 +688,16 @@ class MAE:
                     sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
                     depth_mask_batch = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
+                    imr_batch_label = self.imr_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    img_batch_label = self.img_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    imb_batch_label = self.imb_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    depth_batch_label = self.depth_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    gnd_batch_label= self.gnd_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    obj_batch_label = self.obj_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    bld_batch_label = self.bld_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
+
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_batch,
                                                                                                         img_batch,
                                                                                                         imb_batch,
@@ -627,15 +722,15 @@ class MAE:
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
                                  self.depth_mask:depth_mask_batch,
-                                 self.imr_label:imr_batch,
-                                 self.img_label:img_batch,
-                                 self.imb_label:imb_batch,
-                                 self.depth_label:depth_batch,
-                                 self.gnd_label:gnd_batch,
-                                 self.obj_label:obj_batch,
-                                 self.bld_label:bld_batch,
-                                 self.veg_label:veg_batch,
-                                 self.sky_label:sky_batch}
+                                 self.imr_label:imr_batch_label,
+                                 self.img_label:img_batch_label,
+                                 self.imb_label:imb_batch_label,
+                                 self.depth_label:depth_batch_label,
+                                 self.gnd_label:gnd_batch_label,
+                                 self.obj_label:obj_batch_label,
+                                 self.bld_label:bld_batch_label,
+                                 self.veg_label:veg_batch_label,
+                                 self.sky_label:sky_batch_label}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 10:
@@ -733,7 +828,7 @@ class MAE:
             #init_op = tf.initialize_all_variables()
             saver = tf.train.Saver()
             if loadmodel == True:
-                dir = self.project_dir + self.folder_model + self.mode + run +
+                dir = self.project_dir + self.folder_model + self.mode + run + 'fullmodel.ckpt'
                 saver.restore(sess,dir)
 
             #sess.run(init_op)
