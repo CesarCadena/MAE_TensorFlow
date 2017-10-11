@@ -771,8 +771,6 @@ class MAE:
                                                                                                         bld_label,
                                                                                                         veg_label,
                                                                                                         sky_label,
-                                                                                                        border1=0.4,
-                                                                                                        border2=0.8,
                                                                                                         resolution=(18,60),
                                                                                                         singleframe=True)
 
@@ -856,8 +854,6 @@ class MAE:
                                                                                                     bld_out,
                                                                                                     veg_out,
                                                                                                     sky_out,
-                                                                                                    border1=0.4,
-                                                                                                    border2=0.8,
                                                                                                     resolution=(18,60),
                                                                                                     singleframe=True)
 
