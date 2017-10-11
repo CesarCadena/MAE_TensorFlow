@@ -81,7 +81,7 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-3
+        self.learning_rate = 1e-6
         self.hm_epochs = 200
 
         # validation options
@@ -186,7 +186,7 @@ class MAE:
                 self.veg_train_label.append((j['sem2']==4).astype(int))
                 self.sky_train_label.append((j['sem2']==5).astype(int))
 
-                ''''
+
 
                 self.imr_train.append(j['xcr1']/255.)
                 self.img_train.append(j['xcg1']/255.)
@@ -230,7 +230,7 @@ class MAE:
                 self.veg_train_label.append((j['sem2']==4).astype(int))
                 self.sky_train_label.append((j['sem2']==5).astype(int))
                 
-                '''
+                
 
 
         # randomly shuffle input frames
@@ -684,8 +684,6 @@ class MAE:
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
-                if epoch==100:
-                    self.learning_rate=1e-4
 
                 for _ in range(self.n_batches):
 
