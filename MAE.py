@@ -185,6 +185,8 @@ class MAE:
                 self.veg_train_label.append((j['sem2']==4).astype(int))
                 self.sky_train_label.append((j['sem2']==5).astype(int))
 
+                ''''
+
                 self.imr_train.append(j['xcr1']/255.)
                 self.img_train.append(j['xcg1']/255.)
                 self.imb_train.append(j['xcb1']/255.)
@@ -226,6 +228,8 @@ class MAE:
                 self.bld_train_label.append((j['sem2']==3).astype(int))
                 self.veg_train_label.append((j['sem2']==4).astype(int))
                 self.sky_train_label.append((j['sem2']==5).astype(int))
+                
+                '''
 
 
         # randomly shuffle input frames
