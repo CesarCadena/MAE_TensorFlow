@@ -230,7 +230,7 @@ class MAE:
                 self.veg_train_label.append((j['sem2']==4).astype(int))
                 self.sky_train_label.append((j['sem2']==5).astype(int))
                 
-                
+
 
 
         # randomly shuffle input frames
@@ -580,7 +580,7 @@ class MAE:
 
 
         # depth mask for loss computation
-        cost = cost + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
 
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                       tf.nn.l2_loss(prediction[1]-self.img_label) + \
@@ -591,7 +591,7 @@ class MAE:
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label)
 
-        loss = loss + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        loss = loss + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
