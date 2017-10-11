@@ -81,7 +81,7 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-6
+        self.learning_rate = 1e-3
         self.hm_epochs = 200
 
         # validation options
@@ -600,7 +600,7 @@ class MAE:
         epoch_loss_update = epoch_loss.assign_add(cost)
 
         loss_val_reset = val_loss.assign(0)
-        loss_val_update = val_loss.assign_add(loss/1080.)
+        loss_val_update = val_loss.assign_add(loss)
 
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
@@ -684,6 +684,9 @@ class MAE:
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
+                if epoch==100:
+                    self.learning_rate=1e-4
+
                 for _ in range(self.n_batches):
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
@@ -755,6 +758,8 @@ class MAE:
 
                 sess.run(loss_val_reset)
 
+                normalization = 8*1080*set_val.shape[0]
+
                 for i in set_val:
 
                     red_label = self.imr_val[i]
@@ -767,6 +772,8 @@ class MAE:
                     bld_label = self.bld_val[i]
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
+
+                    normalization += np.count_nonzero(depth_mask)
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
@@ -804,7 +811,7 @@ class MAE:
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
-                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/set_val.shape[0])
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/normalization)
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)

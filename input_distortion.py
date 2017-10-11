@@ -76,7 +76,7 @@ def random_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolution):
 
     for i in range(0,n_channels):
         indices = np.random.choice(n_pixels,int(noise*n_pixels),replace=False)
-        im =np.asarray(channels[i])
+        im = copy(np.asarray(channels[i]))
         np.put(im,indices,0)
         im = im.tolist()
         im1 = copy(im)
