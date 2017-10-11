@@ -11,6 +11,7 @@ from load_data import load_data
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion, pretraining_input_distortion
 from datetime import datetime
+from copy import copy
 
 # LOAD DATA
 
@@ -694,6 +695,7 @@ class MAE:
                     bld_batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size]
                     veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
+
                     depth_mask_batch = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
                     imr_batch_label = self.imr_train_label[_*self.batch_size:(_+1)*self.batch_size]
@@ -706,15 +708,15 @@ class MAE:
                     veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_batch,
-                                                                                                        img_batch,
-                                                                                                        imb_batch,
-                                                                                                        depth_batch,
-                                                                                                        gnd_batch,
-                                                                                                        obj_batch,
-                                                                                                        bld_batch,
-                                                                                                        veg_batch,
-                                                                                                        sky_batch,
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
+                                                                                                        copy(img_batch),
+                                                                                                        copy(imb_batch),
+                                                                                                        copy(depth_batch),
+                                                                                                        copy(gnd_batch),
+                                                                                                        copy(obj_batch),
+                                                                                                        copy(bld_batch),
+                                                                                                        copy(veg_batch),
+                                                                                                        copy(sky_batch),
                                                                                                         resolution=(18,60))
 
 
@@ -766,15 +768,15 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(red_label,
-                                                                                                        green_label,
-                                                                                                        blue_label,
-                                                                                                        depth_label,
-                                                                                                        gnd_label,
-                                                                                                        obj_label,
-                                                                                                        bld_label,
-                                                                                                        veg_label,
-                                                                                                        sky_label,
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
+                                                                                                        copy(green_label),
+                                                                                                        copy(blue_label),
+                                                                                                        copy(depth_label),
+                                                                                                        copy(gnd_label),
+                                                                                                        copy(obj_label),
+                                                                                                        copy(bld_label),
+                                                                                                        copy(veg_label),
+                                                                                                        copy(sky_label),
                                                                                                         resolution=(18,60),
                                                                                                         singleframe=True)
 

@@ -48,7 +48,7 @@ def input_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolution,singlefram
             c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9 = random_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolution)
         c_distorted = [c_1,c_2,c_3,c_4,c_5,c_6,c_7,c_8,c_9]
         for j in range(0,len(c_distorted)):
-            distorted_outputs[j].append(c_distorted[j])
+            distorted_outputs[j].append(copy(c_distorted[j]))
 
     return distorted_outputs[0],distorted_outputs[1],distorted_outputs[2],distorted_outputs[3],distorted_outputs[4],distorted_outputs[5],distorted_outputs[6],distorted_outputs[7],distorted_outputs[8]
 
@@ -80,7 +80,7 @@ def random_distortion(imr,img,imb,depth,gnd,obj,bld,veg,sky,resolution):
         np.put(im,indices,0)
         im = im.tolist()
         im1 = copy(im)
-        channels_dist.append(im1)
+        channels_dist.append(copy(im1))
 
     return channels_dist[0],channels_dist[1],channels_dist[2],channels_dist[3],channels_dist[4],channels_dist[5],channels_dist[6],channels_dist[7],channels_dist[8]
 
