@@ -9,7 +9,7 @@ import os
 
 from load_data import load_data
 from visualization import display_frame,plot_training_loss
-from input_distortion import input_distortion
+from input_distortion import input_distortion, pretraining_input_distortion
 from datetime import datetime
 
 # LOAD DATA
@@ -711,8 +711,6 @@ class MAE:
                                                                                                         bld_batch,
                                                                                                         veg_batch,
                                                                                                         sky_batch,
-                                                                                                        border1=0.4,
-                                                                                                        border2=0.8,
                                                                                                         resolution=(18,60))
 
 
