@@ -5,7 +5,7 @@
 import tensorflow as tf
 import numpy as np
 import os
-
+import evaluation_functions as eval
 
 from load_data import load_data
 from visualization import display_frame,plot_training_loss
@@ -16,6 +16,7 @@ from copy import copy
 # LOAD DATA
 
 data_train, data_validate, data_test = load_data()
+
 
 
 class MAE:
@@ -36,6 +37,8 @@ class MAE:
         self.n_training_validations = 50
 
 
+
+
         # options
         self.mode = 'denoising' # standard for non denoising training or denoising for training a denoising MAE
 
@@ -53,6 +56,7 @@ class MAE:
         # prepare data
         self.prepare_training_data()
         self.prepare_validation_data()
+        self.prepare_test_data()
 
         # placeholder definition
         self.imr_input = tf.placeholder('float',[None,self.size_input])
@@ -287,6 +291,46 @@ class MAE:
                 self.bld_val.append((j['sem1']==3).astype(int))
                 self.veg_val.append((j['sem1']==4).astype(int))
                 self.sky_val.append((j['sem1']==5).astype(int))
+
+    def prepare_test_data(self):
+
+        # prepare test data containers
+        self.imr_test = []
+        self.img_test = []
+        self.imb_test = []
+        self.depth_test = []
+        self.gnd_test = []
+        self.obj_test = []
+        self.bld_test = []
+        self.veg_test = []
+        self.sky_test = []
+
+
+        for i in self.data_test:
+            for j in i:
+                self.imr_test.append(j['xcr1']/255.)
+                self.img_test.append(j['xcg1']/255.)
+                self.imb_test.append(j['xcb1']/255.)
+                self.depth_test.append(j['xid1'])
+                self.gnd_test.append((j['sem1']==1).astype(int))
+                self.obj_test.append((j['sem1']==2).astype(int))
+                self.bld_test.append((j['sem1']==3).astype(int))
+                self.veg_test.append((j['sem1']==4).astype(int))
+                self.sky_test.append((j['sem1']==5).astype(int))
+
+        # randomly shuffle input frames
+        rand_indices = np.arange(len(self.imr_test)).astype(int)
+        np.random.shuffle(rand_indices)
+
+        self.imr_test = np.asarray(self.imr_test)[rand_indices]
+        self.img_test = np.asarray(self.img_test)[rand_indices]
+        self.imb_test = np.asarray(self.imb_test)[rand_indices]
+        self.depth_test = np.asarray(self.depth_test)[rand_indices]
+        self.gnd_test = np.asarray(self.gnd_test)[rand_indices]
+        self.obj_test = np.asarray(self.obj_test)[rand_indices]
+        self.bld_test = np.asarray(self.bld_test)[rand_indices]
+        self.veg_test = np.asarray(self.veg_test)[rand_indices]
+        self.sky_test = np.asarray(self.sky_test)[rand_indices]
 
     def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky,mode='training'):
 
@@ -820,7 +864,6 @@ class MAE:
                 saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
                 print('SAVED MODEL')
 
-
     def validate_model(self,n_validations,run,loadmodel=True):
 
         with tf.Session() as sess:
@@ -881,14 +924,83 @@ class MAE:
 
                 prediction = sess.run(prediction,feed_dict=feed_dict)
 
+    def evaluate(self,run=False):
+
+        predictions = self.neural_model(self.imr_input,
+                                        self.img_input,
+                                        self.imb_input,
+                                        self.depth_input,
+                                        self.gnd_input,
+                                        self.obj_input,
+                                        self.bld_input,
+                                        self.veg_input,
+                                        self.sky_input)
+
+        load_weights = tf.train.Saver()
+
+        if run==False:
+            raise ValueError
+
+        dir = 'models/full/' + run
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/fullmodel.ckpt')
+
+            n_evaluations = 697
+            print('Size of Test Set:',n_evaluations)
+
+            error_rms = 0
 
 
 
+            for i in range(0,n_evaluations):
+
+                imr_label = self.imr_test[i]
+                img_label = self.img_test[i]
+                imb_label = self.imb_test[i]
+                depth_label = self.depth_test[i]
+                gnd_label = self.gnd_test[i]
+                obj_label = self.obj_test[i]
+                bld_label = self.bld_test[i]
+                veg_label = self.veg_test[i]
+                sky_label = self.sky_test[i]
 
 
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
+                                                                                                    copy(img_label),
+                                                                                                    copy(imb_label),
+                                                                                                    copy(depth_label),
+                                                                                                    copy(gnd_label),
+                                                                                                    copy(obj_label),
+                                                                                                    copy(bld_label),
+                                                                                                    copy(veg_label),
+                                                                                                    copy(sky_label),
+                                                                                                    resolution=(18,60),
+                                                                                                    singleframe=True)
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in}
+
+                pred = sess.run(predictions,feed_dict=feed_dict)
+                depth_pred = pred[4]
 
 
+                depth_pred = np.asarray(depth_pred)
+                depth_label = np.asarray(depth_label)
 
+
+                error_rms += eval.rms_error(depth_pred,depth_label)
+
+            print('Error (RMS):', error_rms)
 
 
 
@@ -901,8 +1013,9 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-mae.train_model()
-#mae.validate_model(n_validations=1,loadmodel=True)
+#mae.train_model()
+
+mae.evaluate(run='20171011-224144')
 
 
 

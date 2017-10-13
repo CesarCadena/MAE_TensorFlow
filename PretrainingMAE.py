@@ -1879,18 +1879,16 @@ class PretrainingMAE():
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
-#pretraining.pretrain_red_channel()
-#pretraining.pretrain_green_channel()
-#pretraining.pretrain_blue_channel()
+pretraining.pretrain_red_channel()
+pretraining.pretrain_green_channel()
+pretraining.pretrain_blue_channel()
 
-#pretraining.pretrain_gnd_channel()
-#pretraining.pretrain_obj_channel()
-#pretraining.pretrain_bld_channel()
-#pretraining.pretrain_veg_channel()
-#pretraining.pretrain_sky_channel()
-
-#pretraining.pretrain_shared_semantics()
-
+pretraining.pretrain_gnd_channel()
+pretraining.pretrain_obj_channel()
+pretraining.pretrain_bld_channel()
+pretraining.pretrain_veg_channel()
+pretraining.pretrain_sky_channel()
+pretraining.pretrain_shared_semantics()
 pretraining.pretrain_depth_channel()
 
 #pretraining.validate_depth(run='20171010-115125')
