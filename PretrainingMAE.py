@@ -1751,8 +1751,6 @@ class PretrainingMAE():
                                                                                                         copy(bld_batch),
                                                                                                         copy(veg_batch),
                                                                                                         copy(sky_batch),
-                                                                                                        border1=1,
-                                                                                                        border2=1,
                                                                                                         resolution=(18,60))
 
                     feed_dict_sem = {self.input_gnd:gnd_in,
@@ -1881,14 +1879,14 @@ class PretrainingMAE():
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
 #pretraining.pretrain_red_channel()
-pretraining.pretrain_green_channel()
-pretraining.pretrain_blue_channel()
+#pretraining.pretrain_green_channel()
+#pretraining.pretrain_blue_channel()
 
-pretraining.pretrain_gnd_channel()
-pretraining.pretrain_obj_channel()
-pretraining.pretrain_bld_channel()
-pretraining.pretrain_veg_channel()
-pretraining.pretrain_sky_channel()
+#pretraining.pretrain_gnd_channel()
+#pretraining.pretrain_obj_channel()
+#pretraining.pretrain_bld_channel()
+#pretraining.pretrain_veg_channel()
+#pretraining.pretrain_sky_channel()
 pretraining.pretrain_shared_semantics()
 pretraining.pretrain_depth_channel()
 
