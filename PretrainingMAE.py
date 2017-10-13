@@ -1880,7 +1880,7 @@ class PretrainingMAE():
 
 pretraining = PretrainingMAE(data_train, data_validate, data_test)
 
-pretraining.pretrain_red_channel()
+#pretraining.pretrain_red_channel()
 pretraining.pretrain_green_channel()
 pretraining.pretrain_blue_channel()
 
