@@ -658,7 +658,8 @@ class PretrainingMAE():
 
             n_batches = int(len(self.imr_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            # comment for complete training on gpu
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -766,7 +767,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.img_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -872,7 +873,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.imb_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -982,7 +983,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.imb_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -1723,7 +1724,7 @@ class PretrainingMAE():
 
             n_batches = int(len(self.gnd_train)/self.batch_size)
 
-            tf.get_default_graph().finalize()
+            #tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
