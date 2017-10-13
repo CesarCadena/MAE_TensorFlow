@@ -77,7 +77,8 @@ class PretrainingMAE():
 
         self.model_folder = 'models/'
         self.logs_folder = 'logs/'
-        self.run = now.strftime('%Y%m%d-%H%M%S')
+        #self.run = now.strftime('%Y%m%d-%H%M%S')
+        self.run = '20171013-212118'
 
         # directory definitions
 
@@ -1797,8 +1798,6 @@ class PretrainingMAE():
                                                                                                         copy(label_bld),
                                                                                                         copy(label_veg),
                                                                                                         copy(label_sky),
-                                                                                                        border1=1,
-                                                                                                        border2=1,
                                                                                                         resolution=(18,60),
                                                                                                         singleframe=True)
 
