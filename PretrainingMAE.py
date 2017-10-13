@@ -77,8 +77,8 @@ class PretrainingMAE():
 
         self.model_folder = 'models/'
         self.logs_folder = 'logs/'
-        #self.run = now.strftime('%Y%m%d-%H%M%S')
-        self.run = '20171013-212118'
+        self.run = now.strftime('%Y%m%d-%H%M%S')
+        #self.run = '20171013-212118'
 
         # directory definitions
 
@@ -1712,14 +1712,16 @@ class PretrainingMAE():
 
         saver_save = tf.train.Saver()
 
+        dir = 'models/pretraining/20171013-212118'
+
         with tf.Session(config=config) as sess:
 
             sess.run(tf.global_variables_initializer())
-            saver_load_gnd.restore(sess,self.FLAGS.train_dir+'/pretrained_gnd.ckpt')
-            saver_load_obj.restore(sess,self.FLAGS.train_dir+'/pretrained_obj.ckpt')
-            saver_load_bld.restore(sess,self.FLAGS.train_dir+'/pretrained_bld.ckpt')
-            saver_load_veg.restore(sess,self.FLAGS.train_dir+'/pretrained_veg.ckpt')
-            saver_load_sky.restore(sess,self.FLAGS.train_dir+'/pretrained_sky.ckpt')
+            saver_load_gnd.restore(sess,dir+'/pretrained_gnd.ckpt')
+            saver_load_obj.restore(sess,dir+'/pretrained_obj.ckpt')
+            saver_load_bld.restore(sess,dir+'/pretrained_bld.ckpt')
+            saver_load_veg.restore(sess,dir+'/pretrained_veg.ckpt')
+            saver_load_sky.restore(sess,dir+'/pretrained_sky.ckpt')
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
 
