@@ -1,8 +1,5 @@
 
 # coding: utf-8
-
-# In[3]:
-
 # %load autoencoder_tensorflow_MAE.py
 # Draft MAE Model in tensorflow based on Dr.Cesar Cadena
 # this code is developed by Yi Liu 
@@ -15,19 +12,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
+tf.reset_default_graph()
+
 
 batch_size=128
-num_epochs=1
-learning_rate=1e-3
+num_epochs=200
 hidden_size=1024
+RESTORE=0
 
-# ##  load data
 
-# In[ ]:
 
 #  prepare data 
 data=process_data('training')
-
 Red_data=data['Red']
 Green_data=data['Green']
 Blue_data=data['Blue']
@@ -40,10 +36,10 @@ Vegetation_data=data['Vegetation']
 Sky_data=data['Sky']
 
 
-# In[10]:
+
+
 
 #load parameters
-
 pre_Depth_weights=np.load("../par/Depth_weights.npy")
 pre_Depth_bias=np.load("../par/Depth_bias.npy")
 pre_Depth_outweights=np.load("../par/Depth_outweights.npy")
@@ -62,7 +58,7 @@ pre_Green_outbias=np.load("../par/Green_outbias.npy")
 pre_Blue_weights=np.load("../par/Blue_weights.npy")
 pre_Blue_bias=np.load("../par/Blue_bias.npy")
 pre_Blue_outweights=np.load("../par/Blue_outweights.npy")
-pre_Blue_outbias=np.load("../par/blue_outbias.npy")
+pre_Blue_outbias=np.load("../par/Blue_outbias.npy")
 
 pre_Ground_weights=np.load("../par/Ground_weights.npy")
 pre_Ground_bias=np.load("../par/Ground_bias.npy")
@@ -90,32 +86,28 @@ pre_Sky_outweights=np.load("../par/Sky_outweights.npy")
 pre_Sky_outbias=np.load("../par/Sky_outbias.npy")
 
 
-pre_Sem_en_weights=np.load("../par/Sem_en_weights.npy")
-pre_Sem_en_bias=np.load("../par/Sem_en_bias.npy")
-pre_Sem_de_weights=np.load("../par/Sem_de_weights.npy")
-pre_Sem_de_bias=np.load("../par/Sem_de_bias.npy")
-
-
-
-
-
+pre_Semantic_weights=np.load("../par/Semantic_weights.npy")
+pre_Semantic_bias=np.load("../par/Semantic_bias.npy")
+pre_Semantic_deweights=np.load("../par/Semantic_deweights.npy")
+pre_Semantic_debias=np.load("../par/Semantic_debias.npy")
 # ##  full MAE
 
-# In[11]:
+
 
 ### build full MAE  model 
-# totally 9 channels 
-Red_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Blue_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Green_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Depth_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Depthmask_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+# totally 9 channels (including mask channels)
+Red_input=tf.placeholder(tf.float32,shape=[None,1080])
+Blue_input=tf.placeholder(tf.float32,shape=[None,1080])
+Green_input=tf.placeholder(tf.float32,shape=[None,1080])
+Depth_input=tf.placeholder(tf.float32,shape=[None,1080])
+Depthmask_input=tf.placeholder(tf.float32,shape=[None,1080])
+Ground_input=tf.placeholder(tf.float32,shape=[None,1080])
+Objects_input=tf.placeholder(tf.float32,shape=[None,1080])
+Building_input=tf.placeholder(tf.float32,shape=[None,1080])
+Vegetation_input=tf.placeholder(tf.float32,shape=[None,1080])
+Sky_input=tf.placeholder(tf.float32,shape=[None,1080])
 
-Ground_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Objects_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Building_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Vegetation_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Sky_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+
 
 
 
@@ -166,16 +158,20 @@ Vegetation_hidden=tf.nn.relu(tf.matmul(Vegetation_input,Vegetation_weights)+Vege
 Sky_hidden=tf.nn.relu(tf.matmul(Sky_input,Sky_weights)+Sky_bias)
 
 
-Semantic_weights=tf.Variable(pre_Sem_en_weights,name="Semantic_weights")
-Semantic_bias=tf.Variable(pre_Sem_en_bias,name="Semantic_bias")
+
+
+
+Semantic_weights=tf.Variable(pre_Semantic_weights,name="Semantic_weights")
+Semantic_bias=tf.Variable(pre_Semantic_bias,name="Semantic_bias")
 
 Semantic_shared=tf.matmul(tf.concat([Ground_hidden,Objects_hidden,Building_hidden,Vegetation_hidden,Sky_hidden],1)
                                      ,Semantic_weights)+Semantic_bias
 
 
 
+
 Fullshared_weights=tf.Variable(tf.random_normal(shape=[5*hidden_size,hidden_size],
-                               stddev=0.01),name="Fullshared_weights")
+                               stddev=0.1),name="Fullshared_weights")
 Fullshared_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Fullshared_bias")
 
 Full_shared=tf.matmul(tf.concat([Depth_hidden,Red_hidden,Green_hidden,Blue_hidden,
@@ -183,25 +179,30 @@ Full_shared=tf.matmul(tf.concat([Depth_hidden,Red_hidden,Green_hidden,Blue_hidde
 
 
 
-#####decoder 
 
-decoder_weights=tf.Variable(tf.random_normal(shape=[hidden_size,5*hidden_size],
-                           stddev=0.01),name="decoder_weights")
-decoder_bias=tf.Variable(tf.zeros([1,5*hidden_size]),name="decoder_bias")
 
-decoder_layer=tf.matmul(Full_shared,decoder_weights)+decoder_bias
+#####decoder######
+
+Fullshared_deweights=tf.Variable(tf.random_normal(shape=[hidden_size,5*hidden_size],
+                           stddev=0.1),name="Fullshared_deweights")
+Fullshared_debias=tf.Variable(tf.zeros([1,5*hidden_size]),name="Fullshared_debias")
+
+decoder_layer=tf.matmul(Full_shared,Fullshared_deweights)+Fullshared_debias
+
 
 
 decoder_Depth,decoder_Red,decoder_Green,decoder_Blue,decoder_sem=tf.split(decoder_layer,num_or_size_splits=5, axis=1)
 
 
-decoder_semweights=tf.Variable(pre_Sem_de_weights,name="decoder_semweights")
-decoder_sembias=tf.Variable(pre_Sem_de_bias,name="decoder_sembias")
-decoder_sems=tf.matmul(decoder_sem,decoder_semweights)+decoder_sembias
+
+Semantic_deweights=tf.Variable(pre_Semantic_deweights,name="Semantic_deweights")
+Semantic_debias=tf.Variable(pre_Semantic_debias,name="Semantic_debias")
+decoder_sems=tf.matmul(decoder_sem,Semantic_deweights)+Semantic_debias
 
 
-decoder_ground,decoder_objects,decoder_building,decoder_vegetation,decoder_sky=tf.split(decoder_sems,num_or_size_splits=5, axis=1)
 
+
+decoder_Ground,decoder_Objects,decoder_Building,decoder_Vegetation,decoder_Sky=tf.split(decoder_sems,num_or_size_splits=5, axis=1)
 
 
 Depth_outweights=tf.Variable(pre_Depth_outweights,name="Depth_outweights")
@@ -224,25 +225,25 @@ Blue_out=tf.nn.sigmoid(tf.matmul(decoder_Blue,Blue_outweights)+Blue_outbias)
 
 Ground_outweights=tf.Variable(pre_Ground_outweights,name="ground_outweights")
 Ground_outbias=tf.Variable(pre_Ground_outbias,name="ground_outbias")
-Ground_out=tf.nn.sigmoid(tf.matmul(decoder_ground,Ground_outweights)+Ground_outbias)
+Ground_out=tf.nn.sigmoid(tf.matmul(decoder_Ground,Ground_outweights)+Ground_outbias)
 
 Objects_outweights=tf.Variable(pre_Objects_outweights,name="Objects_outweights")
 Objects_outbias=tf.Variable(pre_Objects_outbias,name="Objects_outbias")
-Objects_out=tf.nn.sigmoid(tf.matmul(decoder_objects,Objects_outweights)+Objects_outbias)
+Objects_out=tf.nn.sigmoid(tf.matmul(decoder_Objects,Objects_outweights)+Objects_outbias)
 
 
 Building_outweights=tf.Variable(pre_Building_outweights,name="Building_outweights")
 Building_outbias=tf.Variable(pre_Building_outbias,name="Building_outbias")
-Building_out=tf.nn.sigmoid(tf.matmul(decoder_building,Building_outweights)+Building_outbias)
+Building_out=tf.nn.sigmoid(tf.matmul(decoder_Building,Building_outweights)+Building_outbias)
 
 
 Vegetation_outweights=tf.Variable(pre_Vegetation_outweights,name="Vegetation_outweights")
 Vegetation_outbias=tf.Variable(pre_Vegetation_outbias,name="Vegetation_outbias")
-Vegetation_out=tf.nn.sigmoid(tf.matmul(decoder_vegetation,Vegetation_outweights)+Vegetation_outbias)
+Vegetation_out=tf.nn.sigmoid(tf.matmul(decoder_Vegetation,Vegetation_outweights)+Vegetation_outbias)
 
 Sky_outweights=tf.Variable(pre_Sky_outweights,name="Sky_outweights")
 Sky_outbias=tf.Variable(pre_Sky_outbias,name="Sky_outbias")
-Sky_out=tf.nn.sigmoid(tf.matmul(decoder_sky,Sky_outweights)+Sky_outbias)
+Sky_out=tf.nn.sigmoid(tf.matmul(decoder_Sky,Sky_outweights)+Sky_outbias)
 
 
 
@@ -252,7 +253,7 @@ Sky_out=tf.nn.sigmoid(tf.matmul(decoder_sky,Sky_outweights)+Sky_outbias)
 loss=(tf.nn.l2_loss(Red_input-Red_out)
      +tf.nn.l2_loss(Blue_input-Blue_out)
      +tf.nn.l2_loss(Green_input-Green_out)
-     +tf.nn.l2_loss(np.multiply((Depth_input-Depth_out),Depthmask_input))
+     +5*tf.nn.l2_loss(np.multiply((Depth_input-Depth_out),Depthmask_input))
      +tf.nn.l2_loss(Ground_input-Ground_out)
      +tf.nn.l2_loss(Objects_input-Objects_out)
      +tf.nn.l2_loss(Building_input-Building_out)
@@ -261,59 +262,82 @@ loss=(tf.nn.l2_loss(Red_input-Red_out)
 
 
 
-regularization=(tf.nn.l2_loss(Depth_weights)+tf.nn.l2_loss(Depth_outbias)
-             +tf.nn.l2_loss(Red_weights)+tf.nn.l2_loss(Red_bias)
-             +tf.nn.l2_loss(Blue_weights)+tf.nn.l2_loss(Blue_bias)
-             +tf.nn.l2_loss(Green_weights)+tf.nn.l2_loss(Green_bias)
-             +tf.nn.l2_loss(Ground_weights)+tf.nn.l2_loss(Ground_bias)
-             +tf.nn.l2_loss(Objects_weights)+tf.nn.l2_loss(Objects_bias)
-             +tf.nn.l2_loss(Building_weights)+tf.nn.l2_loss(Building_bias)
-             +tf.nn.l2_loss(Vegetation_weights)+tf.nn.l2_loss(Vegetation_bias)
-             +tf.nn.l2_loss(Sky_weights)+tf.nn.l2_loss(Sky_bias)
-             +tf.nn.l2_loss(Semantic_weights)+tf.nn.l2_loss(Semantic_bias)
-             +tf.nn.l2_loss(Fullshared_weights)+tf.nn.l2_loss(Fullshared_bias)
-             +tf.nn.l2_loss(decoder_weights)+tf.nn.l2_loss(decoder_bias)
-             +tf.nn.l2_loss(decoder_semweights)+tf.nn.l2_loss(decoder_sembias)
-             +tf.nn.l2_loss(Depth_outweights)+tf.nn.l2_loss(Depth_outbias)
-             +tf.nn.l2_loss(Red_outweights)+tf.nn.l2_loss(Red_outbias)
-             +tf.nn.l2_loss(Blue_outweights)+tf.nn.l2_loss(Blue_outbias)
-             +tf.nn.l2_loss(Green_outweights)+tf.nn.l2_loss(Green_outbias)
-             +tf.nn.l2_loss(Ground_outweights)+tf.nn.l2_loss(Green_outbias)
-             +tf.nn.l2_loss(Objects_outweights)+tf.nn.l2_loss(Objects_outbias)
-             +tf.nn.l2_loss(Building_outweights)+tf.nn.l2_loss(Building_outbias)
-             +tf.nn.l2_loss(Vegetation_outweights)+tf.nn.l2_loss(Vegetation_outbias)
-             +tf.nn.l2_loss(Sky_outweights)+tf.nn.l2_loss(Sky_outbias))
+regularizer = tf.contrib.layers.l2_regularizer(scale=5e-04)
+regularization= tf.contrib.layers.apply_regularization(regularizer,
+                       weights_list=[Depth_weights,Red_weights,Blue_weights,
+                                     Green_weights,Ground_weights,Objects_weights,
+                                     Building_weights,Vegetation_weights,Sky_weights,
+                                     Semantic_weights,Fullshared_weights,Fullshared_deweights,
+                                     Depth_outweights,Red_outweights,Blue_outweights,
+                                     Green_outweights,Ground_outweights,Objects_outweights,
+                                     Building_outweights,Vegetation_outweights,Sky_outweights])
+
+        
+#regularization=(tf.nn.l2_loss(Depth_weights)+tf.nn.l2_loss(Depth_outbias)
+#             +tf.nn.l2_loss(Red_weights)+tf.nn.l2_loss(Red_bias)
+#             +tf.nn.l2_loss(Blue_weights)+tf.nn.l2_loss(Blue_bias)
+#             +tf.nn.l2_loss(Green_weights)+tf.nn.l2_loss(Green_bias)
+#             +tf.nn.l2_loss(Ground_weights)+tf.nn.l2_loss(Ground_bias)
+#             +tf.nn.l2_loss(Objects_weights)+tf.nn.l2_loss(Objects_bias)
+#             +tf.nn.l2_loss(Building_weights)+tf.nn.l2_loss(Building_bias)
+#             +tf.nn.l2_loss(Vegetation_weights)+tf.nn.l2_loss(Vegetation_bias)
+#             +tf.nn.l2_loss(Sky_weights)+tf.nn.l2_loss(Sky_bias)
+#             +tf.nn.l2_loss(Semantic_weights)+tf.nn.l2_loss(Semantic_bias)
+#             +tf.nn.l2_loss(Fullshared_weights)+tf.nn.l2_loss(Fullshared_bias)
+#             +tf.nn.l2_loss(Fullshared_deweights)+tf.nn.l2_loss(Fullshared_debias)
+#             +tf.nn.l2_loss(Semantic_deweights)+tf.nn.l2_loss(Semantic_debias)
+#             +tf.nn.l2_loss(Depth_outweights)+tf.nn.l2_loss(Depth_outbias)
+#             +tf.nn.l2_loss(Red_outweights)+tf.nn.l2_loss(Red_outbias)
+#             +tf.nn.l2_loss(Blue_outweights)+tf.nn.l2_loss(Blue_outbias)
+#             +tf.nn.l2_loss(Green_outweights)+tf.nn.l2_loss(Green_outbias)
+#             +tf.nn.l2_loss(Ground_outweights)+tf.nn.l2_loss(Green_outbias)
+#             +tf.nn.l2_loss(Objects_outweights)+tf.nn.l2_loss(Objects_outbias)
+#             +tf.nn.l2_loss(Building_outweights)+tf.nn.l2_loss(Building_outbias)
+#             +tf.nn.l2_loss(Vegetation_outweights)+tf.nn.l2_loss(Vegetation_outbias)
+#             +tf.nn.l2_loss(Sky_outweights)+tf.nn.l2_loss(Sky_outbias))
 
               
-loss_r=loss+1e-8*regularization
+loss_r=loss+regularization
 
-optimizer=tf.train.AdamOptimizer(learning_rate=learning_rate,beta1=0.9,beta2=0.999,
-                                 epsilon=0.001,use_locking=False,name='Adam').minimize(loss_r)
-#optimizer=tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(loss)
+first_train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
+                                 "Full")
+
+optimizer_first=tf.train.AdamOptimizer(learning_rate=1e-3,beta1=0.9,beta2=0.999,
+                
+                                 epsilon=1e-3,use_locking=False,name='Adam').minimize(loss_r,var_list=first_train_vars)
 
 
-# ##  training
 
-# In[41]:
+optimizer_second=tf.train.AdamOptimizer(learning_rate=1e-5,beta1=0.9,beta2=0.999,
+                                 epsilon=1e-3,use_locking=False,name='Adam').minimize(loss_r)
+
+
+####  training
 
 saver=tf.train.Saver()
-
 init=tf.global_variables_initializer()
 train_size=Ground_data.shape[0]
 train_indices=range(train_size)
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction =0.5
 
 
-with tf.Session() as sess:
-    
+
+with tf.Session(config=config) as sess:
+
+  if RESTORE:
+
+    saver.restore(sess,'../model/MAE.ckpt')
+
+  else:
 
     sess.run(init)
 
     #summary_op=tf.summary.merge_all()
     #summary_writer=tf.summary.FileWriter(FLAGS.train_dir,graph=sess.graph)
 
-    for ipoch in range(num_epochs):
+    for ipoch in range(0,30):
         
-
         perm_indices=np.random.permutation(train_indices)
 
 
@@ -322,7 +346,6 @@ with tf.Session() as sess:
 
             offset=(step*batch_size)%(train_size-batch_size)
             batch_indices=perm_indices[offset:(offset+batch_size)]
-
 
             feed_dict={Ground_input:Ground_data[batch_indices,:],
                        Objects_input:Objects_data[batch_indices,:],
@@ -335,11 +358,46 @@ with tf.Session() as sess:
                        Depth_input:Depth_data[batch_indices,:],
                        Depthmask_input:Depthmask_data[batch_indices,:]
                       }   
-
-      
-            _,l=sess.run([optimizer,loss_r],feed_dict=feed_dict)
-            print ('loss is ' ,l)
     
+            _,l,r=sess.run([optimizer_first,loss,regularization],feed_dict=feed_dict)
+
+        print ('loss of epoch %d :'%ipoch,l)
+        print ('regularization:',r)
+
+
+
+
+    for ipoch in range(30,num_epochs):
+        
+        perm_indices=np.random.permutation(train_indices)
+
+
+        for step in range(int(train_size/batch_size)):
+
+
+            offset=(step*batch_size)%(train_size-batch_size)
+            batch_indices=perm_indices[offset:(offset+batch_size)]
+
+            feed_dict={Ground_input:Ground_data[batch_indices,:],
+                       Objects_input:Objects_data[batch_indices,:],
+                       Vegetation_input:Vegetation_data[batch_indices,:],
+                       Building_input:Building_data[batch_indices,:],
+                       Sky_input:Sky_data[batch_indices,:],
+                       Red_input:Red_data[batch_indices,:],
+                       Green_input:Green_data[batch_indices,:],
+                       Blue_input:Blue_data[batch_indices,:],
+                       Depth_input:Depth_data[batch_indices,:],
+                       Depthmask_input:Depthmask_data[batch_indices,:]
+                      }   
+    
+            _,l,r=sess.run([optimizer_second,loss,regularization],feed_dict=feed_dict)
+
+
+        print ('loss of epoch %d :'%ipoch,l)
+        print ('regularization:',r)
+
+    
+
     save_path=saver.save(sess,'../model/MAE.ckpt')
 
         
