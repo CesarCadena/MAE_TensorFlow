@@ -9,3 +9,5 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 
 More to come ...
+
+average RMSE of depth(inverse) for validation data is 0.07 
