@@ -85,7 +85,7 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-4
+        self.learning_rate = 1e-6
         self.hm_epochs = 150
 
         # validation options
@@ -643,8 +643,10 @@ class MAE:
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
 
+        normalization = tf.placeholder('float')
+
         loss_val_reset = val_loss.assign(0)
-        loss_val_update = val_loss.assign_add(loss)
+        loss_val_update = val_loss.assign_add(loss/normalization)
 
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
@@ -804,9 +806,11 @@ class MAE:
 
                 sess.run(loss_val_reset)
 
-                normalization = 8*1080*set_val.shape[0]
+
 
                 for i in set_val:
+
+                    norm = 8*1080*set_val.shape[0]
 
                     red_label = self.imr_val[i]
                     green_label = self.img_val[i]
@@ -819,7 +823,7 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
-                    normalization += np.count_nonzero(depth_mask)
+                    norm += np.count_nonzero(depth_mask)
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
@@ -851,13 +855,14 @@ class MAE:
                                  self.obj_label:[obj_label],
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
-                                 self.sky_label:[sky_label]}
+                                 self.sky_label:[sky_label],
+                                 normalization:norm}
 
                     im_pred,c_val = sess.run([prediction,loss_val_update],feed_dict=feed_dict)
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
-                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/normalization)
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)
