@@ -1017,9 +1017,9 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-#mae.train_model()
+mae.train_model()
 
-mae.evaluate(run='20171011-224144')
+#mae.evaluate(run='20171011-224144')
 
 
 
