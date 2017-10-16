@@ -615,7 +615,7 @@ class MAE:
         cost = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                       tf.nn.l2_loss(prediction[1]-self.img_label) + \
                       tf.nn.l2_loss(prediction[2]-self.imb_label) + \
-                      tf.nn.l2_loss(prediction[3]-self.gnd_label) + \
+                      tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
                       tf.nn.l2_loss(prediction[5]-self.obj_label) + \
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
@@ -624,18 +624,18 @@ class MAE:
 
 
         # depth mask for loss computation
-        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                       tf.nn.l2_loss(prediction[1]-self.img_label) + \
                       tf.nn.l2_loss(prediction[2]-self.imb_label) + \
-                      tf.nn.l2_loss(prediction[3]-self.gnd_label) + \
+                      tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
                       tf.nn.l2_loss(prediction[5]-self.obj_label) + \
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label)
 
-        loss = loss + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[4])-tf.multiply(self.depth_mask,self.depth_label))
+        loss = loss + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
@@ -1013,9 +1013,9 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-#mae.train_model()
+mae.train_model()
 
-mae.evaluate(run='20171011-224144')
+#mae.evaluate(run='20171011-224144')
 
 
 
