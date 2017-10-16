@@ -85,8 +85,8 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-6
-        self.hm_epochs = 200
+        self.learning_rate = 1e-4
+        self.hm_epochs = 150
 
         # validation options
         self.n_validation_steps = 1
@@ -725,6 +725,10 @@ class MAE:
             tf.get_default_graph().finalize()
 
             for epoch in range(0,self.hm_epochs):
+
+                if epoch == 20:
+                    self.learning_rate = 1e-6
+
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
@@ -1000,7 +1004,7 @@ class MAE:
 
                 error_rms += eval.rms_error(depth_pred,depth_label)
 
-            print('Error (RMS):', error_rms)
+            print('Error (RMS):', error_rms/n_evaluations)
 
 
 
@@ -1013,9 +1017,9 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-mae.train_model()
+#mae.train_model()
 
-#mae.evaluate(run='20171011-224144')
+mae.evaluate(run='20171011-224144')
 
 
 
