@@ -18,16 +18,25 @@ def ABSR(true,pred):
     return r_error
 
 
-def RMSE(true,pred):
-    T=(np.where(true>1e-8) and np.where(pred>1e-8) )[0]
+def RMSE(truth,prediction):
+
+    T1=truth>0
+    T2=prediction>0
+    T3=prediction>50
+    T=np.logical_and(T1,T2)
+    T=np.logical_and(T,T3)
+
+
+    #print(T)
+    truth=truth[T]
+    truth=1/truth
+    prediction=prediction[T]
+    prediction=1/prediction
     
-    
-    true=true[T]
-    pred=pred[T]
- 
-    n=len(T)
+    n=sum(T)
+    #print(n)
   
-    error=sum((true-pred)**2)
+    error=sum((truth-prediction)**2)
     rmse_error=np.sqrt(error/n)
     
     return rmse_error

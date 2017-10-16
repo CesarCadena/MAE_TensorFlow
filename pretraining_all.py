@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 import tensorflow as tf
@@ -6,15 +5,16 @@ import numpy as np
 from process_data import process_data
 import pandas as pd
 import scipy.io
+import os
+import sys
 batch_size=128
 hidden_size=1024
-num_epoch=1
+num_epoch=20
+
 
 
 
 data=process_data('training')
-
-
 Red_data=data['Red']
 Green_data=data['Green']
 Blue_data=data['Blue']
@@ -27,16 +27,15 @@ Vegetation_data=data['Vegetation']
 Sky_data=data['Sky']
 
 
+
+
+
 # # pretraining
 
 # ## red channel
-
-# In[18]:
-
-
-   #  seperate channel pretraining
+#  seperate channel pretraining
 #  red channel
-Red_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Red_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 Red_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
                                   stddev=0.01),name="Red_weights")
@@ -63,7 +62,7 @@ optimizer_red=tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(lo
 
 # In[19]:
 
-Green_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Green_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 Green_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
                                   stddev=0.01),name="Green_weights")
@@ -90,7 +89,7 @@ optimizer_green=tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(
 
 # In[20]:
 
-Blue_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Blue_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 Blue_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
                                   stddev=0.01),name="Blue_weights")
@@ -118,9 +117,9 @@ optimizer_blue=tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(l
 
 # In[21]:
 
-Depth_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Depth_input=tf.placeholder(tf.float32,shape=[None,1080])
 
-Depthmask_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Depthmask_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 
 Depth_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
@@ -150,11 +149,11 @@ optimizer_depth=tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(
 
 # In[22]:
 
-Ground_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Objects_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Building_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Vegetation_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
-Sky_input=tf.placeholder(tf.float32,shape=[batch_size,1080])
+Ground_input=tf.placeholder(tf.float32,shape=[None,1080])
+Objects_input=tf.placeholder(tf.float32,shape=[None,1080])
+Building_input=tf.placeholder(tf.float32,shape=[None,1080])
+Vegetation_input=tf.placeholder(tf.float32,shape=[None,1080])
+Sky_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 
 Ground_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
@@ -261,14 +260,18 @@ optimizer_sem=tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(lo
 
 # ##  start trainning
 
-# In[23]:
 
 init=tf.global_variables_initializer()
 saver=tf.train.Saver()
 train_size=Ground_data.shape[0]
 train_indices=range(train_size)
 
-with tf.Session() as sess:
+
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.4
+
+
+with tf.Session(config=config) as sess:
     
     sess.run(init)
      
@@ -305,73 +308,80 @@ with tf.Session() as sess:
             
             _sem,l_sem=sess.run([optimizer_sem,loss_sem],feed_dict=feed_dict)
             
-            
-    saver.save(sess,"../model/pretraining.ckpt")
+
+    model_path="../model"
+    if not os.path.isdir(model_path):
+        os.mkdir(model_path)
+        
+    saver.save(sess,model_path+"/pretraining.ckpt")
             
     print ('pretraining finished')
              
 
 # ##  save parameters 
 
-# In[24]:
-
 saver_pre=tf.train.Saver()
+par_path="../par/"
+if not os.path.isdir(par_path):
+    os.mkdir(par_path)
 
-with tf.Session() as sess:
+
+
+with tf.Session(config=config) as sess:
     
     saver_pre.restore(sess,"../model/pretraining.ckpt")
     
-    np.save("../par/Red_weights",sess.run(Red_weights))
-    np.save("../par/Red_bias",sess.run(Red_bias))
-    np.save("../par/Red_outweights",sess.run(Red_outweights))
-    np.save("../par/Red_outbias",sess.run(Red_outbias))
+    np.save(par_path+"Red_weights",sess.run(Red_weights))
+    np.save(par_path+"Red_bias",sess.run(Red_bias))
+    np.save(par_path+"Red_outweights",sess.run(Red_outweights))
+    np.save(par_path+"Red_outbias",sess.run(Red_outbias))
     
-    np.save("../par/Green_weights",sess.run(Green_weights))
-    np.save("../par/Green_bias",sess.run(Green_bias))
-    np.save("../par/Green_outweights",sess.run(Green_outweights))
-    np.save("../par/Green_outbias",sess.run(Green_outbias))
+    np.save(par_path+"Green_weights",sess.run(Green_weights))
+    np.save(par_path+"Green_bias",sess.run(Green_bias))
+    np.save(par_path+"Green_outweights",sess.run(Green_outweights))
+    np.save(par_path+"Green_outbias",sess.run(Green_outbias))
     
-    np.save("../par/Blue_weights",sess.run(Blue_weights))
-    np.save("../par/Blue_bias",sess.run(Blue_bias))
-    np.save("../par/Blue_outweights",sess.run(Blue_outweights))
-    np.save("../par/Blue_outbias",sess.run(Blue_outbias))
+    np.save(par_path+"Blue_weights",sess.run(Blue_weights))
+    np.save(par_path+"Blue_bias",sess.run(Blue_bias))
+    np.save(par_path+"Blue_outweights",sess.run(Blue_outweights))
+    np.save(par_path+"Blue_outbias",sess.run(Blue_outbias))
     
 
-    np.save("../par/Depth_weights",sess.run(Depth_weights))
-    np.save("../par/Depth_bias",sess.run(Depth_bias))
-    np.save("../par/Depth_outweights",sess.run(Depth_outweights))
-    np.save("../par/Depth_outbias",sess.run(Depth_outbias))
+    np.save(par_path+"Depth_weights",sess.run(Depth_weights))
+    np.save(par_path+"Depth_bias",sess.run(Depth_bias))
+    np.save(par_path+"Depth_outweights",sess.run(Depth_outweights))
+    np.save(par_path+"Depth_outbias",sess.run(Depth_outbias))
     
-    np.save("../par/Ground_weights",sess.run(Ground_weights))
-    np.save("../par/Ground_bias",sess.run(Ground_bias))
-    np.save("../par/Ground_outweights",sess.run(Ground_outweights))
-    np.save("../par/Ground_outbias",sess.run(Ground_outbias))
+    np.save(par_path+"Ground_weights",sess.run(Ground_weights))
+    np.save(par_path+"Ground_bias",sess.run(Ground_bias))
+    np.save(par_path+"Ground_outweights",sess.run(Ground_outweights))
+    np.save(par_path+"Ground_outbias",sess.run(Ground_outbias))
     
-    np.save("../par/Objects_weights",sess.run(Objects_weights))
-    np.save("../par/Objects_bias",sess.run(Objects_bias))
-    np.save("../par/Objects_outweights",sess.run(Objects_outweights))
-    np.save("../par/Objects_outbias",sess.run(Objects_outbias))
+    np.save(par_path+"Objects_weights",sess.run(Objects_weights))
+    np.save(par_path+"Objects_bias",sess.run(Objects_bias))
+    np.save(par_path+"Objects_outweights",sess.run(Objects_outweights))
+    np.save(par_path+"Objects_outbias",sess.run(Objects_outbias))
     
-    np.save("../par/Building_weights",sess.run(Building_weights))
-    np.save("../par/Building_bias",sess.run(Building_bias))
-    np.save("../par/Building_outweights",sess.run(Building_outweights))
-    np.save("../par/Building_outbias",sess.run(Building_outbias))
+    np.save(par_path+"Building_weights",sess.run(Building_weights))
+    np.save(par_path+"Building_bias",sess.run(Building_bias))
+    np.save(par_path+"Building_outweights",sess.run(Building_outweights))
+    np.save(par_path+"Building_outbias",sess.run(Building_outbias))
     
-    np.save("../par/Vegetation_weights",sess.run(Vegetation_weights))
-    np.save("../par/Vegetation_bias",sess.run(Vegetation_bias))
-    np.save("../par/Vegetation_outweights",sess.run(Vegetation_outweights))
-    np.save("../par/Vegetation_outbias",sess.run(Vegetation_outbias)) 
+    np.save(par_path+"Vegetation_weights",sess.run(Vegetation_weights))
+    np.save(par_path+"Vegetation_bias",sess.run(Vegetation_bias))
+    np.save(par_path+"Vegetation_outweights",sess.run(Vegetation_outweights))
+    np.save(par_path+"Vegetation_outbias",sess.run(Vegetation_outbias)) 
     
-    np.save("../par/Sky_weights",sess.run(Sky_weights))
-    np.save("../par/Sky_bias",sess.run(Sky_bias))
-    np.save("../par/Sky_outweights",sess.run(Sky_outweights))
-    np.save("../par/Sky_outbias",sess.run(Sky_outbias)) 
+    np.save(par_path+"Sky_weights",sess.run(Sky_weights))
+    np.save(par_path+"Sky_bias",sess.run(Sky_bias))
+    np.save(par_path+"Sky_outweights",sess.run(Sky_outweights))
+    np.save(par_path+"Sky_outbias",sess.run(Sky_outbias)) 
     
     
-    np.save("../par/Sem_en_weights",sess.run(Semantic_weights))
-    np.save("../par/Sem_en_bias",sess.run(Semantic_bias))
-    np.save("../par/Sem_de_weights",sess.run(decoder_semweights))
-    np.save("../par/Sem_de_bias",sess.run(decoder_sembias)) 
+    np.save(par_path+"Sem_en_weights",sess.run(Semantic_weights))
+    np.save(par_path+"Sem_en_bias",sess.run(Semantic_bias))
+    np.save(par_path+"Sem_de_weights",sess.run(decoder_semweights))
+    np.save(par_path+"Sem_de_bias",sess.run(decoder_sembias)) 
     
 
 

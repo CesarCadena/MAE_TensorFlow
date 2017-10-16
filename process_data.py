@@ -1,12 +1,10 @@
 
 # coding: utf-8
-
 # this is process_data function.
 # need to feed flag :'training','test','validation' as string
 #return data dictionary 
 #example:Data=process_data('training') ,then Red_input=Data['Red'] as a [batch_size,1080] array
 # data in the directory '../MAE_KITTI/data_18x60/'
-
 
 def process_data(flag):
     
