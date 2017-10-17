@@ -961,6 +961,7 @@ class MAE:
             print('Size of Test Set:',n_evaluations)
 
             error_rms = 0
+            error_rel = 0
 
 
 
@@ -988,6 +989,13 @@ class MAE:
                                                                                                     copy(sky_label),
                                                                                                     resolution=(18,60),
                                                                                                     singleframe=True)
+                # taking only rgb as input
+                depth_in = [[0]*self.size_input]
+                gnd_in = [[0]*self.size_input]
+                obj_in = [[0]*self.size_input]
+                bld_in = [[0]*self.size_input]
+                veg_in = [[0]*self.size_input]
+                sky_in = [[0]*self.size_input]
 
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
@@ -1000,7 +1008,7 @@ class MAE:
                              self.sky_input:sky_in}
 
                 pred = sess.run(predictions,feed_dict=feed_dict)
-                depth_pred = pred[4]
+                depth_pred = pred[3]
 
 
                 depth_pred = np.asarray(depth_pred)
@@ -1008,8 +1016,11 @@ class MAE:
 
 
                 error_rms += eval.rms_error(depth_pred,depth_label)
+                error_rel += eval.relative_error(depth_pred,depth_label)
+
 
             print('Error (RMS):', error_rms/n_evaluations)
+            print('Error (Relative Error):', error_rel/n_evaluations)
 
 
 
@@ -1022,9 +1033,8 @@ class MAE:
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-mae.train_model()
-
-#mae.evaluate(run='20171011-224144')
+#mae.train_model()
+mae.evaluate(run='20171016-131619')
 
 
 
