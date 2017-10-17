@@ -958,13 +958,14 @@ class MAE:
             sess.run(tf.global_variables_initializer())
             load_weights.restore(sess,dir+'/fullmodel.ckpt')
 
-            n_evaluations = 697
+            n_evaluations = self.imr_test.shape[0]
             print('Size of Test Set:',n_evaluations)
 
             error_rms = 0
             error_rel = 0
 
-
+            all_inv_depth_pred = np.empty([1,0])
+            all_inv_depth_label = np.empty([1,0])
 
             for i in range(0,n_evaluations):
 
@@ -978,7 +979,7 @@ class MAE:
                 veg_label = self.veg_test[i]
                 sky_label = self.sky_test[i]
 
-
+                '''
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
                                                                                                     copy(img_label),
                                                                                                     copy(imb_label),
@@ -990,6 +991,7 @@ class MAE:
                                                                                                     copy(sky_label),
                                                                                                     resolution=(18,60),
                                                                                                     singleframe=True)
+                '''
                 # taking only rgb as input
                 depth_in = [[0]*self.size_input]
                 gnd_in = [[0]*self.size_input]
@@ -998,9 +1000,9 @@ class MAE:
                 veg_in = [[0]*self.size_input]
                 sky_in = [[0]*self.size_input]
 
-                feed_dict = {self.imr_input:imr_in,
-                             self.img_input:img_in,
-                             self.imb_input:imb_in,
+                feed_dict = {self.imr_input:[imr_label],
+                             self.img_input:[img_label],
+                             self.imb_input:[imb_label],
                              self.depth_input:depth_in,
                              self.gnd_input:gnd_in,
                              self.obj_input:obj_in,
@@ -1012,23 +1014,18 @@ class MAE:
                 depth_pred = pred[3]
 
 
-                inv_depth_pred = np.asarray(depth_pred)
-                inv_depth_label = np.asarray(depth_label)
+                all_inv_depth_pred = np.concatenate((all_inv_depth_pred,np.asarray(depth_pred)),axis=1)
+                all_inv_depth_label = np.concatenate((all_inv_depth_label,np.asarray([depth_label])),axis=1)
 
-                gt = BR.invert_depth(inv_depth_label)
-                est = BR.invert_depth(inv_depth_pred)
+            gt = BR.invert_depth(inv_depth_label)
+            est = BR.invert_depth(inv_depth_pred)
 
-                error_rms += eval.rms_error(est,gt)
-                error_rel += eval.relative_error(est,gt)
-
-
-            print('Error (RMS):', error_rms/n_evaluations)
-            print('Error (Relative Error):', error_rel/n_evaluations)
+            error_rms = eval.rms_error(est,gt)
+            error_rel = eval.relative_error(est,gt)
 
 
-
-
-
+            print('Error (RMS):', error_rms)
+            print('Error (Relative Error):', error_rel)
 
 
 
