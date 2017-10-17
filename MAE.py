@@ -6,6 +6,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import evaluation_functions as eval
+import basic_routines as BR
 
 from load_data import load_data
 from visualization import display_frame,plot_training_loss
@@ -1011,12 +1012,14 @@ class MAE:
                 depth_pred = pred[3]
 
 
-                depth_pred = np.asarray(depth_pred)
-                depth_label = np.asarray(depth_label)
+                inv_depth_pred = np.asarray(depth_pred)
+                inv_depth_label = np.asarray(depth_label)
 
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
 
-                error_rms += eval.rms_error(depth_pred,depth_label)
-                error_rel += eval.relative_error(depth_pred,depth_label)
+                error_rms += eval.rms_error(est,gt)
+                error_rel += eval.relative_error(est,gt)
 
 
             print('Error (RMS):', error_rms/n_evaluations)
