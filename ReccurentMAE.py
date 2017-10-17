@@ -471,7 +471,7 @@ class MAE:
         self.layers.append(self.full_dc_layer)
 
         # rgb and depth decoding layers
- 
+
         self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='red_dc_layer_weights'),
                              'bias':tf.Variable(tf.zeros([self.size_input]),name='red_dc_layer_bias')}
         self.layers.append(self.red_dc_layer)
