@@ -22,19 +22,20 @@ def RMSE(truth,prediction):
 
     T1=truth>0
     T2=prediction>0
-    T3=prediction>50
     T=np.logical_and(T1,T2)
-    T=np.logical_and(T,T3)
 
-
-    #print(T)
     truth=truth[T]
-    truth=1/truth
     prediction=prediction[T]
+    print(len(prediction))
+    truth=1/truth
     prediction=1/prediction
+
+    T3=prediction<50
+    prediction=prediction[T3]
+    truth=truth[T3]
     
-    n=sum(T)
-    #print(n)
+    n=len(truth)
+    print(n)
   
     error=sum((truth-prediction)**2)
     rmse_error=np.sqrt(error/n)
