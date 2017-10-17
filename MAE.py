@@ -1017,8 +1017,8 @@ class MAE:
                 all_inv_depth_pred = np.concatenate((all_inv_depth_pred,np.asarray(depth_pred)),axis=1)
                 all_inv_depth_label = np.concatenate((all_inv_depth_label,np.asarray([depth_label])),axis=1)
 
-            gt = BR.invert_depth(inv_depth_label)
-            est = BR.invert_depth(inv_depth_pred)
+            gt = BR.invert_depth(all_inv_depth_label)
+            est = BR.invert_depth(all_inv_depth_pred)
 
             error_rms = eval.rms_error(est,gt)
             error_rel = eval.relative_error(est,gt)
