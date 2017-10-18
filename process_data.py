@@ -124,9 +124,9 @@ def process_data(flag):
 
     Depth_data=np.concatenate((xid1,xid2),axis=0)
     Depthmask_data=np.concatenate((dmask1,dmask2),axis=0)
-    Red_data=np.concatenate((xcr1,xcr2),axis=0)/255
-    Green_data=np.concatenate((xcg1,xcg2),axis=0)/255
-    Blue_data=np.concatenate((xcb1,xcb2),axis=0)/255
+    Red_data=np.concatenate((xcr1,xcr2),axis=0)/255.0
+    Green_data=np.concatenate((xcg1,xcg2),axis=0)/255.0
+    Blue_data=np.concatenate((xcb1,xcb2),axis=0)/255.0
     Ground_data=np.concatenate((Ground1,Ground2),axis=0)
     Objects_data=np.concatenate((Objects1,Objects2),axis=0)
     Building_data=np.concatenate((Building1,Building2),axis=0)
