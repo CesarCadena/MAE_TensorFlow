@@ -8,10 +8,17 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 
 
-More to come ...
+# How to run  ...
 1.run MAE_pretraining_sep.py
 2.run MAE_pretraining_sem_shared.py
 3.run fullMAE.py
 
-average l2 loss perpixel is 1e-3 to 1e-2
-average RMSE of depth(inverse) for validation data is 0.07 
+# depth evaluation
+
+for first 1000 test data frames ,
+with RGBDs input 
+RMSE error is 4.3044
+absr error is 0.3595
+processing time for one frame is 20ms on mac laptop.
+
+
