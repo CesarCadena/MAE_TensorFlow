@@ -8,13 +8,13 @@ import sys
 tf.reset_default_graph()
 batch_size=128
 hidden_size=1024
-num_epoch=200
+num_epoch=150
 
+print("###########loading data ..........########")
 
-
-FLAG='train'
-if (FLAG=='train'):
-    data=process_data('training')
+FLAG='training'
+if (True):
+    data=process_data(FLAG)
     Red_data=data['Red']
     Green_data=data['Green']
     Blue_data=data['Blue']
@@ -26,36 +26,7 @@ if (FLAG=='train'):
     Vegetation_data=data['Vegetation']
     Sky_data=data['Sky']
 
-
-
-pre_Ground_weights=np.load("../par/Ground_weights.npy")
-pre_Ground_bias=np.load("../par/Ground_bias.npy")
-pre_Ground_outweights=np.load("../par/Ground_outweights.npy")
-pre_Ground_outbias=np.load("../par/Ground_outbias.npy")
-
-pre_Objects_weights=np.load("../par/Objects_weights.npy")
-pre_Objects_bias=np.load("../par/Objects_bias.npy")
-pre_Objects_outweights=np.load("../par/Objects_outweights.npy")
-pre_Objects_outbias=np.load("../par/Objects_outbias.npy")
-
-pre_Building_weights=np.load("../par/Building_weights.npy")
-pre_Building_bias=np.load("../par/Building_bias.npy")
-pre_Building_outweights=np.load("../par/Building_outweights.npy")
-pre_Building_outbias=np.load("../par/Building_outbias.npy")
-
-pre_Vegetation_weights=np.load("../par/Vegetation_weights.npy")
-pre_Vegetation_bias=np.load("../par/Vegetation_bias.npy")
-pre_Vegetation_outweights=np.load("../par/Vegetation_outweights.npy")
-pre_Vegetation_outbias=np.load("../par/Vegetation_outbias.npy")
-
-pre_Sky_weights=np.load("../par/Sky_weights.npy")
-pre_Sky_bias=np.load("../par/Sky_bias.npy")
-pre_Sky_outweights=np.load("../par/Sky_outweights.npy")
-pre_Sky_outbias=np.load("../par/Sky_outbias.npy")
-
-
-
-
+print("###########building model  ..........########")
 
 # shared semantic model 
 Ground_input=tf.placeholder(tf.float32,shape=[None,1080])
@@ -64,29 +35,32 @@ Building_input=tf.placeholder(tf.float32,shape=[None,1080])
 Vegetation_input=tf.placeholder(tf.float32,shape=[None,1080])
 Sky_input=tf.placeholder(tf.float32,shape=[None,1080])
 
+"""define encoder layers"""
+Ground_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
+                                  stddev=0.01),name="Ground_weights")
+Ground_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Ground_bias")
 
 
-
-Ground_weights=tf.Variable(pre_Ground_weights,name="Ground_weights")
-Ground_bias=tf.Variable(pre_Ground_bias,name="Ground_bias")
-
-
-Objects_weights=tf.Variable(pre_Objects_weights,name="Objects_weights")
-Objects_bias=tf.Variable(pre_Objects_bias,name="Objects_bias")
+Objects_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
+                                  stddev=0.01),name="Objects_weights")
+Objects_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Objects_bias")
 
 
-Building_weights=tf.Variable(pre_Building_weights,name="Building_weights")
-Building_bias=tf.Variable(pre_Building_bias,name="Building_bias")
+Building_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
+                                  stddev=0.01),name="Building_weights")
+Building_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Building_bias")
 
 
-Vegetation_weights=tf.Variable(pre_Vegetation_weights,name="Vegetation_weights")
-Vegetation_bias=tf.Variable(pre_Vegetation_bias,name="Vegetation_bias")
+Vegetation_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
+                                  stddev=0.01),name="Vegetation_weights")
+Vegetation_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Vegetation_bias")
 
 
+Sky_weights=tf.Variable(tf.random_normal(shape=[1080,hidden_size],
+                                  stddev=0.01),name="Sky_weights")
+Sky_bias=tf.Variable(tf.zeros([1,hidden_size]),name="Sky_bias")
 
-Sky_weights=tf.Variable(pre_Sky_weights,name="Sky_weights")
-Sky_bias=tf.Variable(pre_Sky_bias,name="Sky_bias")
-
+"""define hidden layers"""
 
 Ground_hidden=tf.nn.relu(tf.matmul(Ground_input,Ground_weights)+Ground_bias)
 Objects_hidden=tf.nn.relu(tf.matmul(Objects_input,Objects_weights)+Objects_bias)
@@ -94,7 +68,7 @@ Building_hidden=tf.nn.relu(tf.matmul(Building_input,Building_weights)+Building_b
 Vegetation_hidden=tf.nn.relu(tf.matmul(Vegetation_input,Vegetation_weights)+Vegetation_bias)
 Sky_hidden=tf.nn.relu(tf.matmul(Sky_input,Sky_weights)+Sky_bias)
 
-
+"""define semantic layers"""
 
 
 Semantic_weights=tf.Variable(tf.random_normal(shape=[5*hidden_size,hidden_size],
@@ -104,103 +78,134 @@ Semantic_shared=tf.matmul(tf.concat([Ground_hidden,Objects_hidden,Building_hidde
                                      ,Semantic_weights)+Semantic_bias
 
 
-
-Semantic_deweights=tf.Variable(tf.random_normal(shape=[hidden_size,5*hidden_size],stddev=0.01),name="Semantic_deweights")
+Semantic_deweights=tf.Variable(tf.random_normal(shape=[hidden_size,5*hidden_size],
+                                           stddev=0.01),name="Semantic_deweights")
 Semantic_debias=tf.Variable(tf.zeros([1,5*hidden_size]),name="Semantic_debias")  
-decoder_sem=tf.matmul(Semantic_shared,Semantic_deweights)+Semantic_debias
+Semantic_deshared=tf.matmul(Semantic_shared,Semantic_deweights)+Semantic_debias
 
-decoder_ground,decoder_objects,decoder_building,decoder_vegetation,decoder_sky=tf.split(decoder_sem,num_or_size_splits=5, axis=1)
+decoder_ground,decoder_objects,decoder_building,decoder_vegetation,decoder_sky=tf.split(Semantic_deshared,num_or_size_splits=5, axis=1)
 
+"""define decoder layers"""
 
-
-Ground_outweights=tf.Variable(pre_Ground_outweights,name="Ground_outweights")
-Ground_outbias=tf.Variable(pre_Ground_outbias,name="Ground_outbias")
+Ground_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
+                                   stddev=0.01),name="Ground_outweights")
+Ground_outbias=tf.Variable(tf.zeros([1,1080]),name="Ground_outbias")
 Ground_out=tf.nn.sigmoid(tf.matmul(decoder_ground,Ground_outweights)+Ground_outbias)
 
 
-Objects_outweights=tf.Variable(pre_Objects_outweights,name="Objects_outweights")
-Objects_outbias=tf.Variable(pre_Objects_outbias,name="Objects_outbias")
+
+Objects_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
+                                   stddev=0.01),name="Objects_outweights")
+Objects_outbias=tf.Variable(tf.zeros([1,1080]),name="Objects_outbias")
 Objects_out=tf.nn.sigmoid(tf.matmul(decoder_objects,Objects_outweights)+Objects_outbias)
 
 
 
-Building_outweights=tf.Variable(pre_Building_outweights,name="Building_outweights")
-Building_outbias=tf.Variable(pre_Building_outbias,name="Building_outbias")
+Building_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
+                                   stddev=0.01),name="Building_outweights")
+Building_outbias=tf.Variable(tf.zeros([1,1080]),name="Building_outbias")
 Building_out=tf.nn.sigmoid(tf.matmul(decoder_building,Building_outweights)+Building_outbias)
 
 
-Vegetation_outweights=tf.Variable(pre_Vegetation_outweights,name="Vegetation_outweights")
-Vegetation_outbias=tf.Variable(pre_Vegetation_outbias,name="Vegetation_outbias")
+
+Vegetation_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
+                                   stddev=0.01),name="Vegetation_outweights")
+Vegetation_outbias=tf.Variable(tf.zeros([1,1080]),name="Vegetation_outbias")
 Vegetation_out=tf.nn.sigmoid(tf.matmul(decoder_vegetation,Vegetation_outweights)+Vegetation_outbias)
 
 
-Sky_outweights=tf.Variable(pre_Sky_outweights,name="Sky_outweights")
-Sky_outbias=tf.Variable(pre_Sky_outbias,name="Sky_outbias")
+Sky_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
+                                   stddev=0.01),name="Sky_outweights")
+Sky_outbias=tf.Variable(tf.zeros([1,1080]),name="Sky_outbias")
 Sky_out=tf.nn.sigmoid(tf.matmul(decoder_sky,Sky_outweights)+Sky_outbias)
 
+"""define loss"""
 
-
-loss_sem=(tf.nn.l2_loss(Ground_input-Ground_out)+tf.nn.l2_loss(Objects_input-Objects_out)+
-         tf.nn.l2_loss(Building_input-Building_out)+tf.nn.l2_loss(Vegetation_input-Vegetation_out)
+loss_sem=(tf.nn.l2_loss(Ground_input-Ground_out)
+         +tf.nn.l2_loss(Objects_input-Objects_out)
+         +tf.nn.l2_loss(Building_input-Building_out)
+         +tf.nn.l2_loss(Vegetation_input-Vegetation_out)
          +tf.nn.l2_loss(Sky_input-Sky_out))
-
-
-
 regularization_sem=(tf.nn.l2_loss(Ground_weights)
-               +tf.nn.l2_loss(Objects_weights)
-               +tf.nn.l2_loss(Building_weights)
-               +tf.nn.l2_loss(Vegetation_weights)
-               +tf.nn.l2_loss(Sky_weights)
-               +tf.nn.l2_loss(Semantic_weights)
-               +tf.nn.l2_loss(Semantic_deweights)
-               +tf.nn.l2_loss(Ground_outweights)
-               +tf.nn.l2_loss(Objects_outweights)
-               +tf.nn.l2_loss(Building_outweights)
-               +tf.nn.l2_loss(Vegetation_outweights)
-               +tf.nn.l2_loss(Sky_outweights)
-               )
+                   +tf.nn.l2_loss(Objects_weights)
+                   +tf.nn.l2_loss(Building_weights)
+                   +tf.nn.l2_loss(Vegetation_weights)
+                   +tf.nn.l2_loss(Sky_weights)
+                   +tf.nn.l2_loss(Semantic_weights)
+                   +tf.nn.l2_loss(Semantic_deweights)
+                   +tf.nn.l2_loss(Ground_outweights)
+                   +tf.nn.l2_loss(Objects_outweights)
+                   +tf.nn.l2_loss(Building_outweights)
+                   +tf.nn.l2_loss(Vegetation_outweights)
+                   +tf.nn.l2_loss(Sky_outweights))
 
-loss_sem=loss_sem+1e-5*regularization_sem
+loss_sem_t=loss_sem+1e-5*regularization_sem
+
 
 first_train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                  "Sem")
-
 
 optimizer_sem=tf.train.AdamOptimizer(learning_rate=1e-5,
                                       beta1=0.9,beta2=0.999,
                                       epsilon=1e-3,use_locking=False,
                                       name='Adam').minimize(loss_sem,var_list=first_train_vars)
 
+
 optimizer_sem_full=tf.train.AdamOptimizer(learning_rate=1e-7,
                                       beta1=0.9,beta2=0.999,
                                       epsilon=1e-3,use_locking=False,
-                                      name='Adam').minimize(loss_sem)
+                                      name='Adam').minimize(loss_sem_t)
 
-
-
-
-
-par_path="../par/"
-if not os.path.isdir(par_path):
-    os.mkdir(par_path)
-
-model_path="../model"
+model_path="../model_sem"
 if not os.path.isdir(model_path):
     os.mkdir(model_path)
 
+Restore_list={"Ground_weights": Ground_weights,
+              "Ground_bias":Ground_bias,
+              "Building_weights":Building_weights,
+              "Building_bias":Building_bias,
+              "Objects_weights":Objects_weights,
+              "Objects_bias":Objects_bias,
+              "Sky_weights":Sky_weights,
+              "Sky_bias":Sky_bias,
+              "Vegetation_weights":Vegetation_weights,
+              "Vegetation_bias":Vegetation_bias,
+              "Ground_outweights":Ground_outweights,
+              "Ground_outbias":Ground_outbias,
+              "Building_outweights":Building_outweights,
+              "Building_outbias":Building_outbias,
+              "Objects_outweights":Objects_outweights,
+              "Objects_outbias":Objects_outbias,
+              "Sky_outweights":Sky_outweights,
+              "Sky_outbias":Sky_outbias,
+              "Vegetation_outweights":Vegetation_outweights,
+              "Vegetation_outbias":Vegetation_outbias}
 
 
 init=tf.global_variables_initializer()
-saver=tf.train.Saver()
+saver=tf.train.Saver(Restore_list)
+
+
 train_size=Ground_data.shape[0]
 train_indices=range(train_size)
 
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
+saver_all=tf.train.Saver()
+
 with tf.Session(config=config) as sess:
+    #print('hello!')
+
     sess.run(init)
-    for i in range(30):
+ 
+    saver.restore(sess,'../model/pretraining_sep.ckpt')
+
+    #restore will rewrite the para
+    #print(sess.run(Ground_weights)[0][0])
+    #print(sess.run(Semantic_weights)[0][0])
+
+    for i in range(1):
         
         perm_indices=np.random.permutation(train_indices)
         
@@ -217,11 +222,12 @@ with tf.Session(config=config) as sess:
                        Sky_input:Sky_data[batch_indices,:]
                       }
             
-            _sem,l_sem=sess.run([optimizer_sem,loss_sem],feed_dict=feed_dict)
+            _sem,l_sem,l_rg=sess.run([optimizer_sem,loss_sem,regularization_sem],feed_dict=feed_dict)
     
-        print("loss of semantic is :",l_sem) 
+        #print("loss of %d ipoch semantic is :"%i,l_sem,l_rg) 
 
-    for i in range(30,num_epoch):
+
+    for i in range(1,num_epoch):
         
         perm_indices=np.random.permutation(train_indices)
         
@@ -240,43 +246,9 @@ with tf.Session(config=config) as sess:
             
             _sem,l_sem=sess.run([optimizer_sem_full,loss_sem],feed_dict=feed_dict)
 
-        print("loss of semantic is :",l_sem)      
+        #print("loss of %d ipoch semantic is :"%i,l_sem)      
 
-
-    saver.save(sess,model_path+"/pretraining_sem_full.ckpt")
+    saver_all.save(sess,model_path+"/pretraining_sem_full.ckpt")
             
             
     print("training shared sem finished !")
-
-    np.save(par_path+"Ground_weights",sess.run(Ground_weights))
-    np.save(par_path+"Ground_bias",sess.run(Ground_bias))
-    np.save(par_path+"Ground_outweights",sess.run(Ground_outweights))
-    np.save(par_path+"Ground_outbias",sess.run(Ground_outbias))
-    
-    np.save(par_path+"Objects_weights",sess.run(Objects_weights))
-    np.save(par_path+"Objects_bias",sess.run(Objects_bias))
-    np.save(par_path+"Objects_outweights",sess.run(Objects_outweights))
-    np.save(par_path+"Objects_outbias",sess.run(Objects_outbias))
-    
-    np.save(par_path+"Building_weights",sess.run(Building_weights))
-    np.save(par_path+"Building_bias",sess.run(Building_bias))
-    np.save(par_path+"Building_outweights",sess.run(Building_outweights))
-    np.save(par_path+"Building_outbias",sess.run(Building_outbias))
-    
-    np.save(par_path+"Vegetation_weights",sess.run(Vegetation_weights))
-    np.save(par_path+"Vegetation_bias",sess.run(Vegetation_bias))
-    np.save(par_path+"Vegetation_outweights",sess.run(Vegetation_outweights))        
-    np.save(par_path+"Vegetation_outbias",sess.run(Vegetation_outbias)) 
-    
-    np.save(par_path+"Sky_weights",sess.run(Sky_weights))
-    np.save(par_path+"Sky_bias",sess.run(Sky_bias))
-    np.save(par_path+"Sky_outweights",sess.run(Sky_outweights))
-    np.save(par_path+"Sky_outbias",sess.run(Sky_outbias)) 
-            
-
-    np.save(par_path+"Semantic_deweights",sess.run(Semantic_deweights))
-    np.save(par_path+"Semantic_debias",sess.run(Semantic_debias))
-    np.save(par_path+"Semantic_weights",sess.run(Semantic_weights))
-    np.save(par_path+"Semantic_bias",sess.run(Semantic_bias))
-
-
