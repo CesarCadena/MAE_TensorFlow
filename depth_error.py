@@ -2,43 +2,45 @@
 import numpy as np
 def ABSR(true,pred):
 
-    T=(np.where(true>0) and np.where(pred>0) )[0]
+    T1=truth>1e-8
+    T2=prediction>1e-8
+    T=np.logical_and(T1,T2)
+    truth=truth[T]
+    prediction=prediction[T]
 
-    true=true[T]
-    pred=pred[T]
-    n=len(T)
+    T3=truth<50
+    T4=prediction<50
+    T=np.logical_and(T3,T4)
+    prediction=prediction[T]
+    truth=truth[T]
 
-
-   
-    error=abs(true-pred)
-    r_error=error/true
+    n=len(truth)
+    error=sum(abs(truth-prediction)/truth)
+    abs_error=error/n
     
-    r_error=sum(r_error)/n
-    
-    return r_error
+    return abs_error
 
+
+def inverse_depth(a):
+    b=1.0/(a+1e-8)
+    return b
 
 def RMSE(truth,prediction):
 
-    T1=truth>0
-    T2=prediction>0
+    T1=truth>1e-8
+    T2=prediction>1e-8
     T=np.logical_and(T1,T2)
-
     truth=truth[T]
     prediction=prediction[T]
-    print(len(prediction))
-    truth=1/truth
-    prediction=1/prediction
 
-    T3=prediction<50
-    prediction=prediction[T3]
-    truth=truth[T3]
-    
+    T3=truth<50
+    T4=prediction<50
+    T=np.logical_and(T3,T4)
+    prediction=prediction[T]
+    truth=truth[T]
+
     n=len(truth)
-    print(n)
-  
-    error=sum((truth-prediction)**2)
-    rmse_error=np.sqrt(error/n)
+    error=sum((truth-prediction)**2)/n
+    rmse_error=np.sqrt(error)
     
     return rmse_error
-
