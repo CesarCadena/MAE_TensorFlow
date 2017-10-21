@@ -151,10 +151,7 @@ class MAE:
         self.sky_train_label = []
 
 
-
-        n_sequences = 0
         for i in self.data_train:
-            n_sequences += 1
             for j in range(1,len(i)):
 
                 imr_series = []
@@ -202,7 +199,6 @@ class MAE:
                 self.veg_train_label.append(copy(veg_series))
                 self.sky_train_label.append(copy(sky_series))
 
-        print(n_sequences)
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
@@ -243,20 +239,44 @@ class MAE:
         self.veg_val = []
         self.sky_val = []
 
-        v_iterator = 0
 
         for i in self.data_validate:
-            for j in i:
-                self.imr_val.append(j['xcr1']/255.)
-                self.img_val.append(j['xcg1']/255.)
-                self.imb_val.append(j['xcb1']/255.)
-                self.depth_val.append(j['xid1'])
-                self.depth_mask_val.append(j['xmask1'])
-                self.gnd_val.append((j['sem1']==1).astype(int))
-                self.obj_val.append((j['sem1']==2).astype(int))
-                self.bld_val.append((j['sem1']==3).astype(int))
-                self.veg_val.append((j['sem1']==4).astype(int))
-                self.sky_val.append((j['sem1']==5).astype(int))
+            for j in range(len(i)):
+
+                imr_series = []
+                img_series = []
+                imb_series = []
+                depth_series = []
+                depth_mask_series = []
+                gnd_series = []
+                obj_series = []
+                bld_series = []
+                veg_series = []
+                sky_series = []
+
+                for k in range(0,self.n_rnn_steps):
+                    offset = self.n_rnn_steps-1-k
+                    imr_series.append(i[j-offset]['xcr1']/255.)
+                    img_series.append(i[j-offset]['xcg1']/255.)
+                    imb_series.append(i[j-offset]['xcb1']/255.)
+                    depth_series.append(i[j-offset]['xid1'])
+                    depth_mask_series.append(i[j-offset]['xmask1'])
+                    gnd_series.append((i[j-offset]['sem1']==1).astype(int))
+                    obj_series.append((i[j-offset]['sem1']==2).astype(int))
+                    bld_series.append((i[j-offset]['sem1']==3).astype(int))
+                    veg_series.append((i[j-offset]['sem1']==4).astype(int))
+                    sky_series.append((i[j-offset]['sem1']==5).astype(int))
+
+                self.imr_val.append(copy(imr_series))
+                self.img_val.append(copy(img_series))
+                self.imb_val.append(copy(imb_series))
+                self.depth_val.append(copy(depth_series))
+                self.depth_mask_val.append(copy(depth_mask_series))
+                self.gnd_val.append(copy(gnd_series))
+                self.obj_val.append(copy(obj_series))
+                self.bld_val.append(copy(bld_series))
+                self.veg_val.append(copy(veg_series))
+                self.sky_val.append(copy(sky_series))
 
     def prepare_test_data(self):
 
@@ -698,8 +718,10 @@ class MAE:
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
 
+        normalization = tf.placeholder('float')
+
         loss_val_reset = val_loss.assign(0)
-        loss_val_update = val_loss.assign_add(loss)
+        loss_val_update = val_loss.assign_add(loss/normalization)
 
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
@@ -822,8 +844,8 @@ class MAE:
                                                                                                         copy(bld_batch),
                                                                                                         copy(veg_batch),
                                                                                                         copy(sky_batch),
-                                                                                                        resolution=(18,60))
-
+                                                                                                        resolution=(18,60),
+                                                                                                        rnn=True)
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
