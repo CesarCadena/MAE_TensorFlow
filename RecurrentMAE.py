@@ -812,6 +812,8 @@ class MAE:
 
                 in_state = np.zeros((self.batch_size,self.size_coding))
 
+                self.batch_size = 60 # adjust batch size for training
+
 
                 for _ in range(self.n_batches):
 
@@ -895,6 +897,8 @@ class MAE:
                 sess.run(loss_val_reset)
 
                 norm = 2*8*1080*set_val.shape[0]
+
+                self.batch_size = 1 # adjust batchsize for validation
 
                 for i in set_val:
 
