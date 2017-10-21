@@ -60,6 +60,9 @@ class MAE:
         self.prepare_validation_data()
         self.prepare_test_data()
 
+        # flags
+        self.flag_is_running = False
+
 
 
 
@@ -398,19 +401,20 @@ class MAE:
         veg_series = tf.split(veg,self.n_rnn_steps,axis=1)
         sky_series = tf.split(sky,self.n_rnn_steps,axis=1)
 
+        # output container definition
         output = []
 
         for i in range(0,self.n_rnn_steps):
 
-            imr_in = tf.reshape(imr_series[i],[self.batch_size,self.size_input])
-            img_in = tf.reshape(img_series[i],[self.batch_size,self.size_input])
-            imb_in = tf.reshape(imb_series[i],[self.batch_size,self.size_input])
-            depth_in = tf.reshape(depth_series[i],[self.batch_size,self.size_input])
-            gnd_in = tf.reshape(gnd_series[i],[self.batch_size,self.size_input])
-            obj_in = tf.reshape(obj_series[i],[self.batch_size,self.size_input])
-            bld_in = tf.reshape(bld_series[i],[self.batch_size,self.size_input])
-            veg_in = tf.reshape(veg_series[i],[self.batch_size,self.size_input])
-            sky_in = tf.reshape(sky_series[i],[self.batch_size,self.size_input])
+            imr_in = tf.squeeze(imr_series[i],axis=1)
+            img_in = tf.squeeze(img_series[i],axis=1)
+            imb_in = tf.squeeze(imb_series[i],axis=1)
+            depth_in = tf.squeeze(depth_series[i],axis=1)
+            gnd_in = tf.squeeze(gnd_series[i],axis=1)
+            obj_in = tf.squeeze(obj_series[i],axis=1)
+            bld_in = tf.squeeze(bld_series[i],axis=1)
+            veg_in = tf.squeeze(veg_series[i],axis=1)
+            sky_in = tf.squeeze(sky_series[i],axis=1)
 
             # semantics neurons (relu activation)
             self.gnd_encoding = tf.add(tf.matmul(gnd_in,self.gnd_ec_layer['weights']),
@@ -788,6 +792,8 @@ class MAE:
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
         
         with tf.Session(config=config) as sess:
+
+            self.flag_is_running = True
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
