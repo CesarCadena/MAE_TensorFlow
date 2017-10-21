@@ -678,29 +678,27 @@ class MAE:
         veg_label_series = tf.unstack(self.veg_label,axis=1)
         sky_label_series = tf.unstack(self.sky_label,axis=1)
 
-        cost = 0
-        for i in range(0,self.n_rnn_steps):
-            cost += tf.nn.l2_loss(imr_label_series[i]-output[0][i]) + \
-                    tf.nn.l2_loss(img_label_series[i]-output[1][i]) + \
-                    tf.nn.l2_loss(imb_label_series[i]-output[2][i]) + \
-                    10*tf.nn.l2_loss(depth_label_series[i]-output[3][i]) + \
-                    tf.nn.l2_loss(gnd_label_series[i]-output[4][i]) + \
-                    tf.nn.l2_loss(obj_label_series[i]-output[5][i]) + \
-                    tf.nn.l2_loss(bld_label_series[i]-output[6][i]) + \
-                    tf.nn.l2_loss(veg_label_series[i]-output[7][i]) + \
-                    tf.nn.l2_loss(sky_label_series[i]-output[8][i])
 
-        loss = 0
-        for i in range(0,self.n_rnn_steps):
-            loss += tf.nn.l2_loss(imr_label_series[i]-output[0][i]) + \
-                    tf.nn.l2_loss(img_label_series[i]-output[1][i]) + \
-                    tf.nn.l2_loss(imb_label_series[i]-output[2][i]) + \
-                    10*tf.nn.l2_loss(depth_label_series[i]-output[3][i]) + \
-                    tf.nn.l2_loss(gnd_label_series[i]-output[4][i]) + \
-                    tf.nn.l2_loss(obj_label_series[i]-output[5][i]) + \
-                    tf.nn.l2_loss(bld_label_series[i]-output[6][i]) + \
-                    tf.nn.l2_loss(veg_label_series[i]-output[7][i]) + \
-                    tf.nn.l2_loss(sky_label_series[i]-output[8][i])
+        cost = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
+               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
+               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
+               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
+               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
+               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
+               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
+               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
+               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
+
+
+        loss = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
+               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
+               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
+               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
+               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
+               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
+               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
+               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
+               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
 
 
         self.collect_variables()
@@ -888,10 +886,9 @@ class MAE:
                 print('-----------------------------------------------------------------')
 
 
-                '''
                 sess.run(loss_val_reset)
 
-                normalization = 8*1080*set_val.shape[0]
+                norm = 2*8*1080*set_val.shape[0]
 
                 for i in set_val:
 
@@ -906,7 +903,7 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
-                    normalization += np.count_nonzero(depth_mask)
+                    norm += np.count_nonzero(depth_mask)
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
@@ -918,6 +915,7 @@ class MAE:
                                                                                                         copy(veg_label),
                                                                                                         copy(sky_label),
                                                                                                         resolution=(18,60),
+                                                                                                        rnn=True,
                                                                                                         singleframe=True)
 
                     feed_dict = {self.imr_input:imr_in,
@@ -938,17 +936,17 @@ class MAE:
                                  self.obj_label:[obj_label],
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
-                                 self.sky_label:[sky_label]}
+                                 self.sky_label:[sky_label],
+                                 normalization:norm}
 
-                    im_pred,c_val = sess.run([prediction,loss_val_update],feed_dict=feed_dict)
+                    im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value())/normalization)
                 
                 print('-----------------------------------------------------------------')
-                
-            '''
+
 
             if self.saving == True:
                 saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
