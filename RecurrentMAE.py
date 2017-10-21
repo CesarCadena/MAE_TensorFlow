@@ -641,12 +641,11 @@ class MAE:
 
     def rnn_network(self,inputs):
 
-        inputs = tf.stack([inputs[0],inputs[1]])
-        inputs = tf.reshape(inputs,[self.batch_size,self.n_rnn_steps,self.size_coding])
 
+        inputs = tf.stack([inputs[0],inputs[1]])
 
         cell = tf.nn.rnn_cell.BasicRNNCell(num_units=self.size_coding)
-        states_series, current_state = tf.nn.dynamic_rnn(cell, inputs, initial_state=self.init_states)
+        states_series, current_state = tf.nn.dynamic_rnn(cell, inputs,time_major=True, initial_state=self.init_states)
 
         return states_series, current_state
 
