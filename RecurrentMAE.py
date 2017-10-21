@@ -91,7 +91,7 @@ class MAE:
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
         # rnn initial states
-        self.init_states = tf.placeholder('float',[self.batch_size,self.size_coding])
+        self.init_states = tf.placeholder('float',[None,self.size_coding])
 
         self.learning_rate = 1e-6
         self.hm_epochs = 200
@@ -937,6 +937,7 @@ class MAE:
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
+                                 self.init_states:np.zeros((1,self.size_coding)),
                                  normalization:norm}
 
                     im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
