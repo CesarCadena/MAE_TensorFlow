@@ -562,7 +562,7 @@ class MAE:
 
         for i in inputs:
 
-            input = tf.reshape(i,[self.batch_size,self.size_coding])
+            input = tf.squeeze(i,axis=1)
 
             # full decoding neurons
 
