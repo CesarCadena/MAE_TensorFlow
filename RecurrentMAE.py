@@ -925,7 +925,6 @@ class MAE:
                                                                                                         rnn=True,
                                                                                                         singleframe=True)
 
-                    print(len(imr_in[0][0]))
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
