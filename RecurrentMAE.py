@@ -888,10 +888,7 @@ class MAE:
                 print('----------------------------------------------------------------')
                 print('Epoch', epoch, 'completed out of', self.hm_epochs)
                 print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
-                time2 = datetime.now()
-                delta = time2-time1
-                print('Epoch Time [seconds]:', delta.seconds)
-                print('-----------------------------------------------------------------')
+
 
 
                 sess.run(loss_val_reset)
@@ -956,8 +953,10 @@ class MAE:
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
-                print('Validation Loss (per pixel): ', sess.run(val_loss.value())/normalization)
-                
+                print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
+                time2 = datetime.now()
+                delta = time2-time1
+                print('Epoch Time [seconds]:', delta.seconds)
                 print('-----------------------------------------------------------------')
 
 
