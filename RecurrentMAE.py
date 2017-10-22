@@ -543,7 +543,7 @@ class MAE:
 
 
 
-        inputs = tf.split(inputs,self.n_rnn_steps,axis=1)
+        inputs = tf.split(inputs,self.n_rnn_steps,axis=0)
 
 
         # output containers
@@ -562,7 +562,7 @@ class MAE:
 
         for i in inputs:
 
-            input = tf.squeeze(i,axis=1)
+            input = tf.squeeze(i,axis=0)
 
             # full decoding neurons
 
@@ -643,6 +643,7 @@ class MAE:
 
 
         inputs = tf.stack([inputs[0],inputs[1]])
+
 
         cell = tf.nn.rnn_cell.BasicRNNCell(num_units=self.size_coding)
         states_series, current_state = tf.nn.dynamic_rnn(cell, inputs,time_major=True, initial_state=self.init_states)
@@ -926,6 +927,8 @@ class MAE:
                                                                                                         resolution=(18,60),
                                                                                                         rnn=True,
                                                                                                         singleframe=True)
+
+                    print(len(imr_in[0][0]))
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
