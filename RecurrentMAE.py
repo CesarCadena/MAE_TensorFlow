@@ -683,26 +683,28 @@ class MAE:
         sky_label_series = tf.unstack(self.sky_label,axis=1)
 
 
-        cost = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
+        cost = 0
+        loss = 0
+        for i in range(0,self.n_rnn_steps):
+            cost += tf.nn.l2_loss(imr_label_series[i]-output[0][i]) + \
+                    tf.nn.l2_loss(img_label_series[i]-output[1][i]) + \
+                    tf.nn.l2_loss(imb_label_series[i]-output[2][i]) + \
+                    10*tf.nn.l2_loss(depth_label_series[i]-output[3][i]) + \
+                    tf.nn.l2_loss(gnd_label_series[i]-output[4][i]) + \
+                    tf.nn.l2_loss(obj_label_series[i]-output[5][i]) + \
+                    tf.nn.l2_loss(bld_label_series[i]-output[6][i]) + \
+                    tf.nn.l2_loss(veg_label_series[i]-output[7][i]) + \
+                    tf.nn.l2_loss(sky_label_series[i]-output[8][i])
 
-
-        loss = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
+            loss += tf.nn.l2_loss(imr_label_series[i]-output[0][i]) + \
+                    tf.nn.l2_loss(img_label_series[i]-output[1][i]) + \
+                    tf.nn.l2_loss(imb_label_series[i]-output[2][i]) + \
+                    10*tf.nn.l2_loss(depth_label_series[i]-output[3][i]) + \
+                    tf.nn.l2_loss(gnd_label_series[i]-output[4][i]) + \
+                    tf.nn.l2_loss(obj_label_series[i]-output[5][i]) + \
+                    tf.nn.l2_loss(bld_label_series[i]-output[6][i]) + \
+                    tf.nn.l2_loss(veg_label_series[i]-output[7][i]) + \
+                    tf.nn.l2_loss(sky_label_series[i]-output[8][i])
 
 
         self.collect_variables()
