@@ -52,7 +52,7 @@ class MAE:
 
          # recurrent options
 
-        self.n_rnn_steps = 2
+        self.n_rnn_steps = 10
         self.n_states = 3
 
         # prepare data
@@ -639,14 +639,13 @@ class MAE:
         output = [imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out]
         return output
 
-    def rnn_network(self,inputs):
+    def rnn_network(self, inputs):
 
 
-        inputs = tf.stack([inputs[0],inputs[1]])
-
+        inputs_stacked = tf.stack(inputs)
 
         cell = tf.nn.rnn_cell.BasicRNNCell(num_units=self.size_coding)
-        states_series, current_state = tf.nn.dynamic_rnn(cell, inputs,time_major=True, initial_state=self.init_states)
+        states_series, current_state = tf.nn.dynamic_rnn(cell, inputs_stacked, time_major=True, initial_state=self.init_states)
 
         return states_series, current_state
 
@@ -893,7 +892,7 @@ class MAE:
 
                 sess.run(loss_val_reset)
 
-                norm = 2*8*1080*set_val.shape[0]
+                norm = self.n_rnn_steps*8*1080*set_val.shape[0]
 
                 for i in set_val:
 
@@ -908,7 +907,8 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
-                    norm += np.count_nonzero(depth_mask)
+                    for i in depth_mask:
+                        norm += np.count_nonzero(i)
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
