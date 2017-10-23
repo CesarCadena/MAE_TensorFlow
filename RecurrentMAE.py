@@ -871,7 +871,7 @@ class MAE:
                                  self.bld_label:bld_batch_label,
                                  self.veg_label:veg_batch_label,
                                  self.sky_label:sky_batch_label,
-                                 self.init_states:in_state}
+                                 self.init_states:current_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 10:
