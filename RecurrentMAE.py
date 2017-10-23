@@ -891,7 +891,7 @@ class MAE:
 
                 sess.run(loss_val_reset)
 
-                norm = self.n_rnn_steps*8*1080*set_val.shape[0]
+                norm = 8*1080*set_val.shape[0]
 
                 for i in set_val:
 
@@ -906,8 +906,8 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
-                    for i in depth_mask:
-                        norm += np.count_nonzero(i)
+
+                    norm += np.count_nonzero(depth_mask[-1])
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
