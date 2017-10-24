@@ -497,7 +497,7 @@ class MAE:
         self.layers.append(self.green_dc_layer)
 
         self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='blue_dc_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_weights')}
+                              'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_bias')}
         self.layers.append(self.blue_dc_layer)
 
         self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='depth_dc_layer_weights'),
@@ -1025,19 +1025,11 @@ class MAE:
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (Relative Error):', error_rel/n_evaluations)
 
-
-
-
-
-
-
-
-
 # running model
 
 mae = MAE(data_train,data_validate,data_test)
-#mae.train_model()
-mae.evaluate(run='20171016-131619')
+mae.train_model()
+#mae.evaluate(run='20171016-131619')
 
 
 
