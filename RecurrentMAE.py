@@ -18,6 +18,9 @@ from copy import copy
 
 data_train, data_validate, data_test = load_data()
 
+# deleted blue_dc_layer_bias from loader (wrong name in full model)
+# need to change that afterwards, when corrected full model is trained
+
 
 
 class MAE:
@@ -34,11 +37,7 @@ class MAE:
         self.size_input = self.height*self.width
         self.size_coding = 1024
 
-        self.n_training_data = 300 # max 15301
         self.n_training_validations = 50
-
-        # options
-        self.mode = 'denoising' # standard for non denoising training or denoising for training a denoising MAE
 
         # noise values for the different modalities (min 0, max 1)
         self.imr_noise = 0.1
@@ -54,7 +53,6 @@ class MAE:
          # recurrent options
 
         self.n_rnn_steps = 3
-        self.n_states = 3
 
         # prepare data
         self.prepare_training_data()
@@ -64,8 +62,40 @@ class MAE:
         # flags
         self.flag_is_running = False
 
+        self.placeholder_definition()
+
+        # training options
+        self.batch_size = 60
+        self.n_batches = int(len(self.imr_train)/self.batch_size)
 
 
+        self.learning_rate = 1e-6
+        self.hm_epochs = 200
+
+        # model savings
+        self.saving = True
+        now = datetime.now()
+
+        self.folder_model = 'models/'
+        self.folder_logs = 'logs/'
+
+        self.mode = 'rnn/'
+        self.run = now.strftime('%Y%m%d-%H%M%S')
+
+        self.project_dir = './'
+        self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
+        self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
+        self.load_dir = self.project_dir + self.folder_model + 'full/FullMAE/'
+
+        os.mkdir(self.model_dir)
+        os.mkdir(self.logs_dir)
+
+        tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
+        tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
+
+        self.FLAGS = tf.app.flags.FLAGS
+
+    def placeholder_definition(self):
 
         # placeholder definition
         self.imr_input = tf.placeholder('float',[None,self.n_rnn_steps,self.size_input])
@@ -90,40 +120,8 @@ class MAE:
         self.veg_label = tf.placeholder('float',[None,self.n_rnn_steps,self.size_input])
         self.sky_label = tf.placeholder('float',[None,self.n_rnn_steps,self.size_input])
 
-        # training options
-        self.batch_size = 60
-        self.n_batches = int(len(self.imr_train)/self.batch_size)
-
         # rnn initial states
         self.init_states = tf.placeholder('float',[None,self.size_coding])
-
-        self.learning_rate = 1e-6
-        self.hm_epochs = 200
-
-        # validation options
-        self.n_validation_steps = 1
-
-        # model savings
-        self.saving = True
-        now = datetime.now()
-
-        self.folder_model = 'models/'
-        self.folder_logs = 'logs/'
-
-        self.mode = 'rnn/'
-        self.run = now.strftime('%Y%m%d-%H%M%S')
-
-        self.project_dir = './'
-        self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
-        self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
-
-        os.mkdir(self.model_dir)
-        os.mkdir(self.logs_dir)
-
-        tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
-        tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
-
-        self.FLAGS = tf.app.flags.FLAGS
 
     def prepare_training_data(self):
         '''
@@ -542,33 +540,9 @@ class MAE:
                              'bias':tf.Variable(tf.zeros([self.size_input]),name='sky_dc_layer_bias')}
         self.layers.append(self.sky_dc_layer)
 
+        # full decoding layer
 
-
-        #inputs = tf.split(inputs,self.n_rnn_steps,axis=0)
-
-
-        # output containers
-
-        imr_out = []
-        img_out = []
-        imb_out = []
-        depth_out = []
-        gnd_out = []
-        obj_out = []
-        bld_out = []
-        veg_out = []
-        sky_out = []
-
-        # forward pass
-
-        #for i in [inputs]:
-
-        input = inputs
-        #input = tf.squeeze(inputs,axis=0)
-
-        # full decoding neurons
-
-        self.full_decoding = tf.add(tf.matmul(input,self.full_dc_layer['weights']),
+        self.full_decoding = tf.add(tf.matmul(inputs,self.full_dc_layer['weights']),
                                             self.full_dc_layer['bias'])
         self.full_decoding = tf.nn.relu(self.full_decoding)
 
@@ -595,15 +569,15 @@ class MAE:
                                            self.depth_dc_layer['bias'])
         self.depth_output = tf.nn.relu(self.depth_output)
 
-        imr_out.append(self.red_output)
-        img_out.append(self.green_output)
-        imb_out.append(self.blue_output)
-        depth_out.append(self.depth_output)
+        imr_out = self.red_output
+        img_out = self.green_output
+        imb_out = self.blue_output
+        depth_out = self.depth_output
 
         # decoding neurons full semantics
 
         self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
-                                       self.sem_dc_layer['bias'])
+                               self.sem_dc_layer['bias'])
         self.full_sem = tf.nn.relu(self.full_sem)
 
         # splitting full semantics
@@ -632,34 +606,42 @@ class MAE:
                                          self.sky_dc_layer['bias'])
         self.sky_output = tf.sigmoid(self.sky_output)
 
-        gnd_out.append(self.gnd_output)
-        obj_out.append(self.obj_output)
-        bld_out.append(self.bld_output)
-        veg_out.append(self.veg_output)
-        sky_out.append(self.sky_output)
+        gnd_out = self.gnd_output
+        obj_out = self.obj_output
+        bld_out = self.bld_output
+        veg_out = self.veg_output
+        sky_out = self.sky_output
 
         output = [imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out]
         return output
 
     def rnn_network(self, inputs):
 
-        cell = tf.nn.rnn_cell.BasicRNNCell(num_units=self.size_coding)
-        output = list(BR.create(self.n_rnn_steps,constructor=list))
 
-        state = self.init_states
+        self.rnn_weights_H = []
+
+        state_size = self.size_coding
 
         with tf.variable_scope('RNN') as rnn:
-
             for i in range(0,self.n_rnn_steps):
-                out, state = cell(inputs[i],state)
-                output[i].append(out)
+                self.rnn_weights_H.append(tf.Variable(tf.zeros([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
 
-
+            self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
+            self.rnn_bias_W = tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_bias')
 
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
 
+        state = self.init_states
 
-        return output[-1], state
+        for i in range(0,self.n_rnn_steps):
+            state = tf.matmul(state,self.rnn_weights_H[i])
+
+        output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W),state),self.rnn_bias_W)
+
+
+
+
+        return output, state
 
     def collect_variables(self):
 
@@ -681,7 +663,7 @@ class MAE:
                                          mode='training')
 
         outputs, _current_state = self.rnn_network(encoding)
-        output = self.decoding_network(outputs[-1])
+        output = self.decoding_network(outputs)
 
         imr_label_series = tf.unstack(self.imr_label,axis=1)
         img_label_series = tf.unstack(self.img_label,axis=1)
@@ -695,25 +677,25 @@ class MAE:
 
 
 
-        cost = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
+        cost = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
+               tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
+               tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
+               10*tf.nn.l2_loss(depth_label_series[-1]-output[3]) + \
+               tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
+               tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
+               tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
+               tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
+               tf.nn.l2_loss(sky_label_series[-1]-output[8])
 
-        loss = tf.nn.l2_loss(imr_label_series[-1]-output[0][-1]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1][-1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2][-1]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3][-1]) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4][-1]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5][-1]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6][-1]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7][-1]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8][-1])
+        loss = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
+               tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
+               tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
+               10*tf.nn.l2_loss(depth_label_series[-1]-output[3]) + \
+               tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
+               tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
+               tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
+               tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
+               tf.nn.l2_loss(sky_label_series[-1]-output[8])
 
 
 
@@ -756,7 +738,7 @@ class MAE:
                                     'blue_ec_layer_weights':self.blue_ec_layer['weights'],
                                     'blue_ec_layer_bias':self.blue_ec_layer['bias'],
                                     'blue_dc_layer_weights':self.blue_dc_layer['weights'],
-                                    'blue_dc_layer_bias':self.blue_dc_layer['bias'],
+                                   'blue_dc_layer_bias':self.blue_dc_layer['bias'],
                                    'depth_ec_layer_weights':self.depth_ec_layer['weights'],
                                     'depth_ec_layer_bias':self.depth_ec_layer['bias'],
                                     'depth_dc_layer_weights':self.depth_dc_layer['weights'],
@@ -784,7 +766,11 @@ class MAE:
                                     'sky_dc_layer_weights':self.sky_dc_layer['weights'],
                                     'sky_dc_layer_bias':self.sky_dc_layer['bias'],
                                     'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                    'sem_dc_layer_bias':self.sem_dc_layer['bias']})
+                                    'full_sem_dc_layer_bias':self.sem_dc_layer['bias'],
+                                   'full_ec_layer_weights':self.full_ec_layer['weights'],
+                                   'full_ec_layer_bias':self.full_ec_layer['bias'],
+                                   'full_dc_layer_weights':self.full_dc_layer['weights'],
+                                   'full_dc_layer_bias':self.full_dc_layer['bias']})
 
         saver = tf.train.Saver()
 
@@ -799,11 +785,93 @@ class MAE:
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
+
             load_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
 
-
+            for i in self.rnn_variables:
+                print(sess.run(i.value()))
 
             tf.get_default_graph().finalize()
+
+
+            print('----------------------------------------------------------------')
+            print('Zero Validation')
+
+            sess.run(loss_val_reset)
+
+            norm = 8*1080*set_val.shape[0]
+            error_rms = 0
+            error_rel = 0
+
+            for i in set_val:
+
+                red_label = self.imr_val[i]
+                green_label = self.img_val[i]
+                blue_label = self.imb_val[i]
+                depth_label = self.depth_val[i]
+                depth_mask = self.depth_mask_val[i]
+                gnd_label = self.gnd_val[i]
+                obj_label = self.obj_val[i]
+                bld_label = self.bld_val[i]
+                veg_label = self.veg_val[i]
+                sky_label = self.sky_val[i]
+
+
+                norm += np.count_nonzero(depth_mask[-1])
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
+                                                                                                    copy(green_label),
+                                                                                                    copy(blue_label),
+                                                                                                    copy(depth_label),
+                                                                                                    copy(gnd_label),
+                                                                                                    copy(obj_label),
+                                                                                                    copy(bld_label),
+                                                                                                    copy(veg_label),
+                                                                                                    copy(sky_label),
+                                                                                                    resolution=(18,60),
+                                                                                                    rnn=True,
+                                                                                                    singleframe=True)
+
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in,
+                             self.depth_mask:[depth_mask],
+                             self.imr_label:[red_label],
+                             self.img_label:[green_label],
+                             self.imb_label:[blue_label],
+                             self.depth_label:[depth_label],
+                             self.gnd_label:[gnd_label],
+                             self.obj_label:[obj_label],
+                             self.bld_label:[bld_label],
+                             self.veg_label:[veg_label],
+                             self.sky_label:[sky_label],
+                             self.init_states:np.zeros((1,self.size_coding)),
+                             normalization:norm}
+
+                im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
+
+                depth_pred = BR.invert_depth(im_pred[3])
+                depth_gt = BR.invert_depth(depth_label[-1])
+
+                error_rms += eval.rms_error(depth_pred,depth_gt)
+                error_rel += eval.relative_error(depth_pred,depth_gt)
+
+            sum_val = sess.run(sum_val_loss)
+            train_writer1.add_summary(sum_val,0)
+            print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
+            print('RMSE Error over Validation Set:', error_rms/self.n_training_validations)
+            print('Relative Error over Validation Set:', error_rel/self.n_training_validations)
+            print('-----------------------------------------------------------------')
+
+
+
 
             for epoch in range(0,self.hm_epochs):
                 sess.run(epoch_loss_reset)
@@ -836,7 +904,7 @@ class MAE:
                     veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
 
-                    current_state = np.zeros((self.batch_size,self.size_coding))
+                    current_state = 1e-03*np.ones((self.batch_size,self.size_coding))
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
                                                                                                         copy(img_batch),
@@ -872,10 +940,7 @@ class MAE:
                                  self.init_states:current_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 10:
-                        _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
-                    else:
-                        _ ,c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state],feed_dict=feed_dict)
+                    _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
 
 
@@ -891,6 +956,8 @@ class MAE:
                 sess.run(loss_val_reset)
 
                 norm = 8*1080*set_val.shape[0]
+                error_rms = 0
+                error_rel = 0
 
                 for i in set_val:
 
@@ -941,14 +1008,22 @@ class MAE:
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
-                                 self.init_states:np.zeros((1,self.size_coding)),
+                                 self.init_states:1e-3*np.ones((1,self.size_coding)),
                                  normalization:norm}
 
                     im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
 
+                    depth_pred = BR.invert_depth(im_pred[3])
+                    depth_gt = BR.invert_depth(depth_label[-1])
+
+                    error_rms += eval.rms_error(depth_pred,depth_gt)
+                    error_rel += eval.relative_error(depth_pred,depth_gt)
+
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
+                print('RMSE Error over Validation Set:', error_rms/self.n_training_validations)
+                print('Relative Error over Validation Set:', error_rel/self.n_training_validations)
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)

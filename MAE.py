@@ -526,7 +526,7 @@ class MAE:
         # decoding layer full semantics
 
         self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
+                             'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='sem_dc_layer_bias')}
         self.layers.append(self.sem_dc_layer)
 
         # decoding neurons full semantics
