@@ -543,7 +543,7 @@ class MAE:
 
 
 
-        inputs = tf.split(inputs,self.n_rnn_steps,axis=0)
+        #inputs = tf.split(inputs,self.n_rnn_steps,axis=0)
 
 
         # output containers
@@ -560,81 +560,82 @@ class MAE:
 
         # forward pass
 
-        for i in inputs:
+        #for i in [inputs]:
 
-            input = tf.squeeze(i,axis=0)
+        input = inputs
+        #input = tf.squeeze(inputs,axis=0)
 
-            # full decoding neurons
+        # full decoding neurons
 
-            self.full_decoding = tf.add(tf.matmul(input,self.full_dc_layer['weights']),
-                                        self.full_dc_layer['bias'])
-            self.full_decoding = tf.nn.relu(self.full_decoding)
+        self.full_decoding = tf.add(tf.matmul(input,self.full_dc_layer['weights']),
+                                            self.full_dc_layer['bias'])
+        self.full_decoding = tf.nn.relu(self.full_decoding)
 
-            # slicing full decoding
+        # slicing full decoding
 
-            self.depth_full_dc,self.red_full_dc,self.green_full_dc,self.blue_full_dc,self.sem_full_dc = tf.split(self.full_decoding,5,1)
+        self.depth_full_dc,self.red_full_dc,self.green_full_dc,self.blue_full_dc,self.sem_full_dc = tf.split(self.full_decoding,5,1)
 
 
-            # decoding neurons
+        # decoding neurons
 
-            self.red_output = tf.add(tf.matmul(self.red_full_dc,self.red_dc_layer['weights']),
-                                       self.red_dc_layer['bias'])
-            self.red_output = tf.sigmoid(self.red_output)
+        self.red_output = tf.add(tf.matmul(self.red_full_dc,self.red_dc_layer['weights']),
+                                           self.red_dc_layer['bias'])
+        self.red_output = tf.sigmoid(self.red_output)
 
-            self.green_output = tf.add(tf.matmul(self.green_full_dc, self.green_dc_layer['weights']),
-                                       self.green_dc_layer['bias'])
-            self.green_output = tf.sigmoid(self.green_output)
+        self.green_output = tf.add(tf.matmul(self.green_full_dc, self.green_dc_layer['weights']),
+                                           self.green_dc_layer['bias'])
+        self.green_output = tf.sigmoid(self.green_output)
 
-            self.blue_output = tf.add(tf.matmul(self.blue_full_dc, self.blue_dc_layer['weights']),
-                                      self.blue_dc_layer['bias'])
-            self.blue_output = tf.sigmoid(self.blue_output)
+        self.blue_output = tf.add(tf.matmul(self.blue_full_dc, self.blue_dc_layer['weights']),
+                                          self.blue_dc_layer['bias'])
+        self.blue_output = tf.sigmoid(self.blue_output)
 
-            self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
-                                       self.depth_dc_layer['bias'])
-            self.depth_output = tf.nn.relu(self.depth_output)
+        self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
+                                           self.depth_dc_layer['bias'])
+        self.depth_output = tf.nn.relu(self.depth_output)
 
-            imr_out.append(self.red_output)
-            img_out.append(self.green_output)
-            imb_out.append(self.blue_output)
-            depth_out.append(self.depth_output)
+        imr_out.append(self.red_output)
+        img_out.append(self.green_output)
+        imb_out.append(self.blue_output)
+        depth_out.append(self.depth_output)
 
-            # decoding neurons full semantics
+        # decoding neurons full semantics
 
-            self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
-                                   self.sem_dc_layer['bias'])
-            self.full_sem = tf.nn.relu(self.full_sem)
+        self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
+                                       self.sem_dc_layer['bias'])
+        self.full_sem = tf.nn.relu(self.full_sem)
 
-            # splitting full semantics
+        # splitting full semantics
 
-            self.gnd_dc, self.obj_dc, self.bld_dc, self.veg_dc, self.sky_dc = tf.split(self.full_sem,5,axis=1)
+        self.gnd_dc, self.obj_dc, self.bld_dc, self.veg_dc, self.sky_dc = tf.split(self.full_sem,5,axis=1)
 
-            # decoding neurons semantics
+        # decoding neurons semantics
 
-            self.gnd_output = tf.add(tf.matmul(self.gnd_dc,self.gnd_dc_layer['weights']),
-                                     self.gnd_dc_layer['bias'])
-            self.gnd_output = tf.sigmoid(self.gnd_output)
+        self.gnd_output = tf.add(tf.matmul(self.gnd_dc,self.gnd_dc_layer['weights']),
+                                         self.gnd_dc_layer['bias'])
+        self.gnd_output = tf.sigmoid(self.gnd_output)
 
-            self.obj_output = tf.add(tf.matmul(self.obj_dc,self.obj_dc_layer['weights']),
-                                     self.obj_dc_layer['bias'])
-            self.obj_output = tf.sigmoid(self.obj_output)
+        self.obj_output = tf.add(tf.matmul(self.obj_dc,self.obj_dc_layer['weights']),
+                                         self.obj_dc_layer['bias'])
+        self.obj_output = tf.sigmoid(self.obj_output)
 
-            self.bld_output = tf.add(tf.matmul(self.bld_dc,self.bld_dc_layer['weights']),
-                                     self.bld_dc_layer['bias'])
-            self.bld_output = tf.sigmoid(self.bld_output)
+        self.bld_output = tf.add(tf.matmul(self.bld_dc,self.bld_dc_layer['weights']),
+                                         self.bld_dc_layer['bias'])
+        self.bld_output = tf.sigmoid(self.bld_output)
 
-            self.veg_output = tf.add(tf.matmul(self.veg_dc,self.veg_dc_layer['weights']),
-                                     self.veg_dc_layer['bias'])
-            self.veg_output = tf.sigmoid(self.veg_output)
+        self.veg_output = tf.add(tf.matmul(self.veg_dc,self.veg_dc_layer['weights']),
+                                         self.veg_dc_layer['bias'])
+        self.veg_output = tf.sigmoid(self.veg_output)
 
-            self.sky_output = tf.add(tf.matmul(self.sky_dc,self.sky_dc_layer['weights']),
-                                     self.sky_dc_layer['bias'])
-            self.sky_output = tf.sigmoid(self.sky_output)
+        self.sky_output = tf.add(tf.matmul(self.sky_dc,self.sky_dc_layer['weights']),
+                                         self.sky_dc_layer['bias'])
+        self.sky_output = tf.sigmoid(self.sky_output)
 
-            gnd_out.append(self.gnd_output)
-            obj_out.append(self.obj_output)
-            bld_out.append(self.bld_output)
-            veg_out.append(self.veg_output)
-            sky_out.append(self.sky_output)
+        gnd_out.append(self.gnd_output)
+        obj_out.append(self.obj_output)
+        bld_out.append(self.bld_output)
+        veg_out.append(self.veg_output)
+        sky_out.append(self.sky_output)
 
         output = [imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out]
         return output
@@ -645,9 +646,9 @@ class MAE:
         inputs_stacked = tf.stack(inputs)
 
         cell = tf.nn.rnn_cell.BasicRNNCell(num_units=self.size_coding)
-        states_series, current_state = tf.nn.dynamic_rnn(cell, inputs_stacked, time_major=True, initial_state=self.init_states)
+        outputs, current_state = tf.nn.dynamic_rnn(cell, inputs_stacked, time_major=True, initial_state=self.init_states)
 
-        return states_series, current_state
+        return outputs, current_state
 
     def collect_variables(self):
 
@@ -668,8 +669,8 @@ class MAE:
                                          self.sky_input,
                                          mode='training')
 
-        states, _current_state = self.rnn_network(encoding)
-        output = self.decoding_network(states)
+        outputs, _current_state = self.rnn_network(encoding)
+        output = self.decoding_network(outputs[-1])
 
         imr_label_series = tf.unstack(self.imr_label,axis=1)
         img_label_series = tf.unstack(self.img_label,axis=1)
