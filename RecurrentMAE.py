@@ -708,6 +708,15 @@ class MAE:
 
         cost += reg_term
 
+        rnn_weight_norms = []
+        for i in self.rnn_variables:
+            rnn_weight_norms.append(tf.norm(i,ord='euclidean'))
+
+        rnn_weight_sum = []
+        for i in range(0,len(rnn_weight_norms)):
+            name = 'RNN Weight Norm ' + str(i)
+            rnn_weight_sum.append(tf.summary.scalar(name,rnn_weight_norms[i]))
+
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
         rms = tf.Variable(0.0,name='rms_error',trainable=False)
@@ -800,9 +809,6 @@ class MAE:
 
 
             load_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
-
-            for i in self.rnn_variables:
-                print(sess.run(i.value()))
 
             tf.get_default_graph().finalize()
 
@@ -959,6 +965,10 @@ class MAE:
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
+
+                for i in rnn_weight_sum:
+                    sum = sess.run(i)
+                    train_writer1.add_summary(sum,epoch)
 
                 print('----------------------------------------------------------------')
                 print('Epoch', epoch, 'completed out of', self.hm_epochs)
