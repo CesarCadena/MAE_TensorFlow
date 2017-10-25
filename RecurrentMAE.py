@@ -709,7 +709,7 @@ class MAE:
         cost += reg_term
 
         rnn_weight_norms = []
-        for i in self.rnn_variables:
+        for i in self.rnn_weights_H:
             rnn_weight_norms.append(tf.norm(i,ord='euclidean'))
 
         rnn_weight_sum = []
