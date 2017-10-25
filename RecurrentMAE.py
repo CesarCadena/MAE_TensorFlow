@@ -669,6 +669,7 @@ class MAE:
         img_label_series = tf.unstack(self.img_label,axis=1)
         imb_label_series = tf.unstack(self.imb_label,axis=1)
         depth_label_series = tf.unstack(self.depth_label,axis=1)
+        depth_mask_series = tf.unstack(self.depth_mask,axis=1)
         gnd_label_series = tf.unstack(self.gnd_label,axis=1)
         obj_label_series = tf.unstack(self.obj_label,axis=1)
         bld_label_series = tf.unstack(self.bld_label,axis=1)
@@ -680,7 +681,7 @@ class MAE:
         cost = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
                tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3]) + \
+               10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
                tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
                tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
                tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
@@ -690,7 +691,7 @@ class MAE:
         loss = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
                tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
-               10*tf.nn.l2_loss(depth_label_series[-1]-output[3]) + \
+               10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
                tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
                tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
                tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
@@ -709,17 +710,29 @@ class MAE:
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
+        rms = tf.Variable(0.0,name='rms_error',trainable=False)
+        rel = tf.Variable(0.0,name='rel_error',trainable=False)
 
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
 
         normalization = tf.placeholder('float')
+        rms_plh = tf.placeholder('float')
+        rel_plh = tf.placeholder('float')
 
         loss_val_reset = val_loss.assign(0)
         loss_val_update = val_loss.assign_add(loss/normalization)
 
+        rms_reset = rms.assign(0.0)
+        rms_update = rms.assign_add(rms_plh)
+
+        rel_reset = rel.assign(0.0)
+        rel_update = rel.assign_add(rel_plh)
+
         sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
+        summary_rms = tf.summary.scalar('RMS Error in Validation', rms)
+        summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables)
 
@@ -953,9 +966,13 @@ class MAE:
 
 
 
-                sess.run(loss_val_reset)
+                sess.run([loss_val_reset,rms_reset,rel_reset])
 
                 norm = 8*1080*set_val.shape[0]
+
+
+
+
                 error_rms = 0
                 error_rel = 0
 
@@ -1019,11 +1036,25 @@ class MAE:
                     error_rms += eval.rms_error(depth_pred,depth_gt)
                     error_rel += eval.relative_error(depth_pred,depth_gt)
 
+
+                error_rms = error_rms/self.n_training_validations
+                error_rel = error_rel/self.n_training_validations
+
+                sess.run(rms_update,feed_dict={rms_plh:error_rms})
+                sess.run(rel_update,feed_dict={rel_plh:error_rel})
+
                 sum_val = sess.run(sum_val_loss)
+                sum_rms = sess.run(summary_rms)
+                sum_rel = sess.run(summary_rel)
+
                 train_writer1.add_summary(sum_val,epoch)
+                train_writer1.add_summary(sum_rms,epoch)
+                train_writer1.add_summary(sum_rel,epoch)
+
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
-                print('RMSE Error over Validation Set:', error_rms/self.n_training_validations)
-                print('Relative Error over Validation Set:', error_rel/self.n_training_validations)
+                print('RMSE Error over Validation Set:', sess.run(rms.value()))
+                print('Relative Error over Validation Set:',sess.run(rel.value()))
+
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)
