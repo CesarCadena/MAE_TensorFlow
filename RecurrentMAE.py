@@ -620,11 +620,11 @@ class MAE:
 
         self.rnn_weights_H = []
 
-        state_size = self.size_coding
+        state_size = self.size_codings
 
         with tf.variable_scope('RNN') as rnn:
             for i in range(0,self.n_rnn_steps):
-                self.rnn_weights_H.append(tf.Variable(1e-08*tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(1e-08*tf.ones([state_size,state_size],dtype=tf.float32)),name='rnn_H_' + str(i))
 
             self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
             self.rnn_bias_W = tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_bias')
