@@ -620,7 +620,7 @@ class MAE:
 
         self.rnn_weights_H = []
 
-        state_size = self.size_codings
+        state_size = self.size_coding
 
         with tf.variable_scope('RNN') as rnn:
             for i in range(0,self.n_rnn_steps):
