@@ -52,7 +52,7 @@ class MAE:
 
          # recurrent options
 
-        self.n_rnn_steps = 3
+        self.n_rnn_steps = 5
 
         # prepare data
         self.prepare_training_data()
@@ -624,7 +624,7 @@ class MAE:
 
         with tf.variable_scope('RNN') as rnn:
             for i in range(0,self.n_rnn_steps):
-                self.rnn_weights_H.append(tf.Variable(1e-06*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(1e-08*tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_H_' + str(i)))
 
             self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
             self.rnn_bias_W = tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_bias')
