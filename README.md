@@ -18,10 +18,15 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 # depth evaluation
 
-for first 1000 test data frames ,  
-with RGBDs input   
-RMSE error is 9.480
-absr error is 0.3125
-processing time for one frame is 20ms on mac laptop.  
+for first 10000 test data frames ,  
+with RGBDs full input     
+RMSE error is 8.5547  
+absr error is 0.3103  
+valid depth points used in measurement 700~800 per 60*18 image.  
+
+with only RGB input  
+
+.....
+ 
 
 
