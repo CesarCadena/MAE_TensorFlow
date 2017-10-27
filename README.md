@@ -19,7 +19,8 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 # depth evaluation
 
 for first 10000 test data frames ,  
-with RGBDs full input     
+with RGBDs full input      
+
 RMSE error is 8.5547  
 absr error is 0.3103  
 valid depth points used in measurement 700~800 per 60*18 image.  
