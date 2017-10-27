@@ -1,2 +1,0 @@
-model_checkpoint_path: "pretrained_red.ckpt"
-all_model_checkpoint_paths: "pretrained_red.ckpt"
