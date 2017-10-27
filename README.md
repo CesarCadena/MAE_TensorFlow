@@ -13,6 +13,9 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 2.run MAE_pretraining_sem_shared.py  
 3.run fullMAE.py  
 
+# load test data   ...  
+1.run MAE_test.py  
+
 # depth evaluation
 
 for first 1000 test data frames ,  
