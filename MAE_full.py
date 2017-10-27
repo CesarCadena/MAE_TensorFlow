@@ -1,10 +1,10 @@
-
 # coding: utf-8
 # %load autoencoder_tensorflow_MAE.py
 # Draft MAE Model in tensorflow based on Dr.Cesar Cadena
 # this code is developed by Yi Liu 
 #run the code under the folder ~/project
 #this version has converged!
+
 import tensorflow as tf
 import numpy as np
 import os
@@ -16,7 +16,7 @@ tf.reset_default_graph()
 
 
 batch_size=128
-num_epochs=150
+num_epochs=50
 hidden_size=1024
 RESTORE=0
 
@@ -35,6 +35,9 @@ Building_data=data['Building']
 Vegetation_data=data['Vegetation']
 Sky_data=data['Sky']
 
+Depth_data=np.multiply(Depth_data,Depthmask_data)
+
+
 print("##########building model ........#######")
 ### build full MAE  model 
 # totally 9 channels (including mask channels)
@@ -48,7 +51,7 @@ Building_input=tf.placeholder(tf.float32,shape=[None,1080])
 Vegetation_input=tf.placeholder(tf.float32,shape=[None,1080])
 Sky_input=tf.placeholder(tf.float32,shape=[None,1080])
 #auxiliary channel
-Depthmask_input=tf.placeholder(tf.float32,shape=[None,1080])
+#Depthmask_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 
 
@@ -163,20 +166,21 @@ Depth_outbias=tf.Variable(tf.zeros([1,1080]),name="Depth_outbias")
 Depth_out=tf.matmul(decoder_Depth,Depth_outweights)+Depth_outbias
 
 
+
 Red_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
                                    stddev=0.01),name="Red_outweights")
 Red_outbias=tf.Variable(tf.zeros([1,1080]),name="Red_outbias")
-Red_out=tf.nn.sigmoid(tf.matmul(decoder_Red,Red_outweights)+Red_outbias)
+Red_out=tf.matmul(decoder_Red,Red_outweights)+Red_outbias
 
 Green_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
                                    stddev=0.01),name="Green_outweights")
 Green_outbias=tf.Variable(tf.zeros([1,1080]),name="Green_outbias")
-Green_out=tf.nn.sigmoid(tf.matmul(decoder_Green,Green_outweights)+Green_outbias)
+Green_out=tf.matmul(decoder_Green,Green_outweights)+Green_outbias
 
 Blue_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
                                    stddev=0.01),name="Blue_outweights")
 Blue_outbias=tf.Variable(tf.zeros([1,1080]),name="Blue_outbias")
-Blue_out=tf.nn.sigmoid(tf.matmul(decoder_Blue,Blue_outweights)+Blue_outbias)
+Blue_out=tf.matmul(decoder_Blue,Blue_outweights)+Blue_outbias
 
 
 Ground_outweights=tf.Variable(tf.random_normal(shape=[hidden_size,1080],
@@ -212,14 +216,18 @@ Sky_out=tf.nn.sigmoid(tf.matmul(decoder_Sky,Sky_outweights)+Sky_outbias)
 loss=(tf.nn.l2_loss(Red_input-Red_out)
      +tf.nn.l2_loss(Blue_input-Blue_out)
      +tf.nn.l2_loss(Green_input-Green_out)
-     +10*tf.nn.l2_loss(np.multiply((Depth_input-Depth_out),Depthmask_input))
-     +tf.nn.l2_loss(Ground_input-Ground_out)
-     +tf.nn.l2_loss(Objects_input-Objects_out)
-     +tf.nn.l2_loss(Building_input-Building_out)
-     +tf.nn.l2_loss(Vegetation_input-Vegetation_out)
-     +tf.nn.l2_loss(Sky_input-Sky_out))
-
-
+     +100*tf.nn.l2_loss(Depth_input-Depth_out)
+     -tf.reduce_sum(np.multiply(Ground_input,tf.log(tf.clip_by_value(Ground_out,1e-10,1)))
+                          +np.multiply(1-Ground_input,tf.log(tf.clip_by_value(1-Ground_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Objects_input,tf.log(tf.clip_by_value(Objects_out,1e-10,1)))
+                          +np.multiply(1-Objects_input,tf.log(tf.clip_by_value(1-Objects_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Building_input,tf.log(tf.clip_by_value(Building_out,1e-10,1)))
+                          +np.multiply(1-Building_input,tf.log(tf.clip_by_value(1-Building_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Sky_input,tf.log(tf.clip_by_value(Sky_out,1e-10,1)))
+                          +np.multiply(1-Sky_input,tf.log(tf.clip_by_value(1-Sky_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Vegetation_input,tf.log(tf.clip_by_value(Vegetation_out,1e-10,1)))
+                          +np.multiply(1-Vegetation_input,tf.log(tf.clip_by_value(1-Vegetation_out,1e-10,1)))
+                          ))
 
 regularizer = tf.contrib.layers.l2_regularizer(scale=5e-04)
 regularization= tf.contrib.layers.apply_regularization(regularizer,
@@ -230,7 +238,6 @@ regularization= tf.contrib.layers.apply_regularization(regularizer,
                                      Depth_outweights,Red_outweights,Blue_outweights,
                                      Green_outweights,Ground_outweights,Objects_outweights,
                                      Building_outweights,Vegetation_outweights,Sky_outweights])
-
         
 
               
@@ -241,7 +248,7 @@ first_train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
 
 optimizer_first=tf.train.AdamOptimizer(learning_rate=1e-4,beta1=0.9,beta2=0.999,
                 
-                                 epsilon=1e-3,use_locking=False,name='Adam').minimize(loss_r,var_list=first_train_vars)
+                                 epsilon=1e-8,use_locking=False,name='Adam').minimize(loss_r,var_list=first_train_vars)
 
 
 
@@ -327,7 +334,7 @@ with tf.Session(config=config) as sess:
     #summary_op=tf.summary.merge_all()
     #summary_writer=tf.summary.FileWriter(FLAGS.train_dir,graph=sess.graph)
 
-    for ipoch in range(70):
+    for ipoch in range(30):
         
         perm_indices=np.random.permutation(train_indices)
 
@@ -347,7 +354,7 @@ with tf.Session(config=config) as sess:
                        Green_input:Green_data[batch_indices,:],
                        Blue_input:Blue_data[batch_indices,:],
                        Depth_input:Depth_data[batch_indices,:],
-                       Depthmask_input:Depthmask_data[batch_indices,:]
+                       #Depthmask_input:Depthmask_data[batch_indices,:]
                       }   
     
             _,l,r=sess.run([optimizer_first,loss,regularization],feed_dict=feed_dict)
@@ -358,7 +365,7 @@ with tf.Session(config=config) as sess:
 
 
 
-    for ipoch in range(70,num_epochs):
+    for ipoch in range(30,num_epochs):
         
         perm_indices=np.random.permutation(train_indices)
 
@@ -378,7 +385,7 @@ with tf.Session(config=config) as sess:
                        Green_input:Green_data[batch_indices,:],
                        Blue_input:Blue_data[batch_indices,:],
                        Depth_input:Depth_data[batch_indices,:],
-                       Depthmask_input:Depthmask_data[batch_indices,:]
+                       #Depthmask_input:Depthmask_data[batch_indices,:]
                       }   
     
             _,l,r=sess.run([optimizer_second,loss,regularization],feed_dict=feed_dict)
