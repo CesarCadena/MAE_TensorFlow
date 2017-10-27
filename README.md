@@ -20,8 +20,8 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 for first 1000 test data frames ,  
 with RGBDs input   
-RMSE error is 4.3044  
-absr error is 0.3595  
+RMSE error is 9.480
+absr error is 0.3125
 processing time for one frame is 20ms on mac laptop.  
 
 
