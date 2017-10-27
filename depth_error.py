@@ -15,7 +15,7 @@ def ABSR(truth,prediction):
     #truth=truth[T]
 
     n=len(truth)
-    print("valid data points",n)
+    #print("valid data points",n)
     error=sum(abs(truth-prediction)/truth)
     abs_error=error/(n+1e-8)
     
@@ -41,7 +41,7 @@ def RMSE(truth,prediction):
     #truth=truth[T]
 
     n=len(truth)
-    print("valid data points",n)
+    #print("valid data points",n)
     error=sum((truth-prediction)**2)/(n+1e-8)
     rmse_error=np.sqrt(error)
     

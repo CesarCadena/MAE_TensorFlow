@@ -24,7 +24,7 @@ RESTORE=0
 
 print("###########loading data.........##########")
 #  prepare data 
-data=process_data('training')
+data=process_data('test')
 Red_data=data['Red']
 Green_data=data['Green']
 Blue_data=data['Blue']
@@ -325,7 +325,7 @@ with tf.Session(config=config) as sess:
 	error_rmse=0
 	error_abs=0
 
-	for i in range (1000):
+	for i in range (10000):
 
 		feed_dict={Ground_input:Ground_data[i:i+1,:],
 				   Objects_input:Objects_data[i:i+1,:],
@@ -335,24 +335,24 @@ with tf.Session(config=config) as sess:
 				   Red_input:Red_data[i:i+1,:],
 				   Green_input:Green_data[i:i+1,:],
 				   Blue_input:Blue_data[i:i+1,:],
-				   Depth_input:Depth_data[i:i+1,:],
+				   Depth_input:Depth_data[i:i+1,:]*0,
 				   #Depthmask_input:Depthmask_data[i:i+1,:]
 				   }   
 
 		a=Depth_data[i:i+1,:]
 		#np.multiply(Depth_data[i:i+1,:],Depthmask_data[i:i+1,:])
-		print(a[0].shape)
-		print(a[0])
+		#print(a[0].shape)
+		#print(a[0])
 		b=sess.run(Depth_out,feed_dict=feed_dict)
-		print(b[0].shape)
-		print(b[0])
+		#print(b[0].shape)
+		#print(b[0])
 
 		error_rmse +=RMSE(a[0],b[0])
 		error_abs +=ABSR(a[0],b[0])
 		#print(error)
 
-	error_rmse=error_rmse/1000
-	error_abs=error_abs/1000
+	error_rmse=error_rmse/10000
+	error_abs=error_abs/10000
 
 	print("average RMSE error is ",error_rmse)
 	print("average ABSR error is ",error_abs)
