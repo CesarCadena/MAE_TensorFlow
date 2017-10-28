@@ -22,8 +22,8 @@ for first 10000 test data frames:
 
 1.with RGBDS full input       
 
-RMSE error is 4.633  
-absr error is 0.143 
+RMSE error is 4.633(depth<50m)/7.133(depth<80m)  
+absr error is 0.143 /0.161
 valid depth points used in measurement 900 per 60*18 image.   
 
 
