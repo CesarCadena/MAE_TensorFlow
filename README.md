@@ -24,7 +24,7 @@ for first 10000 test data frames:
 
 RMSE error is 4.633  
 absr error is 0.143 
-valid depth points used in measurement 700~800 per 60*18 image.   
+valid depth points used in measurement 900 per 60*18 image.   
 
 
 2.with only RGB input   
