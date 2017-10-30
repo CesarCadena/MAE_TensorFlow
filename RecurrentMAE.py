@@ -629,7 +629,7 @@ class MAE:
             for i in range(0,self.n_rnn_steps):
 
                 # initialization of recurrent weights
-                self.rnn_weights_H.append(tf.Variable(1e-05*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(1e-07*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
                 self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
                 self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
 
