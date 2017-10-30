@@ -617,34 +617,39 @@ class MAE:
 
     def rnn_network(self, inputs):
 
-
+        # container for recurrent weights
         self.rnn_weights_H = []
 
+        # set state size
         state_size = self.size_coding
 
         with tf.variable_scope('RNN') as rnn:
             for i in range(0,self.n_rnn_steps):
-                self.rnn_weights_H.append(tf.Variable(1e-06*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
 
+                # initialization of recurrent weights
+                self.rnn_weights_H.append(tf.Variable(1e-05*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+
+            # initialization of weights from current timestep
             self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
             self.rnn_bias_W = tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_bias')
 
+            # get all variables of rnn network
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
 
+        # initialize state of recurrent network from initializing placeholder
         state = self.init_states
 
+        # running recurrent layer
         for i in range(0,self.n_rnn_steps):
             state = tf.matmul(state,self.rnn_weights_H[i])
 
         output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W),state),self.rnn_bias_W)
 
-
-
-
         return output, state
 
     def collect_variables(self):
 
+        # collect all variables for weight regularization
         for i in self.layers:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
@@ -1212,12 +1217,6 @@ class MAE:
                 error_rms += eval.rms_error(depth_pred,depth_label)
 
             print('Error (RMS):', error_rms/n_evaluations)
-
-
-
-
-
-
 
 
 
