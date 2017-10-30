@@ -619,6 +619,8 @@ class MAE:
 
         # container for recurrent weights
         self.rnn_weights_H = []
+        self.rnn_weights_W = []
+        self.rnn_bias_B = []
 
         # set state size
         state_size = self.size_coding
@@ -628,10 +630,14 @@ class MAE:
 
                 # initialization of recurrent weights
                 self.rnn_weights_H.append(tf.Variable(1e-05*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
+                self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
 
             # initialization of weights from current timestep
-            self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
-            self.rnn_bias_W = tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_bias')
+            self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
+            self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
+
+
 
             # get all variables of rnn network
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
@@ -641,9 +647,9 @@ class MAE:
 
         # running recurrent layer
         for i in range(0,self.n_rnn_steps):
-            state = tf.matmul(state,self.rnn_weights_H[i])
+            state = tf.add(tf.add(tf.matmul(state,self.rnn_weights_H[i]),tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i])
 
-        output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W),state),self.rnn_bias_W)
+        output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1])
 
         return output, state
 
