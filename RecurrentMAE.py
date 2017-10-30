@@ -627,7 +627,7 @@ class MAE:
             for i in range(0,self.n_rnn_steps):
 
                 # initialization of recurrent weights
-                self.rnn_weights_H.append(tf.Variable(1e-06*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(1e-05*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
 
             # initialization of weights from current timestep
             self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
