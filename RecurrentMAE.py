@@ -627,7 +627,7 @@ class MAE:
             for i in range(0,self.n_rnn_steps):
 
                 # initialization of recurrent weights
-                self.rnn_weights_H.append(tf.Variable(1e-05*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(1e-06*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
 
             # initialization of weights from current timestep
             self.rnn_weights_W = tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_weights')
@@ -928,7 +928,6 @@ class MAE:
                     veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
                     sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
 
-                    current_state = 1e-03*np.ones((self.batch_size,self.size_coding))
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
                                                                                                         copy(img_batch),
@@ -961,7 +960,7 @@ class MAE:
                                  self.bld_label:bld_batch_label,
                                  self.veg_label:veg_batch_label,
                                  self.sky_label:sky_batch_label,
-                                 self.init_states:current_state}
+                                 self.init_states:in_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
@@ -1040,7 +1039,7 @@ class MAE:
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
-                                 self.init_states:1e-3*np.ones((1,self.size_coding)),
+                                 self.init_states:np.zeros((1,self.size_coding)),
                                  normalization:norm}
 
                     im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
