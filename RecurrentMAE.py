@@ -647,7 +647,7 @@ class MAE:
 
         # running recurrent layer
         for i in range(0,self.n_rnn_steps):
-            state = tf.add(tf.add(tf.matmul(state,self.rnn_weights_H[i]),tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i])
+            state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i]),self.rnn_weights_H[i])
 
         output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1])
 
@@ -754,7 +754,7 @@ class MAE:
         summary_rms = tf.summary.scalar('RMS Error in Validation', rms)
         summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_weights_H)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
