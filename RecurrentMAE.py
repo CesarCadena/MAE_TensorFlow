@@ -55,6 +55,9 @@ class MAE:
         self.n_rnn_steps = 5
 
         # prepare data
+        self.data_augmentation = True
+        self.n_augmentations = 3
+
         self.prepare_training_data()
         self.prepare_validation_data()
         self.prepare_test_data()
@@ -201,6 +204,79 @@ class MAE:
                 self.veg_train_label.append(copy(veg_series))
                 self.sky_train_label.append(copy(sky_series))
 
+
+                if self.data_augmentation == True:
+                    for a in range(0,self.n_augmentations):
+
+                        imr_series_aug = copy(imr_series)
+                        img_series_aug = copy(img_series)
+                        imb_series_aug = copy(imb_series)
+                        depth_series_aug = copy(depth_series)
+                        gnd_series_aug = copy(gnd_series)
+                        obj_series_aug = copy(obj_series)
+                        bld_series_aug = copy(bld_series)
+                        veg_series_aug = copy(veg_series)
+                        sky_series_aug = copy(sky_series)
+
+
+                        for z in range(0,self.n_rnn_steps):
+                            u = np.random.uniform(0,1)
+                            zeros = np.zeros(imr_series_aug[z].shape)
+
+                            if u < 0.33:
+                                # only rgb
+
+                                depth_series_aug[z] = copy(zeros)
+                                gnd_series_aug[z] = copy(zeros)
+                                obj_series_aug[z] = copy(zeros)
+                                bld_series_aug[z] = copy(zeros)
+                                veg_series_aug[z] = copy(zeros)
+                                sky_series_aug[z] = copy(zeros)
+
+
+
+                            if u >= 0.33 and u < 0.66:
+                                # only depth
+                                imr_series_aug[z] = copy(zeros)
+                                img_series_aug[z] = copy(zeros)
+                                imb_series_aug[z] = copy(zeros)
+                                gnd_series_aug[z] = copy(zeros)
+                                obj_series_aug[z] = copy(zeros)
+                                bld_series_aug[z] = copy(zeros)
+                                veg_series_aug[z] = copy(zeros)
+                                sky_series_aug[z] = copy(zeros)
+
+                            if u >= 0.66:
+                                # rgb and depth
+                                gnd_series_aug[z] = copy(zeros)
+                                obj_series_aug[z] = copy(zeros)
+                                bld_series_aug[z] = copy(zeros)
+                                veg_series_aug[z] = copy(zeros)
+                                sky_series_aug[z] = copy(zeros)
+
+
+                        self.imr_train.append(copy(imr_series_aug))
+                        self.img_train.append(copy(img_series_aug))
+                        self.imb_train.append(copy(imb_series_aug))
+                        self.depth_train.append(copy(depth_series_aug))
+                        self.depth_mask_train.append(copy(depth_mask_series))
+                        self.gnd_train.append(copy(gnd_series_aug))
+                        self.obj_train.append(copy(obj_series_aug))
+                        self.bld_train.append(copy(bld_series_aug))
+                        self.veg_train.append(copy(veg_series_aug))
+                        self.sky_train.append(copy(sky_series_aug))
+
+                        self.imr_train_label.append(copy(imr_series))
+                        self.img_train_label.append(copy(img_series))
+                        self.imb_train_label.append(copy(imb_series))
+                        self.depth_train_label.append(copy(depth_series))
+                        self.gnd_train_label.append(copy(gnd_series))
+                        self.obj_train_label.append(copy(obj_series))
+                        self.bld_train_label.append(copy(bld_series))
+                        self.veg_train_label.append(copy(veg_series))
+                        self.sky_train_label.append(copy(sky_series))
+
+
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
@@ -226,6 +302,7 @@ class MAE:
         self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
+
 
     def prepare_validation_data(self):
 
@@ -946,6 +1023,9 @@ class MAE:
                                                                                                         copy(sky_batch),
                                                                                                         resolution=(18,60),
                                                                                                         rnn=True)
+
+
+
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
