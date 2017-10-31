@@ -126,6 +126,82 @@ class MAE:
         # rnn initial states
         self.init_states = tf.placeholder('float',[None,self.size_coding])
 
+    def augment_data(self,imr,img,imb,depth,gnd,obj,bld,veg,sky):
+
+        imr_aug = []
+        img_aug = []
+        imb_aug = []
+        depth_aug = []
+        gnd_aug = []
+        obj_aug = []
+        bld_aug = []
+        veg_aug = []
+        sky_aug = []
+
+        for series in range(0,self.batch_size):
+
+            imr_series_aug = copy(imr[series])
+            img_series_aug = copy(img[series])
+            imb_series_aug = copy(imb[series])
+            depth_series_aug = copy(depth[series])
+            gnd_series_aug = copy(gnd[series])
+            obj_series_aug = copy(obj[series])
+            bld_series_aug = copy(bld[series])
+            veg_series_aug = copy(veg[series])
+            sky_series_aug = copy(sky[series])
+
+            for rnn_step in range(0,self.n_rnn_steps):
+
+                u = np.random.uniform(0,1)
+                zeros = np.zeros(np.asarray(imr_series_aug[rnn_step]).shape)
+
+                if u < 0.33:
+                    # only rgb
+
+                    depth_series_aug[rnn_step] = zeros
+                    gnd_series_aug[rnn_step] = zeros
+                    obj_series_aug[rnn_step] = zeros
+                    bld_series_aug[rnn_step] = zeros
+                    veg_series_aug[rnn_step] = zeros
+                    sky_series_aug[rnn_step] = zeros
+
+
+
+                if u >= 0.33 and u < 0.66:
+                    # only depth
+                    imr_series_aug[rnn_step] = zeros
+                    img_series_aug[rnn_step] = zeros
+                    imb_series_aug[rnn_step] = zeros
+                    gnd_series_aug[rnn_step] = zeros
+                    obj_series_aug[rnn_step] = zeros
+                    bld_series_aug[rnn_step] = zeros
+                    veg_series_aug[rnn_step] = zeros
+                    sky_series_aug[rnn_step] = zeros
+
+                if u >= 0.66:
+                    # rgb and depth
+                    gnd_series_aug[rnn_step] = zeros
+                    obj_series_aug[rnn_step] = zeros
+                    bld_series_aug[rnn_step] = zeros
+                    veg_series_aug[rnn_step] = zeros
+                    sky_series_aug[rnn_step] = zeros
+
+            imr_aug.append(copy(imr_series_aug))
+            imb_aug.append(copy(img_series_aug))
+            img_aug.append(copy(imb_series_aug))
+            depth_aug.append(copy(depth_series_aug))
+            gnd_aug.append(copy(gnd_series_aug))
+            obj_aug.append(copy(obj_series_aug))
+            bld_aug.append(copy(bld_series_aug))
+            veg_aug.append(copy(veg_series_aug))
+            sky_aug.append(copy(sky_series_aug))
+
+        return np.asarray(imr_aug),np.asarray(img_aug),np.asarray(imb_aug),\
+               np.asarray(depth_aug),np.asarray(gnd_aug),np.asarray(obj_aug),\
+               np.asarray(bld_aug),np.asarray(veg_aug),np.asarray(sky_aug)
+
+
+
     def prepare_training_data(self):
         '''
         Function for bringing the training data into a form that suits the training process
@@ -205,78 +281,6 @@ class MAE:
                 self.sky_train_label.append(copy(sky_series))
 
 
-                if self.data_augmentation == True:
-                    for a in range(0,self.n_augmentations):
-
-                        imr_series_aug = copy(imr_series)
-                        img_series_aug = copy(img_series)
-                        imb_series_aug = copy(imb_series)
-                        depth_series_aug = copy(depth_series)
-                        gnd_series_aug = copy(gnd_series)
-                        obj_series_aug = copy(obj_series)
-                        bld_series_aug = copy(bld_series)
-                        veg_series_aug = copy(veg_series)
-                        sky_series_aug = copy(sky_series)
-
-
-                        for z in range(0,self.n_rnn_steps):
-                            u = np.random.uniform(0,1)
-                            zeros = np.zeros(imr_series_aug[z].shape)
-
-                            if u < 0.33:
-                                # only rgb
-
-                                depth_series_aug[z] = copy(zeros)
-                                gnd_series_aug[z] = copy(zeros)
-                                obj_series_aug[z] = copy(zeros)
-                                bld_series_aug[z] = copy(zeros)
-                                veg_series_aug[z] = copy(zeros)
-                                sky_series_aug[z] = copy(zeros)
-
-
-
-                            if u >= 0.33 and u < 0.66:
-                                # only depth
-                                imr_series_aug[z] = copy(zeros)
-                                img_series_aug[z] = copy(zeros)
-                                imb_series_aug[z] = copy(zeros)
-                                gnd_series_aug[z] = copy(zeros)
-                                obj_series_aug[z] = copy(zeros)
-                                bld_series_aug[z] = copy(zeros)
-                                veg_series_aug[z] = copy(zeros)
-                                sky_series_aug[z] = copy(zeros)
-
-                            if u >= 0.66:
-                                # rgb and depth
-                                gnd_series_aug[z] = copy(zeros)
-                                obj_series_aug[z] = copy(zeros)
-                                bld_series_aug[z] = copy(zeros)
-                                veg_series_aug[z] = copy(zeros)
-                                sky_series_aug[z] = copy(zeros)
-
-
-                        self.imr_train.append(copy(imr_series_aug))
-                        self.img_train.append(copy(img_series_aug))
-                        self.imb_train.append(copy(imb_series_aug))
-                        self.depth_train.append(copy(depth_series_aug))
-                        self.depth_mask_train.append(copy(depth_mask_series))
-                        self.gnd_train.append(copy(gnd_series_aug))
-                        self.obj_train.append(copy(obj_series_aug))
-                        self.bld_train.append(copy(bld_series_aug))
-                        self.veg_train.append(copy(veg_series_aug))
-                        self.sky_train.append(copy(sky_series_aug))
-
-                        self.imr_train_label.append(copy(imr_series))
-                        self.img_train_label.append(copy(img_series))
-                        self.imb_train_label.append(copy(imb_series))
-                        self.depth_train_label.append(copy(depth_series))
-                        self.gnd_train_label.append(copy(gnd_series))
-                        self.obj_train_label.append(copy(obj_series))
-                        self.bld_train_label.append(copy(bld_series))
-                        self.veg_train_label.append(copy(veg_series))
-                        self.sky_train_label.append(copy(sky_series))
-
-
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
@@ -302,7 +306,6 @@ class MAE:
         self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
-
 
     def prepare_validation_data(self):
 
@@ -987,29 +990,29 @@ class MAE:
                 in_state = np.zeros((self.batch_size,self.size_coding))
 
 
-                for _ in range(self.n_batches):
+                for batch in range(self.n_batches):
 
-                    imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
-                    img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size]
-                    imb_batch = self.imb_train[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_batch = self.depth_train[_*self.batch_size:(_+1)*self.batch_size]
-                    gnd_batch = self.gnd_train[_*self.batch_size:(_+1)*self.batch_size]
-                    obj_batch = self.obj_train[_*self.batch_size:(_+1)*self.batch_size]
-                    bld_batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size]
-                    veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
-                    sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
+                    imr_batch = self.imr_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    img_batch = self.img_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    imb_batch = self.imb_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    depth_batch = self.depth_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    gnd_batch = self.gnd_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    obj_batch = self.obj_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    bld_batch = self.bld_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    veg_batch = self.veg_train[batch*self.batch_size:(batch+1)*self.batch_size]
+                    sky_batch = self.sky_train[batch*self.batch_size:(batch+1)*self.batch_size]
 
-                    depth_mask_batch = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
+                    depth_mask_batch = self.depth_mask_train[batch*self.batch_size:(batch+1)*self.batch_size]
 
-                    imr_batch_label = self.imr_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    img_batch_label = self.img_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    imb_batch_label = self.imb_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_batch_label = self.depth_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    gnd_batch_label= self.gnd_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    obj_batch_label = self.obj_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    bld_batch_label = self.bld_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
+                    imr_batch_label = self.imr_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    img_batch_label = self.img_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    imb_batch_label = self.imb_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    depth_batch_label = self.depth_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    gnd_batch_label= self.gnd_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    obj_batch_label = self.obj_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    bld_batch_label = self.bld_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    veg_batch_label = self.veg_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                    sky_batch_label = self.sky_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
 
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
@@ -1049,7 +1052,57 @@ class MAE:
                                  self.init_states:in_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                    batch , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+
+                    if self.data_augmentation == True:
+
+                        for augmentation in range(0,self.n_augmentations):
+
+                            imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
+                                                                                                                copy(img_batch),
+                                                                                                                copy(imb_batch),
+                                                                                                                copy(depth_batch),
+                                                                                                                copy(gnd_batch),
+                                                                                                                copy(obj_batch),
+                                                                                                                copy(bld_batch),
+                                                                                                                copy(veg_batch),
+                                                                                                                copy(sky_batch),
+                                                                                                                resolution=(18,60),
+                                                                                                                rnn=True)
+
+                            imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = self.augment_data(imr_in,
+                                                                                                                 img_in,
+                                                                                                                 imb_in,
+                                                                                                                 depth_in,
+                                                                                                                 gnd_in,
+                                                                                                                 obj_in,
+                                                                                                                 bld_in,
+                                                                                                                 veg_in,
+                                                                                                                 sky_in)
+
+                            feed_dict = {self.imr_input:imr_in,
+                                         self.img_input:img_in,
+                                         self.imb_input:imb_in,
+                                         self.depth_input:depth_in,
+                                         self.gnd_input:gnd_in,
+                                         self.obj_input:obj_in,
+                                         self.bld_input:bld_in,
+                                         self.veg_input:veg_in,
+                                         self.sky_input:sky_in,
+                                         self.depth_mask:depth_mask_batch,
+                                         self.imr_label:imr_batch_label,
+                                         self.img_label:img_batch_label,
+                                         self.imb_label:imb_batch_label,
+                                         self.depth_label:depth_batch_label,
+                                         self.gnd_label:gnd_batch_label,
+                                         self.obj_label:obj_batch_label,
+                                         self.bld_label:bld_batch_label,
+                                         self.veg_label:veg_batch_label,
+                                         self.sky_label:sky_batch_label,
+                                         self.init_states:in_state}
+
+                            # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
+                            batch , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
 
 
