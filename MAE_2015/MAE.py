@@ -14,11 +14,6 @@ from input_distortion import input_distortion, pretraining_input_distortion
 from datetime import datetime
 from copy import copy
 
-# LOAD DATA
-
-data_train, data_validate, data_test = load_data()
-
-
 
 class MAE:
 
@@ -148,55 +143,55 @@ class MAE:
 
         for i in self.data_train:
             for j in i:
-                self.imr_train.append(j['xcr1']/255.)
-                self.img_train.append(j['xcg1']/255.)
-                self.imb_train.append(j['xcb1']/255.)
-                self.depth_train.append(j['xid1'])
-                self.depth_mask_train.append(j['xmask1'])
-                self.gnd_train.append((j['sem1']==1).astype(int))
-                self.obj_train.append((j['sem1']==2).astype(int))
-                self.bld_train.append((j['sem1']==3).astype(int))
-                self.veg_train.append((j['sem1']==4).astype(int))
-                self.sky_train.append((j['sem1']==5).astype(int))
+                self.imr_train.append(j['xcrLeft']/255.)
+                self.img_train.append(j['xcgLeft']/255.)
+                self.imb_train.append(j['xcbLeft']/255.)
+                self.depth_train.append(j['xidLeft'])
+                self.depth_mask_train.append(j['xmaskLeft'])
+                self.gnd_train.append((j['semLeft']==1).astype(int))
+                self.obj_train.append((j['semLeft']==2).astype(int))
+                self.bld_train.append((j['semLeft']==3).astype(int))
+                self.veg_train.append((j['semLeft']==4).astype(int))
+                self.sky_train.append((j['semLeft']==5).astype(int))
 
-                self.imr_train_label.append(j['xcr1']/255.)
-                self.img_train_label.append(j['xcg1']/255.)
-                self.imb_train_label.append(j['xcb1']/255.)
-                self.depth_train_label.append(j['xid1'])
-                self.gnd_train_label.append((j['sem1']==1).astype(int))
-                self.obj_train_label.append((j['sem1']==2).astype(int))
-                self.bld_train_label.append((j['sem1']==3).astype(int))
-                self.veg_train_label.append((j['sem1']==4).astype(int))
-                self.sky_train_label.append((j['sem1']==5).astype(int))
-
-
-                self.imr_train.append(j['xcr2']/255.)
-                self.img_train.append(j['xcg2']/255.)
-                self.imb_train.append(j['xcb2']/255.)
-                self.depth_train.append(j['xid2'])
-                self.depth_mask_train.append(j['xmask2'])
-                self.gnd_train.append((j['sem2']==1).astype(int))
-                self.obj_train.append((j['sem2']==2).astype(int))
-                self.bld_train.append((j['sem2']==3).astype(int))
-                self.veg_train.append((j['sem2']==4).astype(int))
-                self.sky_train.append((j['sem2']==5).astype(int))
-
-                self.imr_train_label.append(j['xcr2']/255.)
-                self.img_train_label.append(j['xcg2']/255.)
-                self.imb_train_label.append(j['xcb2']/255.)
-                self.depth_train_label.append(j['xid2'])
-                self.gnd_train_label.append((j['sem2']==1).astype(int))
-                self.obj_train_label.append((j['sem2']==2).astype(int))
-                self.bld_train_label.append((j['sem2']==3).astype(int))
-                self.veg_train_label.append((j['sem2']==4).astype(int))
-                self.sky_train_label.append((j['sem2']==5).astype(int))
+                self.imr_train_label.append(j['xcrLeft']/255.)
+                self.img_train_label.append(j['xcgLeft']/255.)
+                self.imb_train_label.append(j['xcbLeft']/255.)
+                self.depth_train_label.append(j['xidLeft'])
+                self.gnd_train_label.append((j['semLeft']==1).astype(int))
+                self.obj_train_label.append((j['semLeft']==2).astype(int))
+                self.bld_train_label.append((j['semLeft']==3).astype(int))
+                self.veg_train_label.append((j['semLeft']==4).astype(int))
+                self.sky_train_label.append((j['semLeft']==5).astype(int))
 
 
+                self.imr_train.append(j['xcrRight']/255.)
+                self.img_train.append(j['xcgRight']/255.)
+                self.imb_train.append(j['xcbRight']/255.)
+                self.depth_train.append(j['xidRight'])
+                self.depth_mask_train.append(j['xmaskRight'])
+                self.gnd_train.append((j['semRight']==1).astype(int))
+                self.obj_train.append((j['semRight']==2).astype(int))
+                self.bld_train.append((j['semRight']==3).astype(int))
+                self.veg_train.append((j['semRight']==4).astype(int))
+                self.sky_train.append((j['semRight']==5).astype(int))
 
-                self.imr_train.append(j['xcr1']/255.)
-                self.img_train.append(j['xcg1']/255.)
-                self.imb_train.append(j['xcb1']/255.)
-                self.depth_mask_train.append(j['xmask1'])
+                self.imr_train_label.append(j['xcrRight']/255.)
+                self.img_train_label.append(j['xcgRight']/255.)
+                self.imb_train_label.append(j['xcbRight']/255.)
+                self.depth_train_label.append(j['xidRight'])
+                self.gnd_train_label.append((j['semRight']==1).astype(int))
+                self.obj_train_label.append((j['semRight']==2).astype(int))
+                self.bld_train_label.append((j['semRight']==3).astype(int))
+                self.veg_train_label.append((j['semRight']==4).astype(int))
+                self.sky_train_label.append((j['semRight']==5).astype(int))
+
+
+
+                self.imr_train.append(j['xcrLeft']/255.)
+                self.img_train.append(j['xcgLeft']/255.)
+                self.imb_train.append(j['xcbLeft']/255.)
+                self.depth_mask_train.append(j['xmaskLeft'])
                 self.depth_train.append([0]*self.size_input)
                 self.gnd_train.append([0]*self.size_input)
                 self.obj_train.append([0]*self.size_input)
@@ -204,20 +199,20 @@ class MAE:
                 self.veg_train.append([0]*self.size_input)
                 self.sky_train.append([0]*self.size_input)
 
-                self.imr_train_label.append(j['xcr1']/255.)
-                self.img_train_label.append(j['xcg1']/255.)
-                self.imb_train_label.append(j['xcb1']/255.)
-                self.depth_train_label.append(j['xid1'])
-                self.gnd_train_label.append((j['sem1']==1).astype(int))
-                self.obj_train_label.append((j['sem1']==2).astype(int))
-                self.bld_train_label.append((j['sem1']==3).astype(int))
-                self.veg_train_label.append((j['sem1']==4).astype(int))
-                self.sky_train_label.append((j['sem1']==5).astype(int))
+                self.imr_train_label.append(j['xcrLeft']/255.)
+                self.img_train_label.append(j['xcgLeft']/255.)
+                self.imb_train_label.append(j['xcbLeft']/255.)
+                self.depth_train_label.append(j['xidLeft'])
+                self.gnd_train_label.append((j['semLeft']==1).astype(int))
+                self.obj_train_label.append((j['semLeft']==2).astype(int))
+                self.bld_train_label.append((j['semLeft']==3).astype(int))
+                self.veg_train_label.append((j['semLeft']==4).astype(int))
+                self.sky_train_label.append((j['semLeft']==5).astype(int))
 
-                self.imr_train.append(j['xcr2']/255.)
-                self.img_train.append(j['xcg2']/255.)
-                self.imb_train.append(j['xcb2']/255.)
-                self.depth_mask_train.append(j['xmask2'])
+                self.imr_train.append(j['xcrRight']/255.)
+                self.img_train.append(j['xcgRight']/255.)
+                self.imb_train.append(j['xcbRight']/255.)
+                self.depth_mask_train.append(j['xmaskRight'])
                 self.depth_train.append([0]*self.size_input)
                 self.gnd_train.append([0]*self.size_input)
                 self.obj_train.append([0]*self.size_input)
@@ -225,15 +220,15 @@ class MAE:
                 self.veg_train.append([0]*self.size_input)
                 self.sky_train.append([0]*self.size_input)
 
-                self.imr_train_label.append(j['xcr2']/255.)
-                self.img_train_label.append(j['xcg2']/255.)
-                self.imb_train_label.append(j['xcb2']/255.)
-                self.depth_train_label.append(j['xid2'])
-                self.gnd_train_label.append((j['sem2']==1).astype(int))
-                self.obj_train_label.append((j['sem2']==2).astype(int))
-                self.bld_train_label.append((j['sem2']==3).astype(int))
-                self.veg_train_label.append((j['sem2']==4).astype(int))
-                self.sky_train_label.append((j['sem2']==5).astype(int))
+                self.imr_train_label.append(j['xcrRight']/255.)
+                self.img_train_label.append(j['xcgRight']/255.)
+                self.imb_train_label.append(j['xcbRight']/255.)
+                self.depth_train_label.append(j['xidRight'])
+                self.gnd_train_label.append((j['semRight']==1).astype(int))
+                self.obj_train_label.append((j['semRight']==2).astype(int))
+                self.bld_train_label.append((j['semRight']==3).astype(int))
+                self.veg_train_label.append((j['semRight']==4).astype(int))
+                self.sky_train_label.append((j['semRight']==5).astype(int))
                 
 
 
@@ -282,16 +277,16 @@ class MAE:
 
         for i in self.data_validate:
             for j in i:
-                self.imr_val.append(j['xcr1']/255.)
-                self.img_val.append(j['xcg1']/255.)
-                self.imb_val.append(j['xcb1']/255.)
-                self.depth_val.append(j['xid1'])
-                self.depth_mask_val.append(j['xmask1'])
-                self.gnd_val.append((j['sem1']==1).astype(int))
-                self.obj_val.append((j['sem1']==2).astype(int))
-                self.bld_val.append((j['sem1']==3).astype(int))
-                self.veg_val.append((j['sem1']==4).astype(int))
-                self.sky_val.append((j['sem1']==5).astype(int))
+                self.imr_val.append(j['xcrLeft']/255.)
+                self.img_val.append(j['xcgLeft']/255.)
+                self.imb_val.append(j['xcbLeft']/255.)
+                self.depth_val.append(j['xidLeft'])
+                self.depth_mask_val.append(j['xmaskLeft'])
+                self.gnd_val.append((j['semLeft']==1).astype(int))
+                self.obj_val.append((j['semLeft']==2).astype(int))
+                self.bld_val.append((j['semLeft']==3).astype(int))
+                self.veg_val.append((j['semLeft']==4).astype(int))
+                self.sky_val.append((j['semLeft']==5).astype(int))
 
     def prepare_test_data(self):
 
@@ -309,15 +304,15 @@ class MAE:
 
         for i in self.data_test:
             for j in i:
-                self.imr_test.append(j['xcr1']/255.)
-                self.img_test.append(j['xcg1']/255.)
-                self.imb_test.append(j['xcb1']/255.)
-                self.depth_test.append(j['xid1'])
-                self.gnd_test.append((j['sem1']==1).astype(int))
-                self.obj_test.append((j['sem1']==2).astype(int))
-                self.bld_test.append((j['sem1']==3).astype(int))
-                self.veg_test.append((j['sem1']==4).astype(int))
-                self.sky_test.append((j['sem1']==5).astype(int))
+                self.imr_test.append(j['xcrLeft']/255.)
+                self.img_test.append(j['xcgLeft']/255.)
+                self.imb_test.append(j['xcbLeft']/255.)
+                self.depth_test.append(j['xidLeft'])
+                self.gnd_test.append((j['semLeft']==1).astype(int))
+                self.obj_test.append((j['semLeft']==2).astype(int))
+                self.bld_test.append((j['semLeft']==3).astype(int))
+                self.veg_test.append((j['semLeft']==4).astype(int))
+                self.sky_test.append((j['semLeft']==5).astype(int))
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_test)).astype(int)
@@ -1032,9 +1027,9 @@ class MAE:
 
 # running model
 
-mae = MAE(data_train,data_validate,data_test)
+#mae = MAE(data_train,data_validate,data_test)
 #mae.train_model()
-mae.evaluate(run='20171016-131619')
+#mae.evaluate(run='20171016-131619')
 
 
 

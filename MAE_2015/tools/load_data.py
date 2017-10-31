@@ -273,7 +273,7 @@ def load_set_data(data_seq):
               'semRight':0}
 
     for i in range(0,n_seq):
-        seq = []
+        seq = []        
         for j in range(0,data_set[i]['xcr'].shape[1]):
             frame['xcrLeft'] = copy(data_set[i]['xcr'][:,j])
             frame['xcgLeft'] = copy(data_set[i]['xcg'][:,j])
