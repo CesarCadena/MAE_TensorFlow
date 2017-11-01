@@ -200,8 +200,6 @@ class MAE:
                np.asarray(depth_aug),np.asarray(gnd_aug),np.asarray(obj_aug),\
                np.asarray(bld_aug),np.asarray(veg_aug),np.asarray(sky_aug)
 
-
-
     def prepare_training_data(self):
         '''
         Function for bringing the training data into a form that suits the training process
@@ -570,55 +568,59 @@ class MAE:
         # definition of variables for whole decoding network
         # full decoding
 
-        self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01),name='full_dc_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_dc_layer_bias')}
-        self.layers.append(self.full_dc_layer)
+        with tf.variable_scope('Decoder') as decoder:
 
-        # rgb and depth decoding layers
+            self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01),name='full_dc_layer_weights'),
+                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_dc_layer_bias')}
+            self.layers.append(self.full_dc_layer)
 
-        self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='red_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='red_dc_layer_bias')}
-        self.layers.append(self.red_dc_layer)
+            # rgb and depth decoding layers
 
-        self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='green_dc_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_input]),name='green_dc_layer_bias')}
-        self.layers.append(self.green_dc_layer)
+            self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='red_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='red_dc_layer_bias')}
+            self.layers.append(self.red_dc_layer)
 
-        self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='blue_dc_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_bias')}
-        self.layers.append(self.blue_dc_layer)
+            self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='green_dc_layer_weights'),
+                                   'bias':tf.Variable(tf.zeros([self.size_input]),name='green_dc_layer_bias')}
+            self.layers.append(self.green_dc_layer)
 
-        self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='depth_dc_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_input]),name='depth_dc_layer_bias')}
-        self.layers.append(self.depth_dc_layer)
+            self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='blue_dc_layer_weights'),
+                                  'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_bias')}
+            self.layers.append(self.blue_dc_layer)
 
-        # decoding layer full semantics
+            self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='depth_dc_layer_weights'),
+                                   'bias':tf.Variable(tf.zeros([self.size_input]),name='depth_dc_layer_bias')}
+            self.layers.append(self.depth_dc_layer)
 
-        self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
-        self.layers.append(self.sem_dc_layer)
+            # decoding layer full semantics
 
-        # decoding layers semantics
+            self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
+                                      'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
+            self.layers.append(self.sem_dc_layer)
 
-        self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='gnd_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='gnd_dc_layer_bias')}
-        self.layers.append(self.gnd_dc_layer)
+            # decoding layers semantics
 
-        self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='obj_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='obj_dc_layer_bias')}
-        self.layers.append(self.obj_dc_layer)
+            self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='gnd_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='gnd_dc_layer_bias')}
+            self.layers.append(self.gnd_dc_layer)
 
-        self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='bld_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='bld_dc_layer_bias')}
-        self.layers.append(self.bld_dc_layer)
+            self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='obj_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='obj_dc_layer_bias')}
+            self.layers.append(self.obj_dc_layer)
 
-        self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='veg_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='veg_dc_layer_bias')}
-        self.layers.append(self.veg_dc_layer)
+            self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='bld_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='bld_dc_layer_bias')}
+            self.layers.append(self.bld_dc_layer)
 
-        self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='sky_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='sky_dc_layer_bias')}
-        self.layers.append(self.sky_dc_layer)
+            self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='veg_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='veg_dc_layer_bias')}
+            self.layers.append(self.veg_dc_layer)
+
+            self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='sky_dc_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='sky_dc_layer_bias')}
+            self.layers.append(self.sky_dc_layer)
+
+            self.decoder_variables = [v for v in tf.global_variables() if v.name.startswith(decoder.name)]
 
         # full decoding layer
 
@@ -717,8 +719,6 @@ class MAE:
             self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
             self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
 
-
-
             # get all variables of rnn network
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
 
@@ -797,7 +797,10 @@ class MAE:
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
+        rnn_reg_term = tf.contrib.layers.apply_regularization(regularizer,self.rnn_variables)
+
         cost += reg_term
+        cost += rnn_reg_term
 
         rnn_weight_norms = []
         for i in self.rnn_weights_H:
@@ -835,6 +838,9 @@ class MAE:
         summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_weights_H)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables+self.decoder_variables)
+
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1052,7 +1058,14 @@ class MAE:
                                  self.init_states:in_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    batch , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                    if epoch < 10:
+                        _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+
+                    if epoch >= 10 and epoch < 20:
+                        _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+
+                    else:
+                        _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                     if self.data_augmentation == True:
 
@@ -1102,9 +1115,14 @@ class MAE:
                                          self.init_states:in_state}
 
                             # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                            batch , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                            if epoch < 10:
+                                _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
+                            if epoch >= 10 and epoch < 20:
+                                _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
+                            else:
+                                _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
