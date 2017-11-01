@@ -8,7 +8,6 @@ import os
 import evaluation_functions as eval
 import basic_routines as BR
 
-from load_data import load_data
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion, pretraining_input_distortion
 from datetime import datetime
@@ -17,11 +16,7 @@ from copy import copy
 
 class MAE:
 
-    def __init__(self,data_train,data_validate,data_test,resolution=(18,60)):
-
-        self.data_train = data_train
-        self.data_validate = data_validate
-        self.data_test = data_test
+    def __init__(self,resolution=(18,60)):
 
         self.height = resolution[0]
         self.width = resolution[1]
@@ -49,11 +44,6 @@ class MAE:
         self.veg_noise = 0.1
         self.sky_noise = 0.1
 
-        # prepare data
-        self.prepare_training_data()
-        self.prepare_validation_data()
-        self.prepare_test_data()
-
         # placeholder definition
         self.imr_input = tf.placeholder('float',[None,self.size_input])
         self.img_input = tf.placeholder('float',[None,self.size_input])
@@ -77,16 +67,6 @@ class MAE:
         self.veg_label = tf.placeholder('float',[None,self.size_input])
         self.sky_label = tf.placeholder('float',[None,self.size_input])
 
-        # training options
-        self.batch_size = 60
-        self.n_batches = int(len(self.imr_train)/self.batch_size)
-
-        self.learning_rate = 1e-6
-        self.hm_epochs = 150
-
-        # validation options
-        self.n_validation_steps = 1
-
         # model savings
         self.saving = True
         now = datetime.now()
@@ -108,8 +88,8 @@ class MAE:
         tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
 
         self.FLAGS = tf.app.flags.FLAGS
-
-    def prepare_training_data(self):
+    
+    def prepare_training_data(self,data_train):
         '''
         Function for bringing the training data into a form that suits the training process
         :return:
@@ -138,10 +118,7 @@ class MAE:
         self.veg_train_label = []
         self.sky_train_label = []
 
-
-
-
-        for i in self.data_train:
+        for i in data_train:
             for j in i:
                 self.imr_train.append(j['xcrLeft']/255.)
                 self.img_train.append(j['xcgLeft']/255.)
@@ -259,7 +236,7 @@ class MAE:
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
 
-    def prepare_validation_data(self):
+    def prepare_validation_data(self,data_val):
 
         # prepare validation data containers
         self.imr_val = []
@@ -275,7 +252,7 @@ class MAE:
 
         v_iterator = 0
 
-        for i in self.data_validate:
+        for i in data_val:
             for j in i:
                 self.imr_val.append(j['xcrLeft']/255.)
                 self.img_val.append(j['xcgLeft']/255.)
@@ -288,7 +265,7 @@ class MAE:
                 self.veg_val.append((j['semLeft']==4).astype(int))
                 self.sky_val.append((j['semLeft']==5).astype(int))
 
-    def prepare_test_data(self):
+    def prepare_test_data(self,data_test):
 
         # prepare test data containers
         self.imr_test = []
@@ -302,7 +279,7 @@ class MAE:
         self.sky_test = []
 
 
-        for i in self.data_test:
+        for i in data_test:
             for j in i:
                 self.imr_test.append(j['xcrLeft']/255.)
                 self.img_test.append(j['xcgLeft']/255.)
@@ -314,20 +291,31 @@ class MAE:
                 self.veg_test.append((j['semLeft']==4).astype(int))
                 self.sky_test.append((j['semLeft']==5).astype(int))
 
-        # randomly shuffle input frames
-        rand_indices = np.arange(len(self.imr_test)).astype(int)
-        np.random.shuffle(rand_indices)
+    def prepare_test_frames(self,data_test):
 
-        self.imr_test = np.asarray(self.imr_test)[rand_indices]
-        self.img_test = np.asarray(self.img_test)[rand_indices]
-        self.imb_test = np.asarray(self.imb_test)[rand_indices]
-        self.depth_test = np.asarray(self.depth_test)[rand_indices]
-        self.gnd_test = np.asarray(self.gnd_test)[rand_indices]
-        self.obj_test = np.asarray(self.obj_test)[rand_indices]
-        self.bld_test = np.asarray(self.bld_test)[rand_indices]
-        self.veg_test = np.asarray(self.veg_test)[rand_indices]
-        self.sky_test = np.asarray(self.sky_test)[rand_indices]
+        # prepare test data containers
+        self.imr_test = []
+        self.img_test = []
+        self.imb_test = []
+        self.depth_test = []
+        self.gnd_test = []
+        self.obj_test = []
+        self.bld_test = []
+        self.veg_test = []
+        self.sky_test = []
 
+
+        for j in data_test:
+            self.imr_test.append(j['xcr']/255.)
+            self.img_test.append(j['xcg']/255.)
+            self.imb_test.append(j['xcb']/255.)
+            self.depth_test.append(j['xid'])
+            self.gnd_test.append((j['sem']==1).astype(int))
+            self.obj_test.append((j['sem']==2).astype(int))
+            self.bld_test.append((j['sem']==3).astype(int))
+            self.veg_test.append((j['sem']==4).astype(int))
+            self.sky_test.append((j['sem']==5).astype(int))
+        
     def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky,mode='training'):
 
         '''
@@ -342,9 +330,6 @@ class MAE:
         :param sky: binary image for class sky in image semantics
         :return: reconstructed images for all input modalities
         '''
-
-
-
 
         # list to store all layers of the MAE neural network
         self.layers = []
@@ -588,7 +573,21 @@ class MAE:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
 
-    def train_model(self):
+    def train_model(self,data_train,data_validate):
+        
+        # prepare data
+        self.prepare_training_data(data_train)
+        self.prepare_validation_data(data_validate)
+        
+        # training options
+        self.batch_size = 60
+        self.n_batches = int(len(self.imr_train)/self.batch_size)
+
+        self.learning_rate = 1e-6
+        self.hm_epochs = 150
+
+        # validation options
+        self.n_validation_steps = 1
 
         prediction = self.neural_model(self.imr_input,
                                        self.img_input,
@@ -929,7 +928,9 @@ class MAE:
 
                 prediction = sess.run(prediction,feed_dict=feed_dict)
 
-    def evaluate(self,run=False):
+    def evaluate(self,data_test,run=False):
+                
+        self.prepare_test_data(data_test)
 
         predictions = self.neural_model(self.imr_input,
                                         self.img_input,
@@ -974,19 +975,6 @@ class MAE:
                 veg_label = self.veg_test[i]
                 sky_label = self.sky_test[i]
 
-                '''
-                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
-                                                                                                    copy(img_label),
-                                                                                                    copy(imb_label),
-                                                                                                    copy(depth_label),
-                                                                                                    copy(gnd_label),
-                                                                                                    copy(obj_label),
-                                                                                                    copy(bld_label),
-                                                                                                    copy(veg_label),
-                                                                                                    copy(sky_label),
-                                                                                                    resolution=(18,60),
-                                                                                                    singleframe=True)
-                '''
                 # taking only rgb as input
                 depth_in = [[0]*self.size_input]
                 gnd_in = [[0]*self.size_input]
@@ -1022,7 +1010,88 @@ class MAE:
             print('Error (RMS):', error_rms)
             print('Error (Relative Error):', error_rel)
 
+    def evaluate_per_frame(self,data_test,run=False):
+                
+        self.prepare_test_frames(data_test)
 
+        predictions = self.neural_model(self.imr_input,
+                                        self.img_input,
+                                        self.imb_input,
+                                        self.depth_input,
+                                        self.gnd_input,
+                                        self.obj_input,
+                                        self.bld_input,
+                                        self.veg_input,
+                                        self.sky_input)
+
+        load_weights = tf.train.Saver()
+
+        if run==False:
+            raise ValueError
+
+        dir = 'models/full/' + run
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/fullmodel.ckpt')
+
+            n_evaluations = len(self.imr_test)
+            print('Size of Test Set:',n_evaluations)
+
+            error_rms = 0
+            error_rel = 0
+
+            all_inv_depth_pred = np.empty([1,0])
+            all_inv_depth_label = np.empty([1,0])
+
+            for i in range(0,n_evaluations):
+
+                imr_label = self.imr_test[i]
+                img_label = self.img_test[i]
+                imb_label = self.imb_test[i]
+                depth_label = self.depth_test[i]
+                gnd_label = self.gnd_test[i]
+                obj_label = self.obj_test[i]
+                bld_label = self.bld_test[i]
+                veg_label = self.veg_test[i]
+                sky_label = self.sky_test[i]
+
+                
+                # taking only rgb as input
+                depth_in = [[0]*self.size_input]
+                gnd_in = [[0]*self.size_input]
+                obj_in = [[0]*self.size_input]
+                bld_in = [[0]*self.size_input]
+                veg_in = [[0]*self.size_input]
+                sky_in = [[0]*self.size_input]
+
+                feed_dict = {self.imr_input:[imr_label],
+                             self.img_input:[img_label],
+                             self.imb_input:[imb_label],
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in}
+
+                pred = sess.run(predictions,feed_dict=feed_dict)
+                depth_pred = pred[3]
+
+
+                all_inv_depth_pred = np.concatenate((all_inv_depth_pred,np.asarray(depth_pred)),axis=1)
+                all_inv_depth_label = np.concatenate((all_inv_depth_label,np.asarray([depth_label])),axis=1)
+
+            gt = BR.invert_depth(all_inv_depth_label)
+            est = BR.invert_depth(all_inv_depth_pred)
+
+            error_rms = eval.rms_error(est,gt)
+            error_rel = eval.relative_error(est,gt)
+
+
+            print('Error (RMS):', error_rms)
+            print('Error (Relative Error):', error_rel)
 
 
 # running model
