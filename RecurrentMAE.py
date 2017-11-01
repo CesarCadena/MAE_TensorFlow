@@ -23,7 +23,7 @@ data_train, data_validate, data_test = load_data()
 
 
 
-class MAE:
+class RecurrentMAE:
 
     def __init__(self,data_train,data_validate,data_test,resolution=(18,60)):
 
@@ -417,54 +417,57 @@ class MAE:
         # list to store all layers of the MAE neural network
         self.layers = []
 
-        # semantics weights
-        self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='gnd_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='gnd_ec_layer_bias')}
-        self.layers.append(self.gnd_ec_layer)
+        with tf.variable_scope('Encoder') as encoder:
+            # semantics weights
+            self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='gnd_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='gnd_ec_layer_bias')}
+            self.layers.append(self.gnd_ec_layer)
 
-        self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='obj_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='obj_ec_layer_bias')}
-        self.layers.append(self.obj_ec_layer)
+            self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='obj_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='obj_ec_layer_bias')}
+            self.layers.append(self.obj_ec_layer)
 
-        self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='bld_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='bld_ec_layer_bias')}
-        self.layers.append(self.bld_ec_layer)
+            self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='bld_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='bld_ec_layer_bias')}
+            self.layers.append(self.bld_ec_layer)
 
-        self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='veg_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='veg_ec_layer_bias')}
-        self.layers.append(self.veg_ec_layer)
+            self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='veg_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='veg_ec_layer_bias')}
+            self.layers.append(self.veg_ec_layer)
 
-        self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='sky_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='sky_ec_layer_bias')}
-        self.layers.append(self.sky_ec_layer)
+            self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='sky_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='sky_ec_layer_bias')}
+            self.layers.append(self.sky_ec_layer)
 
-        # semantics encoding
-        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5 * self.size_coding, self.size_coding], stddev=0.01), name='sem_ec_layer_weights'),
-                             'bias' : tf.Variable(tf.zeros([self.size_coding]),name='sem_ec_layer_bias')}
-        self.layers.append(self.sem_ec_layer)
+            # semantics encoding
+            self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5 * self.size_coding, self.size_coding], stddev=0.01), name='sem_ec_layer_weights'),
+                                 'bias' : tf.Variable(tf.zeros([self.size_coding]),name='sem_ec_layer_bias')}
+            self.layers.append(self.sem_ec_layer)
 
-        # depth and rgb encoding weights
-        self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='red_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='red_ec_layer_bias')}
-        self.layers.append(self.red_ec_layer)
+            # depth and rgb encoding weights
+            self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='red_ec_layer_weights'),
+                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='red_ec_layer_bias')}
+            self.layers.append(self.red_ec_layer)
 
-        self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='green_ec_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_coding]),name='green_ec_layer_bias')}
-        self.layers.append(self.green_ec_layer)
+            self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='green_ec_layer_weights'),
+                                   'bias':tf.Variable(tf.zeros([self.size_coding]),name='green_ec_layer_bias')}
+            self.layers.append(self.green_ec_layer)
 
-        self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='blue_ec_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([self.size_coding]),name='blue_ec_layer_bias')}
-        self.layers.append(self.blue_ec_layer)
+            self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='blue_ec_layer_weights'),
+                                  'bias':tf.Variable(tf.zeros([self.size_coding]),name='blue_ec_layer_bias')}
+            self.layers.append(self.blue_ec_layer)
 
-        self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='depth_ec_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_coding]),name='depth_ec_layer_bias')}
-        self.layers.append(self.depth_ec_layer)
+            self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='depth_ec_layer_weights'),
+                                   'bias':tf.Variable(tf.zeros([self.size_coding]),name='depth_ec_layer_bias')}
+            self.layers.append(self.depth_ec_layer)
 
-         # full encoding
+             # full encoding
 
-        self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01),name='full_ec_layer_weights'),
-                              'bias' : tf.Variable(tf.zeros([self.size_coding]),name='full_ec_layer_bias')}
-        self.layers.append(self.full_ec_layer)
+            self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01),name='full_ec_layer_weights'),
+                                  'bias' : tf.Variable(tf.zeros([self.size_coding]),name='full_ec_layer_bias')}
+            self.layers.append(self.full_ec_layer)
+
+            self.encoder_variables = [v for v in tf.global_variables() if v.name.startswith(encoder.name)]
 
         # split the input placeholder according to the length of the sequence
 
@@ -840,6 +843,7 @@ class MAE:
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_weights_H)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables)
         optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables+self.decoder_variables)
+        optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
 
         validations = np.arange(0, self.n_training_validations)
@@ -1058,14 +1062,17 @@ class MAE:
                                  self.init_states:in_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 10:
+                    if epoch < 20:
                         _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                    if epoch >= 10 and epoch < 20:
+                    if epoch >= 20 and epoch < 40:
                         _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                    else:
+                    if epoch >= 40 and epoch < 60:
                         _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+
+                    else:
+                        _ , c, l, in_state = sess.run([optimizer4, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                     if self.data_augmentation == True:
 
@@ -1115,14 +1122,17 @@ class MAE:
                                          self.init_states:in_state}
 
                             # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                            if epoch < 10:
+                            if epoch < 20:
                                 _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                            if epoch >= 10 and epoch < 20:
+                            if epoch >= 20 and epoch < 40:
                                 _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                            else:
+                            if epoch >= 40 and epoch < 60:
                                 _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+
+                            else:
+                                _ , c, l, in_state = sess.run([optimizer4, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
@@ -1378,8 +1388,8 @@ class MAE:
 
 # running model
 
-mae = MAE(data_train,data_validate,data_test)
-mae.train_model()
+rnn_mae = RecurrentMAE(data_train,data_validate,data_test)
+rnn_mae.train_model()
 
 #mae.evaluate(run='20171011-224144')
 
