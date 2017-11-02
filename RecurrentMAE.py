@@ -53,6 +53,8 @@ class RecurrentMAE:
          # recurrent options
 
         self.n_rnn_steps = 5
+        self.state_size = 2*1024
+
 
         # prepare data
         self.data_augmentation = True
@@ -124,7 +126,7 @@ class RecurrentMAE:
         self.sky_label = tf.placeholder('float',[None,self.n_rnn_steps,self.size_input])
 
         # rnn initial states
-        self.init_states = tf.placeholder('float',[None,self.size_coding])
+        self.init_states = tf.placeholder('float',[None,self.state_size])
 
     def augment_data(self,imr,img,imb,depth,gnd,obj,bld,veg,sky):
 
@@ -708,19 +710,32 @@ class RecurrentMAE:
         self.rnn_bias_B = []
 
         # set state size
-        state_size = self.size_coding
+        state_size = self.state_size
 
         with tf.variable_scope('RNN') as rnn:
             for i in range(0,self.n_rnn_steps):
 
                 # initialization of recurrent weights
                 self.rnn_weights_H.append(tf.Variable(tf.zeros([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
-                self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
+                self.rnn_weights_W.append(tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
+                                                                 tf.zeros([self.size_coding,self.state_size-self.size_coding])],axis=1),
+                                                      dtype=tf.float32,
+                                                      name='rnn_W_' + str(i)))
+
                 self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
 
             # initialization of weights from current timestep
-            self.rnn_weights_W.append(tf.Variable(tf.diag(tf.ones([state_size],dtype=tf.float32)),name='rnn_W_' + str(i)))
+            self.rnn_weights_W.append(tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
+                                                             tf.zeros([self.size_coding,self.state_size-self.size_coding])],axis=1),
+                                                  dtype=tf.float32,
+                                                  name='rnn_W_out'))
+
             self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
+
+            self.rnn_weights_V = tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
+                                                        tf.zeros([self.state_size-self.size_coding,self.size_coding])],axis=0),
+                                             dtype=tf.float32,
+                                             name='rnn_V_out')
 
             # get all variables of rnn network
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
@@ -732,7 +747,7 @@ class RecurrentMAE:
         for i in range(0,self.n_rnn_steps):
             state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i]),self.rnn_weights_H[i])
 
-        output = tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1])
+        output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1]),self.rnn_weights_V)
 
         return output, state
 
@@ -972,7 +987,7 @@ class RecurrentMAE:
                              self.bld_label:[bld_label],
                              self.veg_label:[veg_label],
                              self.sky_label:[sky_label],
-                             self.init_states:np.zeros((1,self.size_coding)),
+                             self.init_states:np.zeros((1,self.state_size)),
                              normalization:norm}
 
                 im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
@@ -997,7 +1012,7 @@ class RecurrentMAE:
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
-                in_state = np.zeros((self.batch_size,self.size_coding))
+                in_state = np.zeros((self.batch_size,self.state_size))
 
 
                 for batch in range(self.n_batches):
