@@ -1221,7 +1221,7 @@ class RecurrentMAE:
                                  self.bld_label:[bld_label],
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
-                                 self.init_states:np.zeros((1,self.size_coding)),
+                                 self.init_states:np.zeros((1,self.state_size)),
                                  normalization:norm}
 
                     im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
