@@ -248,16 +248,35 @@ class RecurrentMAE:
 
                 for k in range(0,self.n_rnn_steps):
                     offset = self.n_rnn_steps-1-k
-                    imr_series.append(i[j-offset]['xcr1']/255.)
-                    img_series.append(i[j-offset]['xcg1']/255.)
-                    imb_series.append(i[j-offset]['xcb1']/255.)
-                    depth_series.append(i[j-offset]['xid1'])
-                    depth_mask_series.append(i[j-offset]['xmask1'])
-                    gnd_series.append((i[j-offset]['sem1']==1).astype(int))
-                    obj_series.append((i[j-offset]['sem1']==2).astype(int))
-                    bld_series.append((i[j-offset]['sem1']==3).astype(int))
-                    veg_series.append((i[j-offset]['sem1']==4).astype(int))
-                    sky_series.append((i[j-offset]['sem1']==5).astype(int))
+                    check = j - offset
+                    if check < 0:
+
+                        zero_padding = np.zeros((self.size_input,))
+
+                        imr_series.append(zero_padding)
+                        img_series.append(zero_padding)
+                        imb_series.append(zero_padding)
+                        depth_series.append(zero_padding)
+                        depth_mask_series.append(zero_padding)
+                        gnd_series.append(zero_padding)
+                        obj_series.append(zero_padding)
+                        bld_series.append(zero_padding)
+                        veg_series.append(zero_padding)
+                        sky_series.append(zero_padding)
+
+                    else:
+
+                        imr_series.append(i[j-offset]['xcr1']/255.)
+                        img_series.append(i[j-offset]['xcg1']/255.)
+                        imb_series.append(i[j-offset]['xcb1']/255.)
+                        depth_series.append(i[j-offset]['xid1'])
+                        depth_mask_series.append(i[j-offset]['xmask1'])
+                        gnd_series.append((i[j-offset]['sem1']==1).astype(int))
+                        obj_series.append((i[j-offset]['sem1']==2).astype(int))
+                        bld_series.append((i[j-offset]['sem1']==3).astype(int))
+                        veg_series.append((i[j-offset]['sem1']==4).astype(int))
+                        sky_series.append((i[j-offset]['sem1']==5).astype(int))
+
 
                 self.imr_train.append(copy(imr_series))
                 self.img_train.append(copy(img_series))
@@ -337,17 +356,38 @@ class RecurrentMAE:
                 sky_series = []
 
                 for k in range(0,self.n_rnn_steps):
+
                     offset = self.n_rnn_steps-1-k
-                    imr_series.append(i[j-offset]['xcr1']/255.)
-                    img_series.append(i[j-offset]['xcg1']/255.)
-                    imb_series.append(i[j-offset]['xcb1']/255.)
-                    depth_series.append(i[j-offset]['xid1'])
-                    depth_mask_series.append(i[j-offset]['xmask1'])
-                    gnd_series.append((i[j-offset]['sem1']==1).astype(int))
-                    obj_series.append((i[j-offset]['sem1']==2).astype(int))
-                    bld_series.append((i[j-offset]['sem1']==3).astype(int))
-                    veg_series.append((i[j-offset]['sem1']==4).astype(int))
-                    sky_series.append((i[j-offset]['sem1']==5).astype(int))
+                    check = j - offset
+
+                    if check < 0:
+
+                        zero_padding = np.zeros((self.size_input,))
+
+                        imr_series.append(zero_padding)
+                        img_series.append(zero_padding)
+                        imb_series.append(zero_padding)
+                        depth_series.append(zero_padding)
+                        depth_mask_series.append(zero_padding)
+                        gnd_series.append(zero_padding)
+                        obj_series.append(zero_padding)
+                        bld_series.append(zero_padding)
+                        veg_series.append(zero_padding)
+                        sky_series.append(zero_padding)
+
+                    else:
+
+                        imr_series.append(i[j-offset]['xcr1']/255.)
+                        img_series.append(i[j-offset]['xcg1']/255.)
+                        imb_series.append(i[j-offset]['xcb1']/255.)
+                        depth_series.append(i[j-offset]['xid1'])
+                        depth_mask_series.append(i[j-offset]['xmask1'])
+                        gnd_series.append((i[j-offset]['sem1']==1).astype(int))
+                        obj_series.append((i[j-offset]['sem1']==2).astype(int))
+                        bld_series.append((i[j-offset]['sem1']==3).astype(int))
+                        veg_series.append((i[j-offset]['sem1']==4).astype(int))
+                        sky_series.append((i[j-offset]['sem1']==5).astype(int))
+
 
                 self.imr_val.append(copy(imr_series))
                 self.img_val.append(copy(img_series))
@@ -367,6 +407,7 @@ class RecurrentMAE:
         self.img_test = []
         self.imb_test = []
         self.depth_test = []
+        self.depth_mask_test = []
         self.gnd_test = []
         self.obj_test = []
         self.bld_test = []
@@ -375,16 +416,60 @@ class RecurrentMAE:
 
 
         for i in self.data_test:
-            for j in i:
-                self.imr_test.append(j['xcr1']/255.)
-                self.img_test.append(j['xcg1']/255.)
-                self.imb_test.append(j['xcb1']/255.)
-                self.depth_test.append(j['xid1'])
-                self.gnd_test.append((j['sem1']==1).astype(int))
-                self.obj_test.append((j['sem1']==2).astype(int))
-                self.bld_test.append((j['sem1']==3).astype(int))
-                self.veg_test.append((j['sem1']==4).astype(int))
-                self.sky_test.append((j['sem1']==5).astype(int))
+            for j in range(len(i)):
+                imr_series = []
+                img_series = []
+                imb_series = []
+                depth_series = []
+                depth_mask_series = []
+                gnd_series = []
+                obj_series = []
+                bld_series = []
+                veg_series = []
+                sky_series = []
+
+                for k in range(0,self.n_rnn_steps):
+
+                    offset = self.n_rnn_steps-1-k
+                    check = j - offset
+
+                    if check < 0:
+
+                        zero_padding = np.zeros((self.size_input,))
+
+                        imr_series.append(zero_padding)
+                        img_series.append(zero_padding)
+                        imb_series.append(zero_padding)
+                        depth_series.append(zero_padding)
+                        depth_mask_series.append(zero_padding)
+                        gnd_series.append(zero_padding)
+                        obj_series.append(zero_padding)
+                        bld_series.append(zero_padding)
+                        veg_series.append(zero_padding)
+                        sky_series.append(zero_padding)
+
+                    else:
+
+                        imr_series.append(i[j-offset]['xcr1']/255.)
+                        img_series.append(i[j-offset]['xcg1']/255.)
+                        imb_series.append(i[j-offset]['xcb1']/255.)
+                        depth_series.append(i[j-offset]['xid1'])
+                        depth_mask_series.append(i[j-offset]['xmask1'])
+                        gnd_series.append((i[j-offset]['sem1']==1).astype(int))
+                        obj_series.append((i[j-offset]['sem1']==2).astype(int))
+                        bld_series.append((i[j-offset]['sem1']==3).astype(int))
+                        veg_series.append((i[j-offset]['sem1']==4).astype(int))
+                        sky_series.append((i[j-offset]['sem1']==5).astype(int))
+
+                self.imr_test.append(copy(imr_series))
+                self.img_test.append(copy(img_series))
+                self.imb_test.append(copy(imb_series))
+                self.depth_test.append(copy(depth_series))
+                self.gnd_test.append(copy(gnd_series))
+                self.obj_test.append(copy(obj_series))
+                self.bld_test.append(copy(bld_series))
+                self.veg_test.append(copy(veg_series))
+                self.sky_test.append(copy(sky_series))
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_test)).astype(int)
@@ -1258,7 +1343,7 @@ class RecurrentMAE:
 
 
             if self.saving == True:
-                saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
+                saver.save(sess,self.FLAGS.model_dir+'/fullmodel_rnn.ckpt')
                 print('SAVED MODEL')
 
     def validate_model(self,n_validations,run,loadmodel=True):
@@ -1343,7 +1428,7 @@ class RecurrentMAE:
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,dir+'/fullmodel.ckpt')
+            load_weights.restore(sess,dir+'/fullmodel.ckpt') # runs from 06112017 it ist fullmodel_rnn
 
             n_evaluations = 697
             print('Size of Test Set:',n_evaluations)
@@ -1375,6 +1460,7 @@ class RecurrentMAE:
                                                                                                     copy(veg_label),
                                                                                                     copy(sky_label),
                                                                                                     resolution=(18,60),
+                                                                                                    rnn=True,
                                                                                                     singleframe=True)
 
                 feed_dict = {self.imr_input:imr_in,
