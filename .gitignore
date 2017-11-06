@@ -29,6 +29,7 @@ __pycache__
 *.log
 *.sql
 *.sqlite
+*events.out.tfevents.*
 
 # OS generated files #
 ######################

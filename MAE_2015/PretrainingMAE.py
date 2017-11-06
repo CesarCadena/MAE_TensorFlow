@@ -10,6 +10,7 @@ sys.path.append('./tools')
 
 from input_distortion import input_distortion,pretraining_input_distortion
 from visualization import print_training_frames,print_validation_frames
+from basic_routines import horizontal_mirroring
 from copy import copy
 
 
@@ -23,8 +24,8 @@ class PretrainingMAE():
 
         # training options
 
-        self.batch_size = 100
-        self.hm_epochs = 150
+        self.batch_size = 50
+        self.hm_epochs = 4
 
         self.input_size = 1080
         self.hidden_size = 1024
@@ -179,7 +180,6 @@ class PretrainingMAE():
             self.veg_val = []
             self.sky_val = []
             self.depth_mask_val = []
-            #self.depth_loss_mask_val = []
 
             v_iterator = 0
 
@@ -393,221 +393,7 @@ class PretrainingMAE():
 
         return gnd_output,obj_output,bld_output,veg_output,sky_output
 
-    def pretrain_seperate_channels(self):
-
-        red_pred = self.AE_red(self.input_red)
-        green_pred = self.AE_green(self.input_green)
-        blue_pred = self.AE_blue(self.input_blue)
-        depth_pred = self.AE_depth(self.input_depth)
-        gnd_pred = self.AE_gnd(self.input_gnd)
-        obj_pred = self.AE_obj(self.input_obj)
-        bld_pred = self.AE_bld(self.input_bld)
-        veg_pred = self.AE_veg(self.input_veg)
-        sky_pred = self.AE_sky(self.input_sky)
-
-        cost_red = tf.nn.l2_loss(red_pred-self.label_red)
-        cost_green = tf.nn.l2_loss(green_pred-self.label_green)
-        cost_blue = tf.nn.l2_loss(blue_pred-self.label_blue)
-        cost_depth = tf.nn.l2_loss(tf.multiply(self.depth_mask,depth_pred)-tf.multiply(self.depth_mask,self.label_depth))
-        cost_gnd = tf.nn.l2_loss(gnd_pred-self.label_gnd)
-        cost_obj = tf.nn.l2_loss(obj_pred-self.label_obj)
-        cost_bld = tf.nn.l2_loss(bld_pred-self.label_bld)
-        cost_veg = tf.nn.l2_loss(veg_pred-self.label_veg)
-        cost_sky = tf.nn.l2_loss(sky_pred-self.label_sky)
-
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001)
-
-        reg_red = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.red_ec_layer['weights'],
-                                                                             self.red_dc_layer['weights'],
-                                                                             self.red_ec_layer['bias'],
-                                                                             self.red_dc_layer['bias']])
-
-        reg_green = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.green_ec_layer['weights'],
-                                                                             self.green_dc_layer['weights'],
-                                                                             self.green_ec_layer['bias'],
-                                                                             self.green_dc_layer['bias']])
-
-        reg_blue = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.blue_ec_layer['weights'],
-                                                                             self.blue_dc_layer['weights'],
-                                                                             self.blue_ec_layer['bias'],
-                                                                             self.blue_dc_layer['bias']])
-
-        reg_depth = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.depth_ec_layer['weights'],
-                                                                             self.depth_dc_layer['weights'],
-                                                                             self.depth_ec_layer['bias'],
-                                                                             self.depth_dc_layer['bias']])
-
-        reg_gnd = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.gnd_ec_layer['weights'],
-                                                                             self.gnd_dc_layer['weights'],
-                                                                             self.gnd_ec_layer['bias'],
-                                                                             self.gnd_dc_layer['bias']])
-
-        reg_obj = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.obj_ec_layer['weights'],
-                                                                             self.obj_dc_layer['weights'],
-                                                                             self.obj_ec_layer['bias'],
-                                                                             self.obj_dc_layer['bias']])
-
-        reg_bld = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.bld_ec_layer['weights'],
-                                                                             self.bld_dc_layer['weights'],
-                                                                             self.bld_ec_layer['bias'],
-                                                                             self.bld_dc_layer['bias']])
-
-        reg_veg = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.veg_ec_layer['weights'],
-                                                                             self.veg_dc_layer['weights'],
-                                                                             self.veg_ec_layer['bias'],
-                                                                             self.veg_dc_layer['bias']])
-
-        reg_sky = tf.contrib.layers.apply_regularization(regularizer,weights_list=[self.sky_ec_layer['weights'],
-                                                                             self.sky_dc_layer['weights'],
-                                                                             self.sky_ec_layer['bias'],
-                                                                             self.sky_dc_layer['bias']])
-
-        cost_red += reg_red
-        cost_green += reg_green
-        cost_blue += reg_blue
-        cost_depth += reg_depth
-        cost_gnd += reg_gnd
-        cost_obj += reg_obj
-        cost_bld += reg_bld
-        cost_veg += reg_veg
-        cost_sky += reg_sky
-
-
-        summary_red = tf.summary.scalar('cost_red',cost_red)
-        summary_green = tf.summary.scalar('cost_green',cost_green)
-        summary_blue = tf.summary.scalar('cost_blue',cost_blue)
-        summary_depth = tf.summary.scalar('cost_depth',cost_depth)
-        summary_gnd = tf.summary.scalar('cost_gnd',cost_gnd)
-        summary_obj = tf.summary.scalar('cost_obj',cost_obj)
-        summary_bld = tf.summary.scalar('cost_bld',cost_bld)
-        summary_veg = tf.summary.scalar('cost_veg',cost_veg)
-        summary_sky = tf.summary.scalar('cost_sky',cost_sky)
-
-        opt_red = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_red)
-        opt_green = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_green)
-        opt_blue = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_blue)
-        opt_depth = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_depth)
-        opt_gnd = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_gnd)
-        opt_obj = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_obj)
-        opt_bld = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_bld)
-        opt_veg = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_veg)
-        opt_sky = tf.train.AdamOptimizer(learning_rate=0.000001).minimize(cost_sky)
-
-
-
-        with tf.Session() as sess:
-
-            train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
-            sess.run(tf.global_variables_initializer())
-
-            n_batches = int(len(self.imr_train)/self.batch_size)
-            epoch_losses = []
-
-            for epoch in range(0,self.hm_epochs):
-                epoch_loss = np.zeros((9,1))
-                for _ in range(0,n_batches):
-
-                    imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
-                    img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size]
-                    imb_batch = self.imb_train[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_batch = self.depth_train[_*self.batch_size:(_+1)*self.batch_size]
-                    gnd_batch = self.gnd_train[_*self.batch_size:(_+1)*self.batch_size]
-                    obj_batch = self.obj_train[_*self.batch_size:(_+1)*self.batch_size]
-                    bld_batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size]
-                    veg_batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size]
-                    sky_batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_mask = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
-
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = pretraining_input_distortion(imr_batch,
-                                                                                                                    img_batch,
-                                                                                                                    imb_batch,
-                                                                                                                    depth_batch,
-                                                                                                                    gnd_batch,
-                                                                                                                    obj_batch,
-                                                                                                                    bld_batch,
-                                                                                                                    veg_batch,
-                                                                                                                    sky_batch,
-                                                                                                                    resolution=(18,60))
-
-                    feed_dict_red = {self.input_red:imr_in,
-                                     self.label_red:imr_batch}
-
-                    feed_dict_green = {self.input_green:img_in,
-                                     self.label_green:img_batch}
-
-                    feed_dict_blue = {self.input_blue:imb_in,
-                                     self.label_blue:imb_batch}
-
-                    feed_dict_depth = {self.input_depth:depth_in,
-                                       self.depth_mask:depth_mask,
-                                       self.label_depth:depth_batch}
-
-                    feed_dict_gnd = {self.input_gnd:gnd_in,
-                                     self.label_gnd:gnd_batch}
-                    feed_dict_obj = {self.input_obj:obj_in,
-                                     self.label_obj:obj_batch}
-                    feed_dict_bld = {self.input_bld:bld_in,
-                                     self.label_bld:bld_batch}
-                    feed_dict_veg = {self.input_veg:veg_in,
-                                     self.label_veg:veg_batch}
-                    feed_dict_sky = {self.input_sky:sky_in,
-                                     self.label_sky:sky_batch}
-
-                    sum_red, _, c_red = sess.run([summary_red, opt_red, cost_red], feed_dict=feed_dict_red)
-                    epoch_loss[0] += c_red
-
-                    sum_green, _, c_green = sess.run([summary_green, opt_green, cost_green], feed_dict=feed_dict_green)
-                    epoch_loss[1] += c_green
-
-                    sum_blue, _, c_blue = sess.run([summary_blue, opt_blue, cost_blue],feed_dict=feed_dict_blue)
-                    epoch_loss[2] += c_blue
-
-                    sum_depth, _, c_depth = sess.run([summary_depth, opt_depth,cost_depth],feed_dict=feed_dict_depth)
-                    epoch_loss[3] += c_depth
-
-                    sum_gnd, _, c_gnd = sess.run([summary_gnd, opt_gnd, cost_gnd], feed_dict=feed_dict_gnd)
-                    epoch_loss[4] += c_gnd
-
-                    sum_obj, _, c_obj = sess.run([summary_obj, opt_obj, cost_obj], feed_dict=feed_dict_obj)
-                    epoch_loss[5] += c_obj
-
-                    sum_bld, _, c_bld = sess.run([summary_bld, opt_bld, cost_bld],feed_dict=feed_dict_bld)
-                    epoch_loss[6] += c_bld
-
-                    sum_veg, _, c_veg = sess.run([summary_veg, opt_veg, cost_veg], feed_dict=feed_dict_veg)
-                    epoch_loss[7] += c_veg
-
-                    sum_sky, _, c_sky = sess.run([summary_sky, opt_sky, cost_sky],feed_dict=feed_dict_sky)
-                    epoch_loss[8] += c_sky
-
-                epoch_losses.append(epoch_loss)
-
-                train_writer1.add_summary(sum_red,epoch)
-                train_writer1.add_summary(sum_green,epoch)
-                train_writer1.add_summary(sum_blue,epoch)
-                train_writer1.add_summary(sum_depth,epoch)
-                train_writer1.add_summary(sum_gnd,epoch)
-                train_writer1.add_summary(sum_obj,epoch)
-                train_writer1.add_summary(sum_bld,epoch)
-                train_writer1.add_summary(sum_veg,epoch)
-                train_writer1.add_summary(sum_sky,epoch)
-
-                print('Epoch', epoch, 'completed out of', self.hm_epochs)
-                print('Loss Red Channel: ', epoch_losses[epoch][0])
-                print('Loss Green Channel: ', epoch_losses[epoch][1])
-                print('Loss Blue Channel: ', epoch_losses[epoch][2])
-                print('Loss Depth Channel: ', epoch_losses[epoch][3])
-                print('Loss Ground Channel: ', epoch_losses[epoch][4])
-                print('Loss Objects Channel: ', epoch_losses[epoch][5])
-                print('Loss Buildings Channel: ', epoch_losses[epoch][6])
-                print('Loss Vegetation Channel: ', epoch_losses[epoch][7])
-                print('Loss Sky Channel: ', epoch_losses[epoch][8])
-
-            if self.saving == True:
-                saver = tf.train.Saver()
-                saver.save(sess,self.FLAGS.train_dir+'/pretrained1.ckpt')
-                print('SAVED MODEL')
-
+    
     def pretrain_red_channel(self):
 
         red_pred = self.AE_red(self.input_red)
@@ -624,8 +410,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Red Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Red Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Red_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Red_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -643,6 +429,8 @@ class PretrainingMAE():
 
         opt_red = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost_red)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -653,13 +441,8 @@ class PretrainingMAE():
         loss_val_reset = val_loss.assign(0)
         loss_val_update = val_loss.assign_add(loss/1080.)
 
-
-
-
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
-
-
 
         with tf.Session(config=config) as sess:
             saver = tf.train.Saver()
@@ -681,7 +464,11 @@ class PretrainingMAE():
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     imr_in = pretraining_input_distortion(copy(imr_batch))
-
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    imr_in = horizontal_mirroring(imr_in,ind_rand_who)
+                    imr_batch = horizontal_mirroring(imr_batch,ind_rand_who)
+                    
                     feed_dict = {self.input_red:imr_in,
                                  self.label_red:imr_batch}
 
@@ -735,8 +522,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Green Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Green Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Green_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Green_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -754,6 +541,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -789,7 +578,11 @@ class PretrainingMAE():
                     img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     img_in = pretraining_input_distortion(copy(img_batch))
-
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    img_in = horizontal_mirroring(img_in,ind_rand_who)
+                    img_batch = horizontal_mirroring(img_batch,ind_rand_who)
+                    
                     feed_dict = {self.input_green:img_in,
                                  self.label_green:img_batch}
 
@@ -843,8 +636,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Blue Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Blue Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Blue_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Blue_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -862,6 +655,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -895,7 +690,11 @@ class PretrainingMAE():
                     imb_batch = self.imb_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     imb_in = pretraining_input_distortion(copy(imb_batch))
-
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    imb_in = horizontal_mirroring(imb_in,ind_rand_who)
+                    imb_batch = horizontal_mirroring(imb_batch,ind_rand_who)
+                    
                     feed_dict = {self.input_blue:imb_in,
                                  self.label_blue:imb_batch}
 
@@ -953,8 +752,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Depth Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Depth Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Depth_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Depth_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -972,6 +771,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1007,6 +808,11 @@ class PretrainingMAE():
 
                     depth_in = pretraining_input_distortion(copy(batch))
 
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    depth_in = horizontal_mirroring(depth_in,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
+                    batch_mask = horizontal_mirroring(batch_mask,ind_rand_who)
+                    
                     feed_dict = {self.input_depth:depth_in,
                                  self.label_depth:batch,
                                  self.depth_mask:batch_mask}
@@ -1069,8 +875,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Ground Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Ground Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Ground_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Ground_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1088,6 +894,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1123,7 +931,11 @@ class PretrainingMAE():
                     batch = self.gnd_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     inp = pretraining_input_distortion(copy(batch))
-
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    inp = horizontal_mirroring(inp,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
+                    
                     feed_dict = {self.input_gnd:inp,
                                  self.label_gnd:batch}
 
@@ -1177,8 +989,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Object Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Object Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Object_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Object_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1196,6 +1008,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1231,6 +1045,10 @@ class PretrainingMAE():
                     batch = self.obj_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     inp = pretraining_input_distortion(copy(batch))
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    inp = horizontal_mirroring(inp,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
 
                     feed_dict = {self.input_obj:inp,
                                  self.label_obj:batch}
@@ -1285,8 +1103,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Building Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Building Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Building_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Building_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1304,6 +1122,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1339,6 +1159,10 @@ class PretrainingMAE():
                     batch = self.bld_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     inp = pretraining_input_distortion(copy(batch))
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    inp = horizontal_mirroring(inp,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
 
                     feed_dict = {self.input_bld:inp,
                                  self.label_bld:batch}
@@ -1393,8 +1217,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Vegetation Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Vegetation Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Vegetation_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Vegetation_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1412,6 +1236,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1447,6 +1273,10 @@ class PretrainingMAE():
                     batch = self.veg_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     inp = pretraining_input_distortion(copy(batch))
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    inp = horizontal_mirroring(inp,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
 
                     feed_dict = {self.input_veg:inp,
                                  self.label_veg:batch}
@@ -1501,8 +1331,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Sky Channel',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Sky Channel',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Sky_Channel',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Sky_Channel',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1520,6 +1350,8 @@ class PretrainingMAE():
 
         opt = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1555,6 +1387,10 @@ class PretrainingMAE():
                     batch = self.sky_train[_*self.batch_size:(_+1)*self.batch_size,:]
 
                     inp = pretraining_input_distortion(copy(batch))
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    inp = horizontal_mirroring(inp,ind_rand_who)
+                    batch = horizontal_mirroring(batch,ind_rand_who)
 
                     feed_dict = {self.input_sky:inp,
                                  self.label_sky:batch}
@@ -1650,8 +1486,8 @@ class PretrainingMAE():
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Shared Semantics',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Shared Semantics',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Shared_Semantics',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Shared_Semantics',val_loss)
 
         if self.decay == 'constant':
             learning_rate = 0.0001
@@ -1673,6 +1509,8 @@ class PretrainingMAE():
                                                                                            self.sem_dc_layer['bias']])
         opt2 = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+        ind_batch = np.arange(0,self.batch_size)
+        
         # validation objects
         validations = np.arange(0,self.n_validation_data)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1718,7 +1556,7 @@ class PretrainingMAE():
 
         saver_save = tf.train.Saver()
 
-        dir = 'models/pretraining/20171013-212118'
+        dir = 'models/pretraining/20171106-110735'
 
         with tf.Session(config=config) as sess:
 
@@ -1761,6 +1599,23 @@ class PretrainingMAE():
                                                                                                         copy(veg_batch),
                                                                                                         copy(sky_batch),
                                                                                                         resolution=(18,60))
+                    
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    
+                    gnd_in = horizontal_mirroring(gnd_in,ind_rand_who)
+                    gnd_batch = horizontal_mirroring(gnd_batch,ind_rand_who)
+                    
+                    obj_in = horizontal_mirroring(obj_in,ind_rand_who)
+                    obj_batch = horizontal_mirroring(obj_batch,ind_rand_who)
+                    
+                    bld_in = horizontal_mirroring(bld_in,ind_rand_who)
+                    bld_batch = horizontal_mirroring(bld_batch,ind_rand_who)
+                    
+                    veg_in = horizontal_mirroring(veg_in,ind_rand_who)
+                    veg_batch = horizontal_mirroring(veg_batch,ind_rand_who)
+                    
+                    sky_in = horizontal_mirroring(sky_in,ind_rand_who)
+                    sky_batch = horizontal_mirroring(sky_batch,ind_rand_who)
 
                     feed_dict_sem = {self.input_gnd:gnd_in,
                                      self.label_gnd:gnd_batch,

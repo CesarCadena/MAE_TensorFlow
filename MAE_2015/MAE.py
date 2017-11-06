@@ -28,8 +28,6 @@ class MAE:
         self.n_training_validations = 50
 
 
-
-
         # options
         self.mode = 'denoising' # standard for non denoising training or denoising for training a denoising MAE
 
