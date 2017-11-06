@@ -872,6 +872,7 @@ class RecurrentMAE:
 
 
 
+
         cost = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
                tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
@@ -1051,6 +1052,8 @@ class RecurrentMAE:
                                                                                                     resolution=(18,60),
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
+
+                print()
 
 
                 feed_dict = {self.imr_input:imr_in,
@@ -1408,22 +1411,27 @@ class RecurrentMAE:
 
     def evaluate(self,run=False):
 
-        predictions = self.encoding_network(self.imr_input,
-                                            self.img_input,
-                                            self.imb_input,
-                                            self.depth_input,
-                                            self.gnd_input,
-                                            self.obj_input,
-                                            self.bld_input,
-                                            self.veg_input,
-                                            self.sky_input)
+        encoding = self.encoding_network(self.imr_input,
+                                         self.img_input,
+                                         self.imb_input,
+                                         self.depth_input,
+                                         self.gnd_input,
+                                         self.obj_input,
+                                         self.bld_input,
+                                         self.veg_input,
+                                         self.sky_input,
+                                         mode='training')
+
+        outputs, _current_state = self.rnn_network(encoding)
+        output = self.decoding_network(outputs)
+
 
         load_weights = tf.train.Saver()
 
         if run==False:
             raise ValueError
 
-        dir = 'models/full/' + run
+        dir = 'models/rnn/' + run
 
         with tf.Session() as sess:
 
@@ -1434,8 +1442,9 @@ class RecurrentMAE:
             print('Size of Test Set:',n_evaluations)
 
             error_rms = 0
+            error_rel = 0
 
-
+            in_state = np.zeros((1,self.state_size))
 
             for i in range(0,n_evaluations):
 
@@ -1448,6 +1457,7 @@ class RecurrentMAE:
                 bld_label = self.bld_test[i]
                 veg_label = self.veg_test[i]
                 sky_label = self.sky_test[i]
+
 
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
@@ -1463,6 +1473,7 @@ class RecurrentMAE:
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
 
+
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
                              self.imb_input:imb_in,
@@ -1471,28 +1482,34 @@ class RecurrentMAE:
                              self.obj_input:obj_in,
                              self.bld_input:bld_in,
                              self.veg_input:veg_in,
-                             self.sky_input:sky_in}
+                             self.sky_input:sky_in,
+                             self.init_states:in_state}
 
-                pred = sess.run(predictions,feed_dict=feed_dict)
-                depth_pred = pred[4]
-
-
-                depth_pred = np.asarray(depth_pred)
-                depth_label = np.asarray(depth_label)
+                pred = sess.run(output,feed_dict=feed_dict)
+                depth_pred = pred[3]
 
 
-                error_rms += eval.rms_error(depth_pred,depth_label)
+                inv_depth_pred = np.asarray(depth_pred)
+                inv_depth_label = np.asarray(depth_label[-1])
+
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
+
+                error_rms += eval.rms_error(est,gt)
+                error_rel += eval.relative_error(est,gt)
+
 
             print('Error (RMS):', error_rms/n_evaluations)
+            print('Error (REL):', error_rel/n_evaluations)
 
 
 
 # running model
 
 rnn_mae = RecurrentMAE(data_train,data_validate,data_test)
-rnn_mae.train_model()
+#rnn_mae.train_model()
 
-#mae.evaluate(run='20171011-224144')
+rnn_mae.evaluate(run='20171103-074407')
 
 
 
