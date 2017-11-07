@@ -9,8 +9,7 @@ import evaluation_functions as eval
 import basic_routines as BR
 
 from load_data import load_data
-from visualization import display_frame,plot_training_loss
-from input_distortion import input_distortion, pretraining_input_distortion
+from input_distortion import input_distortion
 from datetime import datetime
 from copy import copy
 
@@ -870,9 +869,6 @@ class RecurrentMAE:
         veg_label_series = tf.unstack(self.veg_label,axis=1)
         sky_label_series = tf.unstack(self.sky_label,axis=1)
 
-
-
-
         cost = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
                tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
@@ -915,15 +911,54 @@ class RecurrentMAE:
             name = 'RNN Weight Norm ' + str(i)
             rnn_weight_sum.append(tf.summary.scalar(name,rnn_weight_norms[i]))
 
+        normalization = tf.placeholder('float')
+
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
         rms = tf.Variable(0.0,name='rms_error',trainable=False)
         rel = tf.Variable(0.0,name='rel_error',trainable=False)
 
+
+        imr_loss = tf.Variable(0.0,name='imr_val_loss',trainable=False)
+        img_loss = tf.Variable(0.0,name='img_val_loss',trainable=False)
+        imb_loss = tf.Variable(0.0,name='imb_val_loss',trainable=False)
+        gnd_loss = tf.Variable(0.0,name='gnd_val_loss',trainable=False)
+        obj_loss = tf.Variable(0.0,name='obj_val_loss',trainable=False)
+        bld_loss = tf.Variable(0.0,name='bld_val_loss',trainable=False)
+        veg_loss = tf.Variable(0.0,name='veg_val_loss',trainable=False)
+        sky_loss = tf.Variable(0.0,name='sky_val_loss',trainable=False)
+
+        imr_loss_reset = imr_loss.assign(0.0)
+        img_loss_reset = img_loss.assign(0.0)
+        imb_loss_reset = imb_loss.assign(0.0)
+        gnd_loss_reset = gnd_loss.assign(0.0)
+        obj_loss_reset = obj_loss.assign(0.0)
+        bld_loss_reset = bld_loss.assign(0.0)
+        veg_loss_reset = veg_loss.assign(0.0)
+        sky_loss_reset = sky_loss.assign(0.0)
+
+        imr_loss_update = imr_loss.assign_add(tf.nn.l2_loss(imr_label_series[-1]-output[0])/normalization)
+        img_loss_update = img_loss.assign_add(tf.nn.l2_loss(img_label_series[-1]-output[1])/normalization)
+        imb_loss_update = imb_loss.assign_add(tf.nn.l2_loss(imb_label_series[-1]-output[2])/normalization)
+        gnd_loss_update = gnd_loss.assign_add(tf.nn.l2_loss(gnd_label_series[-1]-output[4])/normalization)
+        obj_loss_update = obj_loss.assign_add(tf.nn.l2_loss(obj_label_series[-1]-output[5])/normalization)
+        bld_loss_update = bld_loss.assign_add(tf.nn.l2_loss(bld_label_series[-1]-output[6])/normalization)
+        veg_loss_update = veg_loss.assign_add(tf.nn.l2_loss(veg_label_series[-1]-output[7])/normalization)
+        sky_loss_update = sky_loss.assign_add(tf.nn.l2_loss(sky_label_series[-1]-output[8])/normalization)
+
+        summary_imr = tf.summary.scalar('Red Channel Validation Loss', imr_loss)
+        summary_img = tf.summary.scalar('Green Channel Validation Loss', img_loss)
+        summary_imb = tf.summary.scalar('Blue Channel Validation Loss', imb_loss)
+        summary_gnd = tf.summary.scalar('Ground Channel Validation Loss', gnd_loss)
+        summary_obj = tf.summary.scalar('Object Channel Validation Loss', obj_loss)
+        summary_bld = tf.summary.scalar('Building Channel Validation Loss', bld_loss)
+        summary_veg = tf.summary.scalar('Vegetation Channel Validation Loss', veg_loss)
+        summary_sky = tf.summary.scalar('Sky Channel Validation Loss', sky_loss)
+
+
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
 
-        normalization = tf.placeholder('float')
         rms_plh = tf.placeholder('float')
         rel_plh = tf.placeholder('float')
 
@@ -1250,7 +1285,17 @@ class RecurrentMAE:
 
 
 
-                sess.run([loss_val_reset,rms_reset,rel_reset])
+                sess.run([loss_val_reset,
+                          rms_reset,
+                          rel_reset,
+                          imr_loss_reset,
+                          img_loss_reset,
+                          imb_loss_reset,
+                          gnd_loss_reset,
+                          obj_loss_reset,
+                          bld_loss_reset,
+                          veg_loss_reset,
+                          sky_loss_reset])
 
                 norm = 8*1080*set_val.shape[0]
 
@@ -1259,6 +1304,8 @@ class RecurrentMAE:
 
                 error_rms = 0
                 error_rel = 0
+
+
 
                 for i in set_val:
 
@@ -1312,7 +1359,16 @@ class RecurrentMAE:
                                  self.init_states:np.zeros((1,self.state_size)),
                                  normalization:norm}
 
-                    im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
+                    im_pred,c_val,l_imr,l_img,l_imb,l_gnd,l_obj,l_bld,l_veg,l_sky = sess.run([output,
+                                                                                              loss_val_update,
+                                                                                              imr_loss_update,
+                                                                                              img_loss_update,
+                                                                                              imb_loss_update,
+                                                                                              gnd_loss_update,
+                                                                                              obj_loss_update,
+                                                                                              bld_loss_update,
+                                                                                              veg_loss_update,
+                                                                                              sky_loss_update],feed_dict=feed_dict)
 
                     depth_pred = BR.invert_depth(im_pred[3])
                     depth_gt = BR.invert_depth(depth_label[-1])
@@ -1330,10 +1386,26 @@ class RecurrentMAE:
                 sum_val = sess.run(sum_val_loss)
                 sum_rms = sess.run(summary_rms)
                 sum_rel = sess.run(summary_rel)
+                sum_imr = sess.run(summary_imr)
+                sum_img = sess.run(summary_img)
+                sum_imb = sess.run(summary_imb)
+                sum_gnd = sess.run(summary_gnd)
+                sum_obj = sess.run(summary_obj)
+                sum_bld = sess.run(summary_bld)
+                sum_veg = sess.run(summary_veg)
+                sum_sky = sess.run(summary_sky)
 
                 train_writer1.add_summary(sum_val,epoch)
                 train_writer1.add_summary(sum_rms,epoch)
                 train_writer1.add_summary(sum_rel,epoch)
+                train_writer1.add_summary(sum_imr,epoch)
+                train_writer1.add_summary(sum_img,epoch)
+                train_writer1.add_summary(sum_imb,epoch)
+                train_writer1.add_summary(sum_gnd,epoch)
+                train_writer1.add_summary(sum_obj,epoch)
+                train_writer1.add_summary(sum_bld,epoch)
+                train_writer1.add_summary(sum_veg,epoch)
+                train_writer1.add_summary(sum_sky,epoch)
 
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
                 print('RMSE Error over Validation Set:', sess.run(rms.value()))
@@ -1507,9 +1579,9 @@ class RecurrentMAE:
 # running model
 
 rnn_mae = RecurrentMAE(data_train,data_validate,data_test)
-#rnn_mae.train_model()
+rnn_mae.train_model()
 
-rnn_mae.evaluate(run='20171103-074407')
+#rnn_mae.evaluate(run='20171103-074407')
 
 
 
