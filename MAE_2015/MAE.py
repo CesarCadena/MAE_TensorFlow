@@ -10,6 +10,7 @@ import basic_routines as BR
 
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion, pretraining_input_distortion
+from basic_routines import horizontal_mirroring, zeroing_channel
 from datetime import datetime
 from copy import copy
 
@@ -23,10 +24,6 @@ class MAE:
 
         self.size_input = self.height*self.width
         self.size_coding = 1024
-
-        self.n_training_data = 300 # max 15301
-        self.n_training_validations = 50
-
 
         # options
         self.mode = 'denoising' # standard for non denoising training or denoising for training a denoising MAE
@@ -105,17 +102,6 @@ class MAE:
 
         self.depth_mask_train = []
 
-
-        self.imr_train_label = []
-        self.img_train_label = []
-        self.imb_train_label = []
-        self.depth_train_label = []
-        self.gnd_train_label = []
-        self.obj_train_label = []
-        self.bld_train_label = []
-        self.veg_train_label = []
-        self.sky_train_label = []
-
         for i in data_train:
             for j in i:
                 self.imr_train.append(j['xcrLeft']/255.)
@@ -129,17 +115,6 @@ class MAE:
                 self.veg_train.append((j['semLeft']==4).astype(int))
                 self.sky_train.append((j['semLeft']==5).astype(int))
 
-                self.imr_train_label.append(j['xcrLeft']/255.)
-                self.img_train_label.append(j['xcgLeft']/255.)
-                self.imb_train_label.append(j['xcbLeft']/255.)
-                self.depth_train_label.append(j['xidLeft'])
-                self.gnd_train_label.append((j['semLeft']==1).astype(int))
-                self.obj_train_label.append((j['semLeft']==2).astype(int))
-                self.bld_train_label.append((j['semLeft']==3).astype(int))
-                self.veg_train_label.append((j['semLeft']==4).astype(int))
-                self.sky_train_label.append((j['semLeft']==5).astype(int))
-
-
                 self.imr_train.append(j['xcrRight']/255.)
                 self.img_train.append(j['xcgRight']/255.)
                 self.imb_train.append(j['xcbRight']/255.)
@@ -150,63 +125,6 @@ class MAE:
                 self.bld_train.append((j['semRight']==3).astype(int))
                 self.veg_train.append((j['semRight']==4).astype(int))
                 self.sky_train.append((j['semRight']==5).astype(int))
-
-                self.imr_train_label.append(j['xcrRight']/255.)
-                self.img_train_label.append(j['xcgRight']/255.)
-                self.imb_train_label.append(j['xcbRight']/255.)
-                self.depth_train_label.append(j['xidRight'])
-                self.gnd_train_label.append((j['semRight']==1).astype(int))
-                self.obj_train_label.append((j['semRight']==2).astype(int))
-                self.bld_train_label.append((j['semRight']==3).astype(int))
-                self.veg_train_label.append((j['semRight']==4).astype(int))
-                self.sky_train_label.append((j['semRight']==5).astype(int))
-
-
-
-                self.imr_train.append(j['xcrLeft']/255.)
-                self.img_train.append(j['xcgLeft']/255.)
-                self.imb_train.append(j['xcbLeft']/255.)
-                self.depth_mask_train.append(j['xmaskLeft'])
-                self.depth_train.append([0]*self.size_input)
-                self.gnd_train.append([0]*self.size_input)
-                self.obj_train.append([0]*self.size_input)
-                self.bld_train.append([0]*self.size_input)
-                self.veg_train.append([0]*self.size_input)
-                self.sky_train.append([0]*self.size_input)
-
-                self.imr_train_label.append(j['xcrLeft']/255.)
-                self.img_train_label.append(j['xcgLeft']/255.)
-                self.imb_train_label.append(j['xcbLeft']/255.)
-                self.depth_train_label.append(j['xidLeft'])
-                self.gnd_train_label.append((j['semLeft']==1).astype(int))
-                self.obj_train_label.append((j['semLeft']==2).astype(int))
-                self.bld_train_label.append((j['semLeft']==3).astype(int))
-                self.veg_train_label.append((j['semLeft']==4).astype(int))
-                self.sky_train_label.append((j['semLeft']==5).astype(int))
-
-                self.imr_train.append(j['xcrRight']/255.)
-                self.img_train.append(j['xcgRight']/255.)
-                self.imb_train.append(j['xcbRight']/255.)
-                self.depth_mask_train.append(j['xmaskRight'])
-                self.depth_train.append([0]*self.size_input)
-                self.gnd_train.append([0]*self.size_input)
-                self.obj_train.append([0]*self.size_input)
-                self.bld_train.append([0]*self.size_input)
-                self.veg_train.append([0]*self.size_input)
-                self.sky_train.append([0]*self.size_input)
-
-                self.imr_train_label.append(j['xcrRight']/255.)
-                self.img_train_label.append(j['xcgRight']/255.)
-                self.imb_train_label.append(j['xcbRight']/255.)
-                self.depth_train_label.append(j['xidRight'])
-                self.gnd_train_label.append((j['semRight']==1).astype(int))
-                self.obj_train_label.append((j['semRight']==2).astype(int))
-                self.bld_train_label.append((j['semRight']==3).astype(int))
-                self.veg_train_label.append((j['semRight']==4).astype(int))
-                self.sky_train_label.append((j['semRight']==5).astype(int))
-                
-
-
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
@@ -221,16 +139,6 @@ class MAE:
         self.bld_train = np.asarray(self.bld_train)[rand_indices]
         self.veg_train = np.asarray(self.veg_train)[rand_indices]
         self.sky_train = np.asarray(self.sky_train)[rand_indices]
-
-        self.imr_train_label = np.asarray(self.imr_train_label)[rand_indices]
-        self.img_train_label = np.asarray(self.img_train_label)[rand_indices]
-        self.imb_train_label = np.asarray(self.imb_train_label)[rand_indices]
-        self.depth_train_label = np.asarray(self.depth_train_label)[rand_indices]
-        self.gnd_train_label = np.asarray(self.gnd_train_label)[rand_indices]
-        self.obj_train_label = np.asarray(self.obj_train_label)[rand_indices]
-        self.bld_train_label = np.asarray(self.bld_train_label)[rand_indices]
-        self.veg_train_label = np.asarray(self.veg_train_label)[rand_indices]
-        self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
 
@@ -248,8 +156,6 @@ class MAE:
         self.veg_val = []
         self.sky_val = []
 
-        v_iterator = 0
-
         for i in data_val:
             for j in i:
                 self.imr_val.append(j['xcrLeft']/255.)
@@ -262,6 +168,17 @@ class MAE:
                 self.bld_val.append((j['semLeft']==3).astype(int))
                 self.veg_val.append((j['semLeft']==4).astype(int))
                 self.sky_val.append((j['semLeft']==5).astype(int))
+                
+                self.imr_val.append(j['xcrRight']/255.)
+                self.img_val.append(j['xcgRight']/255.)
+                self.imb_val.append(j['xcbRight']/255.)
+                self.depth_val.append(j['xidRight'])
+                self.depth_mask_val.append(j['xmaskRight'])
+                self.gnd_val.append((j['semRight']==1).astype(int))
+                self.obj_val.append((j['semRight']==2).astype(int))
+                self.bld_val.append((j['semRight']==3).astype(int))
+                self.veg_val.append((j['semRight']==4).astype(int))
+                self.sky_val.append((j['semRight']==5).astype(int))
 
     def prepare_test_data(self,data_test):
 
@@ -276,7 +193,6 @@ class MAE:
         self.veg_test = []
         self.sky_test = []
 
-
         for i in data_test:
             for j in i:
                 self.imr_test.append(j['xcrLeft']/255.)
@@ -288,6 +204,16 @@ class MAE:
                 self.bld_test.append((j['semLeft']==3).astype(int))
                 self.veg_test.append((j['semLeft']==4).astype(int))
                 self.sky_test.append((j['semLeft']==5).astype(int))
+                
+                self.imr_test.append(j['xcrRight']/255.)
+                self.img_test.append(j['xcgRight']/255.)
+                self.imb_test.append(j['xcbRight']/255.)
+                self.depth_test.append(j['xidRight'])
+                self.gnd_test.append((j['semRight']==1).astype(int))
+                self.obj_test.append((j['semRight']==2).astype(int))
+                self.bld_test.append((j['semRight']==3).astype(int))
+                self.veg_test.append((j['semRight']==4).astype(int))
+                self.sky_test.append((j['semRight']==5).astype(int))
 
     def prepare_test_frames(self,data_test):
 
@@ -582,10 +508,10 @@ class MAE:
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
         self.learning_rate = 1e-6
-        self.hm_epochs = 150
+        self.hm_epochs = 600
+        self.hm_epoch_init = 20
 
-        # validation options
-        self.n_validation_steps = 1
+        # validation options        
 
         prediction = self.neural_model(self.imr_input,
                                        self.img_input,
@@ -641,8 +567,8 @@ class MAE:
         loss_val_reset = val_loss.assign(0)
         loss_val_update = val_loss.assign_add(loss/normalization)
 
-        sum_epoch_loss = tf.summary.scalar('Epoch Loss Full Model',epoch_loss)
-        sum_val_loss = tf.summary.scalar('Validation Loss Full Model',val_loss)
+        sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Full_Model',epoch_loss)
+        sum_val_loss = tf.summary.scalar('Validation_Loss_Full_Model',val_loss)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=[self.full_ec_layer['weights'],
                                                                                                       self.full_ec_layer['bias'],
@@ -650,9 +576,11 @@ class MAE:
                                                                                                       self.full_dc_layer['bias']])
 
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        
+        ind_batch = np.arange(0,self.batch_size)
 
-        validations = np.arange(0, self.n_training_validations)
-        set_val = np.random.choice(validations,self.n_training_validations,replace=False)
+        validations = np.arange(0, len(self.imr_val))        
+        set_val = np.random.choice(validations,len(self.imr_val),replace=False)
 
 
         load_red = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
@@ -721,12 +649,8 @@ class MAE:
 
             for epoch in range(0,self.hm_epochs):
 
-                if epoch == 20:
-                    self.learning_rate = 1e-6
-
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
-
 
                 for _ in range(self.n_batches):
 
@@ -742,16 +666,6 @@ class MAE:
 
                     depth_mask_batch = self.depth_mask_train[_*self.batch_size:(_+1)*self.batch_size]
 
-                    imr_batch_label = self.imr_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    img_batch_label = self.img_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    imb_batch_label = self.imb_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    depth_batch_label = self.depth_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    gnd_batch_label= self.gnd_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    obj_batch_label = self.obj_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    bld_batch_label = self.bld_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    veg_batch_label = self.veg_train_label[_*self.batch_size:(_+1)*self.batch_size]
-                    sky_batch_label = self.sky_train_label[_*self.batch_size:(_+1)*self.batch_size]
-
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
                                                                                                         copy(img_batch),
                                                                                                         copy(imb_batch),
@@ -762,8 +676,47 @@ class MAE:
                                                                                                         copy(veg_batch),
                                                                                                         copy(sky_batch),
                                                                                                         resolution=(18,60))
-
-
+                    
+                    # horizontal mirroring
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    
+                    imr_in = horizontal_mirroring(imr_in,ind_rand_who)
+                    imr_batch = horizontal_mirroring(imr_batch,ind_rand_who)                    
+                    img_in = horizontal_mirroring(img_in,ind_rand_who)
+                    img_batch = horizontal_mirroring(img_batch,ind_rand_who)                    
+                    imb_in = horizontal_mirroring(imb_in,ind_rand_who)
+                    imb_batch = horizontal_mirroring(imb_batch,ind_rand_who)                    
+                    
+                    depth_in = horizontal_mirroring(depth_in,ind_rand_who)
+                    depth_batch = horizontal_mirroring(depth_batch,ind_rand_who)                    
+                    depth_mask_batch = horizontal_mirroring(depth_mask_batch,ind_rand_who)
+                    
+                    gnd_in = horizontal_mirroring(gnd_in,ind_rand_who)
+                    gnd_batch = horizontal_mirroring(gnd_batch,ind_rand_who)                    
+                    obj_in = horizontal_mirroring(obj_in,ind_rand_who)
+                    obj_batch = horizontal_mirroring(obj_batch,ind_rand_who)                    
+                    bld_in = horizontal_mirroring(bld_in,ind_rand_who)
+                    bld_batch = horizontal_mirroring(bld_batch,ind_rand_who)                    
+                    veg_in = horizontal_mirroring(veg_in,ind_rand_who)
+                    veg_batch = horizontal_mirroring(veg_batch,ind_rand_who)                    
+                    sky_in = horizontal_mirroring(sky_in,ind_rand_who)
+                    sky_batch = horizontal_mirroring(sky_batch,ind_rand_who)
+                    
+                    # zeroing depth inputs
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    
+                    depth_in = zeroing_channel(depth_in,ind_rand_who)                   
+                    
+                    # zeroing semantic inputs
+                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
+                    
+                    gnd_in = zeroing_channel(gnd_in,ind_rand_who)
+                    obj_in = zeroing_channel(obj_in,ind_rand_who)
+                    bld_in = zeroing_channel(bld_in,ind_rand_who)
+                    veg_in = zeroing_channel(veg_in,ind_rand_who)
+                    sky_in = zeroing_channel(sky_in,ind_rand_who)
+                    
+                    
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
                                  self.imb_input:imb_in,
@@ -774,18 +727,18 @@ class MAE:
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
                                  self.depth_mask:depth_mask_batch,
-                                 self.imr_label:imr_batch_label,
-                                 self.img_label:img_batch_label,
-                                 self.imb_label:imb_batch_label,
-                                 self.depth_label:depth_batch_label,
-                                 self.gnd_label:gnd_batch_label,
-                                 self.obj_label:obj_batch_label,
-                                 self.bld_label:bld_batch_label,
-                                 self.veg_label:veg_batch_label,
-                                 self.sky_label:sky_batch_label}
+                                 self.imr_label:imr_batch,
+                                 self.img_label:img_batch,
+                                 self.imb_label:imb_batch,
+                                 self.depth_label:depth_batch,
+                                 self.gnd_label:gnd_batch,
+                                 self.obj_label:obj_batch,
+                                 self.bld_label:bld_batch,
+                                 self.veg_label:veg_batch,
+                                 self.sky_label:sky_batch}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 10:
+                    if epoch < self.hm_epoch_init:
                         _ , c, l = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
                     else:
                         _ ,c, l = sess.run([optimizer2, cost, epoch_loss_update],feed_dict=feed_dict)
@@ -799,11 +752,9 @@ class MAE:
 
                 sess.run(loss_val_reset)
 
-
-
                 for i in set_val:
 
-                    norm = 8*1080*set_val.shape[0]
+                    norm = 8.*1080*set_val.shape[0]
 
                     red_label = self.imr_val[i]
                     green_label = self.img_val[i]
@@ -817,7 +768,7 @@ class MAE:
                     sky_label = self.sky_val[i]
 
                     norm += np.count_nonzero(depth_mask)
-
+                    
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
                                                                                                         copy(blue_label),
@@ -850,7 +801,7 @@ class MAE:
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
                                  normalization:norm}
-
+                   
                     im_pred,c_val = sess.run([prediction,loss_val_update],feed_dict=feed_dict)
 
                 sum_val = sess.run(sum_val_loss)

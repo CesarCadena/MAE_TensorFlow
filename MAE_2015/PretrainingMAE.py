@@ -24,14 +24,13 @@ class PretrainingMAE():
 
         # training options
 
-        self.batch_size = 50
-        self.hm_epochs = 4
+        self.batch_size = 100
+        self.hm_epochs = 300
 
         self.input_size = 1080
         self.hidden_size = 1024
 
-        self.saving = True
-        self.n_training_data = 'all'
+        self.saving = True        
 
         self.decay = 'constant'
 
@@ -111,15 +110,11 @@ class PretrainingMAE():
         self.veg_train = []
         self.sky_train = []
 
-        self.depth_mask_train = []
-        #self.depth_loss_mask_train = []
-
-        t_iterator = 0
+        self.depth_mask_train = []        
 
         for i in self.data_train:
             for j in i:
-                if t_iterator == self.n_training_data:
-                    break
+                
                 self.imr_train.append(j['xcrLeft']/255.)                
                 self.img_train.append(j['xcgLeft']/255.)
                 self.img_train.append(j['xcgLeft']/255.)
@@ -131,14 +126,7 @@ class PretrainingMAE():
                 self.bld_train.append((j['semLeft']==3).astype(int))
                 self.veg_train.append((j['semLeft']==4).astype(int))
                 self.sky_train.append((j['semLeft']==5).astype(int))
-
-                t_iterator += 1
-
-        t_iterator = 0
-        for i in self.data_train:
-            for j in i:
-                if t_iterator == self.n_training_data:
-                    break
+              
                 self.imr_train.append(j['xcrRight']/255.)
                 self.img_train.append(j['xcgRight']/255.)
                 self.imb_train.append(j['xcbRight']/255.)
@@ -149,9 +137,7 @@ class PretrainingMAE():
                 self.bld_train.append((j['semRight']==3).astype(int))
                 self.veg_train.append((j['semRight']==4).astype(int))
                 self.sky_train.append((j['semRight']==5).astype(int))
-
-                t_iterator += 1
-
+        
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
         np.random.shuffle(rand_indices)
@@ -181,8 +167,6 @@ class PretrainingMAE():
             self.sky_val = []
             self.depth_mask_val = []
 
-            v_iterator = 0
-
             for i in self.data_val:
                 for j in i:
                     self.imr_val.append(j['xcrLeft']/255.)
@@ -195,13 +179,7 @@ class PretrainingMAE():
                     self.veg_val.append((j['semLeft']==4).astype(int))
                     self.sky_val.append((j['semLeft']==5).astype(int))
                     self.depth_mask_val.append(j['xmaskLeft'])
-
-                    v_iterator += 1
-                    
-            v_iterator = 0
-
-            for i in self.data_val:
-                for j in i:
+            
                     self.imr_val.append(j['xcrRight']/255.)
                     self.img_val.append(j['xcgRight']/255.)
                     self.imb_val.append(j['xcbRight']/255.)
@@ -212,9 +190,7 @@ class PretrainingMAE():
                     self.veg_val.append((j['semRight']==4).astype(int))
                     self.sky_val.append((j['semRight']==5).astype(int))
                     self.depth_mask_val.append(j['xmaskRight'])
-
-                    v_iterator += 1
-
+            
     def AE_red(self,input):
 
         self.red_ec_layer = {'weights':tf.Variable(tf.random_normal(shape=[self.input_size, self.hidden_size], stddev=0.01), name='red_ec_layer_weights'),

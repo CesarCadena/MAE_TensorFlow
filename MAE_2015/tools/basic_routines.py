@@ -28,3 +28,16 @@ def horizontal_mirroring(x,ind_who,resolution = (18,60)):
         x1[i]=x[i][indmirror]
     
     return x1
+
+def zeroing_channel(x,ind_who,resolution = (18,60)):
+    
+    h = resolution[0]
+    w = resolution[1]
+        
+    x1 = copy(x)    
+    zeros = np.zeros((h*w))
+    
+    for i in ind_who:
+        x1[i] = zeros
+    
+    return x1
