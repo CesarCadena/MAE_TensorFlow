@@ -151,13 +151,84 @@ class RecurrentMAE:
             veg_series_aug = copy(veg[series])
             sky_series_aug = copy(sky[series])
 
+            u = np.random.randint(0,8)
+
             for rnn_step in range(0,self.n_rnn_steps):
 
-                u = np.random.uniform(0,1)
+
                 zeros = np.zeros(np.asarray(imr_series_aug[rnn_step]).shape)
 
-                if u < 0.33:
+                if u == 1:
+                    
                     # only rgb
+                    if rnn_step < 2:
+
+                        depth_series_aug[rnn_step] = zeros
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                    if rnn_step < 4:
+
+                        depth_series_aug[rnn_step] = zeros
+
+                if u == 2:
+
+                    if rnn_step < 2:
+
+                        depth_series_aug[rnn_step] = zeros
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                    if rnn_step < 4:
+
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+
+                if u == 3:
+
+                    if rnn_step%2 == 0:
+
+                        depth_series_aug[rnn_step] = zeros
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                    else:
+                        depth_series_aug[rnn_step] = zeros
+
+
+                if u == 5:
+
+                    if rnn_step%2 == 0:
+
+                        depth_series_aug[rnn_step] = zeros
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                    else:
+
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                if u == 6:
 
                     depth_series_aug[rnn_step] = zeros
                     gnd_series_aug[rnn_step] = zeros
@@ -166,26 +237,20 @@ class RecurrentMAE:
                     veg_series_aug[rnn_step] = zeros
                     sky_series_aug[rnn_step] = zeros
 
+                if u == 7:
+
+                    depth_series_aug[rnn_step] = zeros
 
 
-                if u >= 0.33 and u < 0.66:
-                    # only depth
-                    imr_series_aug[rnn_step] = zeros
-                    img_series_aug[rnn_step] = zeros
-                    imb_series_aug[rnn_step] = zeros
-                    gnd_series_aug[rnn_step] = zeros
-                    obj_series_aug[rnn_step] = zeros
-                    bld_series_aug[rnn_step] = zeros
-                    veg_series_aug[rnn_step] = zeros
-                    sky_series_aug[rnn_step] = zeros
 
-                if u >= 0.66:
-                    # rgb and depth
-                    gnd_series_aug[rnn_step] = zeros
-                    obj_series_aug[rnn_step] = zeros
-                    bld_series_aug[rnn_step] = zeros
-                    veg_series_aug[rnn_step] = zeros
-                    sky_series_aug[rnn_step] = zeros
+
+
+
+
+
+
+
+
 
             imr_aug.append(copy(imr_series_aug))
             imb_aug.append(copy(img_series_aug))
