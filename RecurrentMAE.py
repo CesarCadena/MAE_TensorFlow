@@ -52,7 +52,7 @@ class RecurrentMAE:
          # recurrent options
 
         self.n_rnn_steps = 5
-        self.state_size = 2*1024
+        self.state_size = 1024
 
 
         # prepare data
@@ -159,7 +159,7 @@ class RecurrentMAE:
                 zeros = np.zeros(np.asarray(imr_series_aug[rnn_step]).shape)
 
                 if u == 1:
-                    
+
                     # only rgb
                     if rnn_step < 2:
 
@@ -241,15 +241,8 @@ class RecurrentMAE:
 
                     depth_series_aug[rnn_step] = zeros
 
-
-
-
-
-
-
-
-
-
+                if u == 8:
+                    pass
 
 
             imr_aug.append(copy(imr_series_aug))
@@ -939,20 +932,20 @@ class RecurrentMAE:
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
                tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
+               0.1*tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
                tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
                tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8])
+               0.1*tf.nn.l2_loss(sky_label_series[-1]-output[8])
 
         loss = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
                tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
                tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
                tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
-               tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
+               0.1*tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
                tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
                tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
-               tf.nn.l2_loss(sky_label_series[-1]-output[8])
+               0.1*tf.nn.l2_loss(sky_label_series[-1]-output[8])
 
 
 
@@ -1153,7 +1146,6 @@ class RecurrentMAE:
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
 
-                print()
 
 
                 feed_dict = {self.imr_input:imr_in,
@@ -1196,7 +1188,7 @@ class RecurrentMAE:
 
 
 
-            for epoch in range(0,self.hm_epochs):
+            for epoch in range(0,8*self.hm_epochs):
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
@@ -1240,6 +1232,16 @@ class RecurrentMAE:
                                                                                                         resolution=(18,60),
                                                                                                         rnn=True)
 
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = self.augment_data(imr_in,
+                                                                                                         img_in,
+                                                                                                         imb_in,
+                                                                                                         depth_in,
+                                                                                                         gnd_in,
+                                                                                                         obj_in,
+                                                                                                         bld_in,
+                                                                                                         veg_in,
+                                                                                                         sky_in)
+
 
 
 
@@ -1265,77 +1267,17 @@ class RecurrentMAE:
                                  self.init_states:in_state}
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 20:
+                    if epoch < 10:
                         _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                    if epoch >= 20 and epoch < 40:
+                    if epoch >= 10 and epoch < 30:
                         _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
-                    if epoch >= 40 and epoch < 60:
+                    if epoch >= 30 and epoch < 60:
                         _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                     else:
                         _ , c, l, in_state = sess.run([optimizer4, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
-
-                    if self.data_augmentation == True:
-
-                        for augmentation in range(0,self.n_augmentations):
-
-                            imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
-                                                                                                                copy(img_batch),
-                                                                                                                copy(imb_batch),
-                                                                                                                copy(depth_batch),
-                                                                                                                copy(gnd_batch),
-                                                                                                                copy(obj_batch),
-                                                                                                                copy(bld_batch),
-                                                                                                                copy(veg_batch),
-                                                                                                                copy(sky_batch),
-                                                                                                                resolution=(18,60),
-                                                                                                                rnn=True)
-
-                            imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = self.augment_data(imr_in,
-                                                                                                                 img_in,
-                                                                                                                 imb_in,
-                                                                                                                 depth_in,
-                                                                                                                 gnd_in,
-                                                                                                                 obj_in,
-                                                                                                                 bld_in,
-                                                                                                                 veg_in,
-                                                                                                                 sky_in)
-
-                            feed_dict = {self.imr_input:imr_in,
-                                         self.img_input:img_in,
-                                         self.imb_input:imb_in,
-                                         self.depth_input:depth_in,
-                                         self.gnd_input:gnd_in,
-                                         self.obj_input:obj_in,
-                                         self.bld_input:bld_in,
-                                         self.veg_input:veg_in,
-                                         self.sky_input:sky_in,
-                                         self.depth_mask:depth_mask_batch,
-                                         self.imr_label:imr_batch_label,
-                                         self.img_label:img_batch_label,
-                                         self.imb_label:imb_batch_label,
-                                         self.depth_label:depth_batch_label,
-                                         self.gnd_label:gnd_batch_label,
-                                         self.obj_label:obj_batch_label,
-                                         self.bld_label:bld_batch_label,
-                                         self.veg_label:veg_batch_label,
-                                         self.sky_label:sky_batch_label,
-                                         self.init_states:in_state}
-
-                            # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                            if epoch < 20:
-                                _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
-
-                            if epoch >= 20 and epoch < 40:
-                                _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
-
-                            if epoch >= 40 and epoch < 60:
-                                _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
-
-                            else:
-                                _ , c, l, in_state = sess.run([optimizer4, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
