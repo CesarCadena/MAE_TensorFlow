@@ -52,7 +52,7 @@ class RecurrentMAE:
          # recurrent options
 
         self.n_rnn_steps = 5
-        self.state_size = 1024
+        self.state_size = 2*1024
 
 
         # prepare data
@@ -899,7 +899,29 @@ class RecurrentMAE:
 
         return output, state
 
+    def LSTM_RNN(self,inputs):
+
+        inputs = tf.stack(inputs)
+        initializer = tf.zeros_initializer
+
+        print(self.state_size)
+        with tf.variable_scope('RNN') as rnn:
+            LSTM_cell = tf.nn.rnn_cell.LSTMCell(num_units=self.size_coding,initializer=initializer,state_is_tuple=False)
+
+            # get all variables of rnn network
+            self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
+
+
+        state = self.init_states
+        output, state = tf.nn.dynamic_rnn(LSTM_cell,inputs,initial_state=state,time_major=True)
+
+        output = tf.unstack(output,axis=0)
+
+
+        return output[-1], state
+
     def network(self, input):
+
 
         encoding = self.encoding_network(input[0],
                                          input[1],
@@ -984,12 +1006,15 @@ class RecurrentMAE:
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
+        # comment when using current LSTM implementation
         rnn_reg_term = tf.contrib.layers.apply_regularization(regularizer,self.rnn_variables)
 
         cost += reg_term
+        # comment when using current LSTM implementation
         cost += rnn_reg_term
 
         cost_dw += reg_term
+        # comment when using current LSTM implementation
         cost_dw += rnn_reg_term
 
         return cost, cost_dw, loss, loss_dw
@@ -1023,11 +1048,12 @@ class RecurrentMAE:
         cost, cost_dw, loss, loss_dw = self.cost_definition(output,label_series)
 
 
-
+        # comment when using LSTM
         rnn_weight_norms = []
         for i in self.rnn_weights_H:
             rnn_weight_norms.append(tf.norm(i,ord='euclidean'))
 
+        # comment when using LSTM
         rnn_weight_sum = []
         for i in range(0,len(rnn_weight_norms)):
             name = 'RNN Weight Norm ' + str(i)
@@ -1098,6 +1124,14 @@ class RecurrentMAE:
         summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
         self.training_cost = cost
+
+        # optimizer for draft LSTM network
+        #optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        #optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        #optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        #optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+
+
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_weights_H)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
