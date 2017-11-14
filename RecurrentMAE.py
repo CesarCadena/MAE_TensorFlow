@@ -76,6 +76,12 @@ class RecurrentMAE:
         self.learning_rate = 1e-6
         self.hm_epochs = 200
 
+
+        # variables for overfitting detection
+        self.DOWNWEIGHT = False
+        self.min_val_loss = 1e06
+        self.detection_epoch = 1e06
+
         # model savings
         self.saving = True
         now = datetime.now()
@@ -542,7 +548,7 @@ class RecurrentMAE:
         self.veg_test = np.asarray(self.veg_test)[rand_indices]
         self.sky_test = np.asarray(self.sky_test)[rand_indices]
 
-    def encoding_network(self, imr, img, imb, depth, gnd, obj, bld, veg, sky, mode='training'):
+    def encoding_network(self, imr, img, imb, depth, gnd, obj, bld, veg, sky):
 
         '''
         :param imr: red channel of rgb image
@@ -844,7 +850,7 @@ class RecurrentMAE:
         output = [imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out]
         return output
 
-    def rnn_network(self, inputs):
+    def Basic_RNN(self, inputs):
 
         # container for recurrent weights
         self.rnn_weights_H = []
@@ -893,6 +899,24 @@ class RecurrentMAE:
 
         return output, state
 
+    def network(self, input):
+
+        encoding = self.encoding_network(input[0],
+                                         input[1],
+                                         input[2],
+                                         input[3],
+                                         input[4],
+                                         input[5],
+                                         input[6],
+                                         input[7],
+                                         input[8])
+
+        outputs, _current_state = self.Basic_RNN(encoding)
+
+        output = self.decoding_network(outputs)
+
+        return output, _current_state
+
     def collect_variables(self):
 
         # collect all variables for weight regularization
@@ -900,54 +924,59 @@ class RecurrentMAE:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
 
-    def train_model(self):
+    def overfitting_detection(self,val_loss,epoch):
 
-        encoding = self.encoding_network(self.imr_input,
-                                         self.img_input,
-                                         self.imb_input,
-                                         self.depth_input,
-                                         self.gnd_input,
-                                         self.obj_input,
-                                         self.bld_input,
-                                         self.veg_input,
-                                         self.sky_input,
-                                         mode='training')
+        if self.min_val_loss > val_loss:
+            self.min_val_loss = val_loss
+            self.min_val_loss_epoch = epoch
 
-        outputs, _current_state = self.rnn_network(encoding)
-        output = self.decoding_network(outputs)
+        if 1.1*self.min_val_loss < val_loss:
+            self.detection_epoch = epoch
+            self.DOWNWEIGHT = True
 
-        imr_label_series = tf.unstack(self.imr_label,axis=1)
-        img_label_series = tf.unstack(self.img_label,axis=1)
-        imb_label_series = tf.unstack(self.imb_label,axis=1)
-        depth_label_series = tf.unstack(self.depth_label,axis=1)
-        depth_mask_series = tf.unstack(self.depth_mask,axis=1)
-        gnd_label_series = tf.unstack(self.gnd_label,axis=1)
-        obj_label_series = tf.unstack(self.obj_label,axis=1)
-        bld_label_series = tf.unstack(self.bld_label,axis=1)
-        veg_label_series = tf.unstack(self.veg_label,axis=1)
-        sky_label_series = tf.unstack(self.sky_label,axis=1)
-
-        cost = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
-               0.1*tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
-               0.1*tf.nn.l2_loss(sky_label_series[-1]-output[8])
-
-        loss = tf.nn.l2_loss(imr_label_series[-1]-output[0]) + \
-               tf.nn.l2_loss(img_label_series[-1]-output[1]) + \
-               tf.nn.l2_loss(imb_label_series[-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(depth_mask_series[-1],depth_label_series[-1])-tf.multiply(depth_mask_series[-1],output[3])) + \
-               tf.nn.l2_loss(gnd_label_series[-1]-output[4]) + \
-               0.1*tf.nn.l2_loss(obj_label_series[-1]-output[5]) + \
-               tf.nn.l2_loss(bld_label_series[-1]-output[6]) + \
-               tf.nn.l2_loss(veg_label_series[-1]-output[7]) + \
-               0.1*tf.nn.l2_loss(sky_label_series[-1]-output[8])
+    def cost_definition(self,output,label_series):
 
 
+        cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               tf.nn.l2_loss(label_series[9][-1]-output[8])
+
+        loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               tf.nn.l2_loss(label_series[9][-1]-output[8])
+
+
+        cost_dw = tf.nn.l2_loss(tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+                               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+                               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+                               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+                               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+                               0.1*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+                               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+                               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+                               0.1*tf.nn.l2_loss(label_series[9][-1]-output[8]))
+
+        loss_dw = tf.nn.l2_loss(tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+                               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+                               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+                               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+                               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+                               0.1*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+                               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+                               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+                               0.1*tf.nn.l2_loss(label_series[9][-1]-output[8]))
 
         self.collect_variables()
 
@@ -959,6 +988,41 @@ class RecurrentMAE:
 
         cost += reg_term
         cost += rnn_reg_term
+
+        cost_dw += reg_term
+        cost_dw += rnn_reg_term
+
+        return cost, cost_dw, loss, loss_dw
+
+    def split_label_series(self):
+
+        imr = tf.unstack(self.imr_label,axis=1)
+        img = tf.unstack(self.img_label,axis=1)
+        imb = tf.unstack(self.imb_label,axis=1)
+        depth = tf.unstack(self.depth_label,axis=1)
+        depth_mask = tf.unstack(self.depth_mask,axis=1)
+        gnd = tf.unstack(self.gnd_label,axis=1)
+        obj = tf.unstack(self.obj_label,axis=1)
+        bld = tf.unstack(self.bld_label,axis=1)
+        veg = tf.unstack(self.veg_label,axis=1)
+        sky = tf.unstack(self.sky_label,axis=1)
+
+        label_series = [imr,img,imb,depth,depth_mask,gnd,obj,bld,veg,sky]
+
+        return label_series
+
+    def train_model(self):
+
+        input = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                 self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+
+        output, _current_state = self.network(input)
+
+        label_series = self.split_label_series()
+
+        cost, cost_dw, loss, loss_dw = self.cost_definition(output,label_series)
+
+
 
         rnn_weight_norms = []
         for i in self.rnn_weights_H:
@@ -995,14 +1059,14 @@ class RecurrentMAE:
         veg_loss_reset = veg_loss.assign(0.0)
         sky_loss_reset = sky_loss.assign(0.0)
 
-        imr_loss_update = imr_loss.assign_add(tf.nn.l2_loss(imr_label_series[-1]-output[0])/normalization)
-        img_loss_update = img_loss.assign_add(tf.nn.l2_loss(img_label_series[-1]-output[1])/normalization)
-        imb_loss_update = imb_loss.assign_add(tf.nn.l2_loss(imb_label_series[-1]-output[2])/normalization)
-        gnd_loss_update = gnd_loss.assign_add(tf.nn.l2_loss(gnd_label_series[-1]-output[4])/normalization)
-        obj_loss_update = obj_loss.assign_add(tf.nn.l2_loss(obj_label_series[-1]-output[5])/normalization)
-        bld_loss_update = bld_loss.assign_add(tf.nn.l2_loss(bld_label_series[-1]-output[6])/normalization)
-        veg_loss_update = veg_loss.assign_add(tf.nn.l2_loss(veg_label_series[-1]-output[7])/normalization)
-        sky_loss_update = sky_loss.assign_add(tf.nn.l2_loss(sky_label_series[-1]-output[8])/normalization)
+        imr_loss_update = imr_loss.assign_add(tf.nn.l2_loss(label_series[0][-1]-output[0])/normalization)
+        img_loss_update = img_loss.assign_add(tf.nn.l2_loss(label_series[1][-1]-output[1])/normalization)
+        imb_loss_update = imb_loss.assign_add(tf.nn.l2_loss(label_series[2][-1]-output[2])/normalization)
+        gnd_loss_update = gnd_loss.assign_add(tf.nn.l2_loss(label_series[5][-1]-output[4])/normalization)
+        obj_loss_update = obj_loss.assign_add(tf.nn.l2_loss(label_series[6][-1]-output[5])/normalization)
+        bld_loss_update = bld_loss.assign_add(tf.nn.l2_loss(label_series[7][-1]-output[6])/normalization)
+        veg_loss_update = veg_loss.assign_add(tf.nn.l2_loss(label_series[8][-1]-output[7])/normalization)
+        sky_loss_update = sky_loss.assign_add(tf.nn.l2_loss(label_series[9][-1]-output[8])/normalization)
 
         summary_imr = tf.summary.scalar('Red Channel Validation Loss', imr_loss)
         summary_img = tf.summary.scalar('Green Channel Validation Loss', img_loss)
@@ -1012,7 +1076,6 @@ class RecurrentMAE:
         summary_bld = tf.summary.scalar('Building Channel Validation Loss', bld_loss)
         summary_veg = tf.summary.scalar('Vegetation Channel Validation Loss', veg_loss)
         summary_sky = tf.summary.scalar('Sky Channel Validation Loss', sky_loss)
-
 
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
@@ -1034,15 +1097,15 @@ class RecurrentMAE:
         summary_rms = tf.summary.scalar('RMS Error in Validation', rms)
         summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_weights_H)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables+self.decoder_variables)
-        optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+        self.training_cost = cost
 
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_weights_H)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+        optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
-
 
         load_MAE = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
                                    'red_ec_layer_bias':self.red_ec_layer['bias'],
@@ -1051,46 +1114,45 @@ class RecurrentMAE:
                                    'green_ec_layer_weights':self.green_ec_layer['weights'],
                                    'green_ec_layer_bias':self.green_ec_layer['bias'],
                                    'green_dc_layer_weights':self.green_dc_layer['weights'],
-                                    'green_dc_layer_bias':self.green_dc_layer['bias'],
-                                    'blue_ec_layer_weights':self.blue_ec_layer['weights'],
-                                    'blue_ec_layer_bias':self.blue_ec_layer['bias'],
-                                    'blue_dc_layer_weights':self.blue_dc_layer['weights'],
+                                   'green_dc_layer_bias':self.green_dc_layer['bias'],
+                                   'blue_ec_layer_weights':self.blue_ec_layer['weights'],
+                                   'blue_ec_layer_bias':self.blue_ec_layer['bias'],
+                                   'blue_dc_layer_weights':self.blue_dc_layer['weights'],
                                    'blue_dc_layer_bias':self.blue_dc_layer['bias'],
                                    'depth_ec_layer_weights':self.depth_ec_layer['weights'],
-                                    'depth_ec_layer_bias':self.depth_ec_layer['bias'],
-                                    'depth_dc_layer_weights':self.depth_dc_layer['weights'],
-                                    'depth_dc_layer_bias':self.depth_dc_layer['bias'],
+                                   'depth_ec_layer_bias':self.depth_ec_layer['bias'],
+                                   'depth_dc_layer_weights':self.depth_dc_layer['weights'],
+                                   'depth_dc_layer_bias':self.depth_dc_layer['bias'],
                                    'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
-                                    'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
-                                    'obj_ec_layer_weights':self.obj_ec_layer['weights'],
-                                    'obj_ec_layer_bias':self.obj_ec_layer['bias'],
-                                    'bld_ec_layer_weights':self.bld_ec_layer['weights'],
-                                    'bld_ec_layer_bias':self.bld_ec_layer['bias'],
-                                    'veg_ec_layer_weights':self.veg_ec_layer['weights'],
-                                    'veg_ec_layer_bias':self.veg_ec_layer['bias'],
-                                    'sky_ec_layer_weights':self.sky_ec_layer['weights'],
-                                    'sky_ec_layer_bias':self.sky_ec_layer['bias'],
-                                    'sem_ec_layer_weights':self.sem_ec_layer['weights'],
-                                    'sem_ec_layer_bias':self.sem_ec_layer['bias'],
-                                    'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
-                                    'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
-                                    'obj_dc_layer_weights':self.obj_dc_layer['weights'],
-                                    'obj_dc_layer_bias':self.obj_dc_layer['bias'],
-                                    'bld_dc_layer_weights':self.bld_dc_layer['weights'],
-                                    'bld_dc_layer_bias':self.bld_dc_layer['bias'],
-                                    'veg_dc_layer_weights':self.veg_dc_layer['weights'],
-                                    'veg_dc_layer_bias':self.veg_dc_layer['bias'],
-                                    'sky_dc_layer_weights':self.sky_dc_layer['weights'],
-                                    'sky_dc_layer_bias':self.sky_dc_layer['bias'],
-                                    'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                    'full_sem_dc_layer_bias':self.sem_dc_layer['bias'],
+                                   'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
+                                   'obj_ec_layer_weights':self.obj_ec_layer['weights'],
+                                   'obj_ec_layer_bias':self.obj_ec_layer['bias'],
+                                   'bld_ec_layer_weights':self.bld_ec_layer['weights'],
+                                   'bld_ec_layer_bias':self.bld_ec_layer['bias'],
+                                   'veg_ec_layer_weights':self.veg_ec_layer['weights'],
+                                   'veg_ec_layer_bias':self.veg_ec_layer['bias'],
+                                   'sky_ec_layer_weights':self.sky_ec_layer['weights'],
+                                   'sky_ec_layer_bias':self.sky_ec_layer['bias'],
+                                   'sem_ec_layer_weights':self.sem_ec_layer['weights'],
+                                   'sem_ec_layer_bias':self.sem_ec_layer['bias'],
+                                   'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
+                                   'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
+                                   'obj_dc_layer_weights':self.obj_dc_layer['weights'],
+                                   'obj_dc_layer_bias':self.obj_dc_layer['bias'],
+                                   'bld_dc_layer_weights':self.bld_dc_layer['weights'],
+                                   'bld_dc_layer_bias':self.bld_dc_layer['bias'],
+                                   'veg_dc_layer_weights':self.veg_dc_layer['weights'],
+                                   'veg_dc_layer_bias':self.veg_dc_layer['bias'],
+                                   'sky_dc_layer_weights':self.sky_dc_layer['weights'],
+                                   'sky_dc_layer_bias':self.sky_dc_layer['bias'],
+                                   'sem_dc_layer_weights':self.sem_dc_layer['weights'],
+                                   'full_sem_dc_layer_bias':self.sem_dc_layer['bias'],
                                    'full_ec_layer_weights':self.full_ec_layer['weights'],
                                    'full_ec_layer_bias':self.full_ec_layer['bias'],
                                    'full_dc_layer_weights':self.full_dc_layer['weights'],
                                    'full_dc_layer_bias':self.full_dc_layer['bias']})
 
         saver = tf.train.Saver()
-
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
@@ -1102,11 +1164,9 @@ class RecurrentMAE:
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
-
             load_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
 
             tf.get_default_graph().finalize()
-
 
             print('----------------------------------------------------------------')
             print('Zero Validation')
@@ -1130,7 +1190,6 @@ class RecurrentMAE:
                 veg_label = self.veg_val[i]
                 sky_label = self.sky_val[i]
 
-
                 norm += np.count_nonzero(depth_mask[-1])
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
@@ -1145,8 +1204,6 @@ class RecurrentMAE:
                                                                                                     resolution=(18,60),
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
-
-
 
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
@@ -1414,6 +1471,12 @@ class RecurrentMAE:
                 train_writer1.add_summary(sum_veg,epoch)
                 train_writer1.add_summary(sum_sky,epoch)
 
+                # test for overfitting
+                obj_val_loss = sess.run(obj_loss.value())
+                self.overfitting_detection(obj_val_loss,epoch)
+                if self.DOWNWEIGHT == True:
+                    self.training_cost = cost_dw
+
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
                 print('RMSE Error over Validation Set:', sess.run(rms.value()))
                 print('Relative Error over Validation Set:',sess.run(rel.value()))
@@ -1423,70 +1486,9 @@ class RecurrentMAE:
                 print('Epoch Time [seconds]:', delta.seconds)
                 print('-----------------------------------------------------------------')
 
-
             if self.saving == True:
                 saver.save(sess,self.FLAGS.model_dir+'/fullmodel_rnn.ckpt')
                 print('SAVED MODEL')
-
-    def validate_model(self,n_validations,run,loadmodel=True):
-
-        with tf.Session() as sess:
-
-            prediction = self.encoding_network(self.imr_input,
-                                               self.img_input,
-                                               self.imb_input,
-                                               self.depth_input,
-                                               self.gnd_input,
-                                               self.obj_input,
-                                               self.bld_input,
-                                               self.veg_input,
-                                               self.sky_input,
-                                               mode='training')
-
-            #init_op = tf.initialize_all_variables()
-            saver = tf.train.Saver()
-            if loadmodel == True:
-                dir = self.project_dir + self.folder_model + self.mode + run + 'fullmodel.ckpt'
-                saver.restore(sess,dir)
-
-            #sess.run(init_op)
-
-            for i in range(0,n_validations):
-                imr_out = self.imr_val[i]
-                img_out = self.img_val[i]
-                imb_out = self.imb_val[i]
-                depth_out = self.depth_val[i]
-                gnd_out = self.gnd_val[i]
-                obj_out = self.obj_val[i]
-                bld_out = self.bld_val[i]
-                veg_out = self.veg_val[i]
-                sky_out = self.sky_val[i]
-
-
-                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(imr_out,
-                                                                                                    img_out,
-                                                                                                    imb_out,
-                                                                                                    depth_out,
-                                                                                                    gnd_out,
-                                                                                                    obj_out,
-                                                                                                    bld_out,
-                                                                                                    veg_out,
-                                                                                                    sky_out,
-                                                                                                    resolution=(18,60),
-                                                                                                    singleframe=True)
-
-
-                feed_dict = {self.imr_input:imr_in,
-                             self.img_input:img_in,
-                             self.imb_input:imb_in,
-                             self.depth_input:depth_in,
-                             self.gnd_input:gnd_in,
-                             self.obj_input:obj_in,
-                             self.bld_input:bld_in,
-                             self.veg_input:veg_in,
-                             self.sky_input:sky_in}
-
-                prediction = sess.run(prediction,feed_dict=feed_dict)
 
     def evaluate(self,run=False):
 
@@ -1501,7 +1503,7 @@ class RecurrentMAE:
                                          self.sky_input,
                                          mode='training')
 
-        outputs, _current_state = self.rnn_network(encoding)
+        outputs, _current_state = self.Basic_RNN(encoding)
         output = self.decoding_network(outputs)
 
 
