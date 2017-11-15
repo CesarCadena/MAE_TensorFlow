@@ -163,13 +163,3 @@ def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='
         plt.show()
         plt.pause(0.0001)
         plt.close('all')
-
-
-#def full_model_visualiuzation(input_frame,output_frame,label_frame,shape,resolution=(18,60)):
-
-
-
-
-
-
-

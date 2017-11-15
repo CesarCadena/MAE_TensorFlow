@@ -5,7 +5,7 @@
 import tensorflow as tf
 import numpy as np
 import os
-import evaluation_functions as eval
+import evaluation_functions as Eval
 import basic_routines as BR
 
 from visualization import display_frame,plot_training_loss
@@ -952,8 +952,8 @@ class MAE:
             gt = BR.invert_depth(all_inv_depth_label)
             est = BR.invert_depth(all_inv_depth_pred)
 
-            error_rms = eval.rms_error(est,gt)
-            error_rel = eval.relative_error(est,gt)
+            error_rms = Eval.rms_error(est,gt)
+            error_rel = Eval.relative_error(est,gt)
 
 
             print('Error (RMS):', error_rms)
@@ -993,7 +993,10 @@ class MAE:
 
             all_inv_depth_pred = np.empty([1,0])
             all_inv_depth_label = np.empty([1,0])
-
+            
+            all_sem_pred = np.empty([5,0,len(self.gnd_test[0])])
+            all_sem_label = np.empty([5,0,len(self.gnd_test[0])])
+            
             for i in range(0,n_evaluations):
 
                 imr_label = self.imr_test[i]
@@ -1027,20 +1030,34 @@ class MAE:
 
                 pred = sess.run(predictions,feed_dict=feed_dict)
                 depth_pred = pred[3]
-
-
+                
                 all_inv_depth_pred = np.concatenate((all_inv_depth_pred,np.asarray(depth_pred)),axis=1)
                 all_inv_depth_label = np.concatenate((all_inv_depth_label,np.asarray([depth_label])),axis=1)
+                
+                all_sem_pred = np.concatenate((all_sem_pred,np.asarray(pred[4:])),axis=1)
+                
+                sem_label = np.concatenate((np.asarray([gnd_label]),np.asarray([obj_label]),np.asarray([bld_label]),
+                                           np.asarray([veg_label]),np.asarray([sky_label])),axis=0)
+                                        
+                all_sem_label = np.concatenate((all_sem_label,sem_label[:,np.newaxis,:]),axis=1)
+                
+            depth_gt = BR.invert_depth(all_inv_depth_label)
+            depth_est = BR.invert_depth(all_inv_depth_pred)
 
-            gt = BR.invert_depth(all_inv_depth_label)
-            est = BR.invert_depth(all_inv_depth_pred)
-
-            error_rms = eval.rms_error(est,gt)
-            error_rel = eval.relative_error(est,gt)
-
-
+            error_rms = Eval.rms_error(depth_est,depth_gt)
+            error_rel = Eval.relative_error(depth_est,depth_gt)
+            
+            iu_semantics, inter, union = Eval.inter_union(all_sem_pred,all_sem_label)
+            
             print('Error (RMS):', error_rms)
             print('Error (Relative Error):', error_rel)
+            
+            print('Intersection over Union per class:')
+            print(iu_semantics)
+            
+            print('Intersection: ', inter)
+            print('Union: ', union)
+            
 
 
 # running model
