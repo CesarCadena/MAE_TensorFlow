@@ -1,5 +1,6 @@
 # model based on 'Multi-modal Auto-Encoders as Joint Estimators for Robotics Scene Understanding' by Cadena et al.
 # code developed by Silvan Weder
+from collections import deque
 
 
 import tensorflow as tf
@@ -78,9 +79,18 @@ class RecurrentMAE:
 
 
         # variables for overfitting detection
-        self.DOWNWEIGHT = False
-        self.min_val_loss = 1e06
-        self.detection_epoch = 1e06
+        self.of_det_gnd = deque([])
+        self.of_det_obj = deque([])
+        self.of_det_bld = deque([])
+        self.of_det_veg = deque([])
+        self.of_det_sky = deque([])
+
+
+        self.gnd_dw = False
+        self.obj_dw = False
+        self.bld_dw = False
+        self.veg_dw = False
+        self.sky_dw = False
 
         # model savings
         self.saving = True
@@ -946,61 +956,82 @@ class RecurrentMAE:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
 
-    def overfitting_detection(self,val_loss,epoch):
+    def overfitting_detection(self,val_losses,epoch):
 
+        window_size = 10
 
+        if len(self.of_det_gnd) < window_size:
+            self.of_det_gnd.append(val_losses[0])
+            self.of_det_obj.append(val_losses[1])
+            self.of_det_bld.append(val_losses[2])
+            self.of_det_veg.append(val_losses[3])
+            self.of_det_sky.append(val_losses[4])
 
-        if self.min_val_loss > val_loss:
-            self.min_val_loss = val_loss
-            self.min_val_loss_epoch = epoch
+        else:
+            gnd_avg = sum(self.of_det_gnd)/float(window_size)
+            obj_avg = sum(self.of_det_obj)/float(window_size)
+            bld_avg = sum(self.of_det_bld)/float(window_size)
+            veg_avg = sum(self.of_det_veg)/float(window_size)
+            sky_avg = sum(self.of_det_sky)/float(window_size)
 
-        if 1.1*self.min_val_loss < val_loss:
-            self.detection_epoch = epoch
-            self.DOWNWEIGHT = True
+            if val_losses[0] > 1.05*gnd_avg:
+                self.gnd_dw = True
+
+            if val_losses[1] > 1.05*obj_avg:
+                self.obj_dw = True
+
+            if val_losses[2] > 1.05*bld_avg:
+                self.bld_dw = True
+
+            if val_losses[3] > 1.05*veg_avg:
+                self.veg_dw = True
+
+            if val_losses[4] > 1.05*sky_avg:
+                self.sky_dw = True
+
+            self.of_det_gnd.popleft()
+            self.of_det_obj.popleft()
+            self.of_det_bld.popleft()
+            self.of_det_veg.popleft()
+            self.of_det_sky.popleft()
+
+            self.of_det_gnd.append(val_losses[0])
+            self.of_det_obj.append(val_losses[1])
+            self.of_det_bld.append(val_losses[2])
+            self.of_det_veg.append(val_losses[3])
+            self.of_det_sky.append(val_losses[4])
+
 
     def cost_definition(self,output,label_series):
+
+        self.c_w1 = tf.placeholder('float')
+        self.c_w2 = tf.placeholder('float')
+        self.c_w3 = tf.placeholder('float')
+        self.c_w4 = tf.placeholder('float')
+        self.c_w5 = tf.placeholder('float')
 
 
         cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
-               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-               tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-               tf.nn.l2_loss(label_series[9][-1]-output[8])
+               self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
-               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-               tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-               tf.nn.l2_loss(label_series[9][-1]-output[8])
+               self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
 
-        cost_dw = tf.nn.l2_loss(tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
-                               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
-                               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-                               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
-                               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-                               0.1*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-                               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-                               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-                               0.1*tf.nn.l2_loss(label_series[9][-1]-output[8]))
-
-        loss_dw = tf.nn.l2_loss(tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
-                               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
-                               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-                               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
-                               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-                               0.1*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-                               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-                               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-                               0.1*tf.nn.l2_loss(label_series[9][-1]-output[8]))
 
         self.collect_variables()
 
@@ -1015,11 +1046,7 @@ class RecurrentMAE:
         # comment when using current LSTM implementation
         cost += rnn_reg_term
 
-        cost_dw += reg_term
-        # comment when using current LSTM implementation
-        cost_dw += rnn_reg_term
-
-        return cost, cost_dw, loss, loss_dw
+        return cost, loss
 
     def split_label_series(self):
 
@@ -1047,7 +1074,13 @@ class RecurrentMAE:
 
         label_series = self.split_label_series()
 
-        cost, cost_dw, loss, loss_dw = self.cost_definition(output,label_series)
+        cost, loss = self.cost_definition(output,label_series)
+
+        c_w1 = 1.0
+        c_w2 = 1.0
+        c_w3 = 1.0
+        c_w4 = 1.0
+        c_w5 = 1.0
 
 
         # comment when using LSTM
@@ -1132,8 +1165,6 @@ class RecurrentMAE:
         #optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         #optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         #optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-
-
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_weights_H)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
@@ -1263,6 +1294,14 @@ class RecurrentMAE:
                              self.init_states:np.zeros((1,self.state_size)),
                              normalization:norm}
 
+                cost_dict = {self.c_w1:c_w1,
+                             self.c_w2:c_w2,
+                             self.c_w3:c_w3,
+                             self.c_w4:c_w4,
+                             self.c_w5:c_w5}
+
+                feed_dict.update(cost_dict)
+
                 im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
 
                 depth_pred = BR.invert_depth(im_pred[3])
@@ -1386,6 +1425,14 @@ class RecurrentMAE:
                                  self.sky_label:sky_batch_label,
                                  self.init_states:in_state}
 
+                    cost_dict = {self.c_w1:c_w1,
+                                 self.c_w2:c_w2,
+                                 self.c_w3:c_w3,
+                                 self.c_w4:c_w4,
+                                 self.c_w5:c_w5}
+
+                    feed_dict.update(cost_dict)
+
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 10:
                         _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
@@ -1486,6 +1533,14 @@ class RecurrentMAE:
                                  self.init_states:np.zeros((1,self.state_size)),
                                  normalization:norm}
 
+                    cost_dict = {self.c_w1:c_w1,
+                                 self.c_w2:c_w2,
+                                 self.c_w3:c_w3,
+                                 self.c_w4:c_w4,
+                                 self.c_w5:c_w5}
+
+                    feed_dict.update(cost_dict)
+
                     im_pred,c_val,l_imr,l_img,l_imb,l_gnd,l_obj,l_bld,l_veg,l_sky = sess.run([output,
                                                                                               loss_val_update,
                                                                                               imr_loss_update,
@@ -1535,11 +1590,22 @@ class RecurrentMAE:
                 train_writer1.add_summary(sum_sky,epoch)
 
                 # test for overfitting
-                obj_val_loss = sess.run(obj_loss.value())
-                self.overfitting_detection(obj_val_loss,epoch)
+                g,o,b,v,s = sess.run([gnd_loss.value(),obj_loss.value(),bld_loss.value(),veg_loss.value(),sky_loss.value()])
+                val_losses = [g,o,b,v,s]
+                self.overfitting_detection(val_losses,epoch)
 
-                if self.DOWNWEIGHT == True:
-                    self.training_cost = cost_dw
+                if self.gnd_dw:
+                    c_w1 = 0.1
+                if self.obj_dw:
+                    c_w2 = 0.1
+                if self.bld_dw:
+                    c_w3 = 0.1
+                if self.veg_dw:
+                    c_w4 = 0.1
+                if self.obj_dw:
+                    c_w5 = 0.1
+
+
 
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
                 print('RMSE Error over Validation Set:', sess.run(rms.value()))
