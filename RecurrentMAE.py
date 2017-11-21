@@ -1379,6 +1379,7 @@ class RecurrentMAE:
                     ind_batch = np.linspace(0,self.batch_size-1,self.batch_size).astype(int)
                     ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
 
+                    '''
                     for rnn_step in range(0,self.n_rnn_steps):
                         imr_in[:,rnn_step,:] = BR.horizontal_mirroring(imr_in[:,rnn_step,:],ind_rand_who)
                         imr_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(imr_batch_label[:,rnn_step,:],ind_rand_who)
@@ -1402,7 +1403,7 @@ class RecurrentMAE:
                         sky_in[:,rnn_step,:] = BR.horizontal_mirroring(sky_in[:,rnn_step,:],ind_rand_who)
                         sky_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(sky_batch_label[:,rnn_step,:],ind_rand_who)
 
-
+                    '''
 
 
                     feed_dict = {self.imr_input:imr_in,
