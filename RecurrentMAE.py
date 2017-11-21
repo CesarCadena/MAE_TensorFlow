@@ -948,6 +948,8 @@ class RecurrentMAE:
 
     def overfitting_detection(self,val_loss,epoch):
 
+
+
         if self.min_val_loss > val_loss:
             self.min_val_loss = val_loss
             self.min_val_loss_epoch = epoch
@@ -1333,6 +1335,33 @@ class RecurrentMAE:
                                                                                                          veg_in,
                                                                                                          sky_in)
 
+                    # horizontal mirroring
+                    ind_batch = np.linspace(0,self.batch_size-1,self.batch_size).astype(int)
+                    ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
+
+                    for rnn_step in range(0,self.n_rnn_steps):
+                        imr_in[:,rnn_step,:] = BR.horizontal_mirroring(imr_in[:,rnn_step,:],ind_rand_who)
+                        imr_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(imr_batch_label[:,rnn_step,:],ind_rand_who)
+                        img_in[:,rnn_step,:] = BR.horizontal_mirroring(img_in[:,rnn_step,:],ind_rand_who)
+                        img_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(img_batch_label[:,rnn_step,:],ind_rand_who)
+                        imb_in[:,rnn_step,:] = BR.horizontal_mirroring(imb_in[:,rnn_step,:],ind_rand_who)
+                        imb_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(imb_batch_label[:,rnn_step,:],ind_rand_who)
+
+                        depth_in[:,rnn_step,:] = BR.horizontal_mirroring(depth_in[:,rnn_step,:],ind_rand_who)
+                        depth_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(depth_batch_label[:,rnn_step,:],ind_rand_who)
+                        depth_mask_batch[:,rnn_step,:] = BR.horizontal_mirroring(depth_mask_batch[:,rnn_step,:],ind_rand_who)
+
+                        gnd_in[:,rnn_step,:] = BR.horizontal_mirroring(gnd_in[:,rnn_step,:],ind_rand_who)
+                        gnd_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(gnd_batch_label[:,rnn_step,:],ind_rand_who)
+                        obj_in[:,rnn_step,:] = BR.horizontal_mirroring(obj_in[:,rnn_step,:],ind_rand_who)
+                        obj_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(obj_batch_label[:,rnn_step,:],ind_rand_who)
+                        bld_in[:,rnn_step,:] = BR.horizontal_mirroring(bld_in[:,rnn_step,:],ind_rand_who)
+                        bld_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(bld_batch_label[:,rnn_step,:],ind_rand_who)
+                        veg_in[:,rnn_step,:] = BR.horizontal_mirroring(veg_in[:,rnn_step,:],ind_rand_who)
+                        veg_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(veg_batch_label[:,rnn_step,:],ind_rand_who)
+                        sky_in[:,rnn_step,:] = BR.horizontal_mirroring(sky_in[:,rnn_step,:],ind_rand_who)
+                        sky_batch_label[:,rnn_step,:] = BR.horizontal_mirroring(sky_batch_label[:,rnn_step,:],ind_rand_who)
+
 
 
 
@@ -1508,6 +1537,7 @@ class RecurrentMAE:
                 # test for overfitting
                 obj_val_loss = sess.run(obj_loss.value())
                 self.overfitting_detection(obj_val_loss,epoch)
+
                 if self.DOWNWEIGHT == True:
                     self.training_cost = cost_dw
 

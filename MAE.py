@@ -8,17 +8,21 @@ import os
 import evaluation_functions as eval
 import basic_routines as BR
 
-from load_data import load_data
+from load_data import load_data, load_test_frames, load_frames_data
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion, pretraining_input_distortion
 from datetime import datetime
 from copy import copy
 
+import matplotlib.pyplot as plt
+
+
 # LOAD DATA
 
 data_train, data_validate, data_test = load_data()
 
-
+test_frames = load_test_frames()
+data_test = load_frames_data(test_frames=test_frames)
 
 class MAE:
 
@@ -308,16 +312,16 @@ class MAE:
 
 
         for i in self.data_test:
-            for j in i:
-                self.imr_test.append(j['xcr1']/255.)
-                self.img_test.append(j['xcg1']/255.)
-                self.imb_test.append(j['xcb1']/255.)
-                self.depth_test.append(j['xid1'])
-                self.gnd_test.append((j['sem1']==1).astype(int))
-                self.obj_test.append((j['sem1']==2).astype(int))
-                self.bld_test.append((j['sem1']==3).astype(int))
-                self.veg_test.append((j['sem1']==4).astype(int))
-                self.sky_test.append((j['sem1']==5).astype(int))
+
+            self.imr_test.append(i['xcr']/255.)
+            self.img_test.append(i['xcg']/255.)
+            self.imb_test.append(i['xcb']/255.)
+            self.depth_test.append(i['xid'])
+            self.gnd_test.append((i['sem']==1).astype(int))
+            self.obj_test.append((i['sem']==2).astype(int))
+            self.bld_test.append((i['sem']==3).astype(int))
+            self.veg_test.append((i['sem']==4).astype(int))
+            self.sky_test.append((i['sem']==5).astype(int))
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_test)).astype(int)
@@ -526,7 +530,7 @@ class MAE:
         # decoding layer full semantics
 
         self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='sem_dc_layer_bias')}
+                             'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
         self.layers.append(self.sem_dc_layer)
 
         # decoding neurons full semantics
@@ -990,8 +994,12 @@ class MAE:
                                                                                                     copy(sky_label),
                                                                                                     resolution=(18,60),
                                                                                                     singleframe=True)
+
+
+
                 # taking only rgb as input
                 depth_in = [[0]*self.size_input]
+
                 gnd_in = [[0]*self.size_input]
                 obj_in = [[0]*self.size_input]
                 bld_in = [[0]*self.size_input]
@@ -1008,9 +1016,9 @@ class MAE:
                              self.veg_input:veg_in,
                              self.sky_input:sky_in}
 
+
                 pred = sess.run(predictions,feed_dict=feed_dict)
                 depth_pred = pred[3]
-
 
                 inv_depth_pred = np.asarray(depth_pred)
                 inv_depth_label = np.asarray(depth_label)
@@ -1029,6 +1037,9 @@ class MAE:
 
 mae = MAE(data_train,data_validate,data_test)
 #mae.train_model()
+
+
+
 mae.evaluate(run='20171024-125224')
 
 

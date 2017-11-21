@@ -5,6 +5,50 @@ import matplotlib.style as style
 import tensorflow as tf
 
 
+def display_sequence(seq,shape):
+
+    # display rgb sequence:
+
+
+    im_shape = (shape[1],shape[0])
+
+
+    iterator = 0
+
+    for frame in seq:
+
+        im_r = np.reshape(frame['xcr1'],im_shape).T
+        im_g = np.reshape(frame['xcg1'],im_shape).T
+        im_b = np.reshape(frame['xcb1'],im_shape).T
+
+        im_rgb = np.dstack((im_r,im_g,im_b))
+
+
+        plt.imshow(im_rgb)
+        plt.savefig('plots/Images/im_rgb_'+str(iterator) + '.png')
+
+        im_depth = frame['xid1']
+
+        for i in range(0,im_shape[0]*im_shape[1]):
+
+            if im_depth[i] == -1:
+                im_depth[i] = 0
+
+        im_depth = np.reshape(im_depth,im_shape).T
+
+        plt.imshow(im_depth,cmap='gist_ncar')
+        plt.savefig('plots/Images/im_dpt_'+str(iterator)+'.png')
+
+        im_sem = np.reshape(frame['sem1'],im_shape).T
+
+        plt.imshow(im_sem,cmap='Dark2')
+        plt.savefig('plots/Images/im_sem_'+str(iterator)+'.png')
+
+
+
+        iterator += 1
+
+
 
 
 def display_frame(frame,shape):
@@ -21,9 +65,24 @@ def display_frame(frame,shape):
     im_b = np.reshape(frame['xcb1'],im_shape).T
 
     im_rgb = np.dstack((im_r,im_g,im_b))
-    im_depth = np.reshape(frame['xid1'],im_shape).T
+
+    im_depth = frame['xid1']
+    for i in range(0,im_shape[0]*im_shape[1]):
+        if im_depth[i] == -1:
+            im_depth[i] = 0
+
+    im_depth = np.reshape(im_depth,im_shape).T
 
     im_sem = np.reshape(frame['sem1'],im_shape).T
+
+    plt.imshow(im_rgb)
+    plt.show()
+
+    plt.imshow(im_depth,cmap='gist_ncar')
+    plt.show()
+
+    plt.imshow(im_sem,cmap='Dark2')
+    plt.show()
 
 
     fig,axes = plt.subplots(1,3)
