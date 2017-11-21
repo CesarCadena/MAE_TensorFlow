@@ -1591,20 +1591,21 @@ class RecurrentMAE:
                 train_writer1.add_summary(sum_sky,epoch)
 
                 # test for overfitting
-                g,o,b,v,s = sess.run([gnd_loss.value(),obj_loss.value(),bld_loss.value(),veg_loss.value(),sky_loss.value()])
-                val_losses = [g,o,b,v,s]
-                self.overfitting_detection(val_losses,epoch)
+                if epoch >= 30:
+                    g,o,b,v,s = sess.run([gnd_loss.value(),obj_loss.value(),bld_loss.value(),veg_loss.value(),sky_loss.value()])
+                    val_losses = [g,o,b,v,s]
+                    self.overfitting_detection(val_losses,epoch)
 
-                if self.gnd_dw:
-                    c_w1 = 0.1
-                if self.obj_dw:
-                    c_w2 = 0.1
-                if self.bld_dw:
-                    c_w3 = 0.1
-                if self.veg_dw:
-                    c_w4 = 0.1
-                if self.obj_dw:
-                    c_w5 = 0.1
+                    if self.gnd_dw:
+                        c_w1 = 0.1
+                    if self.obj_dw:
+                        c_w2 = 0.1
+                    if self.bld_dw:
+                        c_w3 = 0.1
+                    if self.veg_dw:
+                        c_w4 = 0.1
+                    if self.obj_dw:
+                        c_w5 = 0.1
 
 
 
