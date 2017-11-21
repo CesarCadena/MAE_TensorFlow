@@ -974,19 +974,21 @@ class RecurrentMAE:
             veg_avg = sum(self.of_det_veg)/float(window_size)
             sky_avg = sum(self.of_det_sky)/float(window_size)
 
-            if val_losses[0] > 1.05*gnd_avg:
+            threshold = 1.15
+
+            if val_losses[0] > threshold*gnd_avg:
                 self.gnd_dw = True
 
-            if val_losses[1] > 1.05*obj_avg:
+            if val_losses[1] > threshold*obj_avg:
                 self.obj_dw = True
 
-            if val_losses[2] > 1.05*bld_avg:
+            if val_losses[2] > threshold*bld_avg:
                 self.bld_dw = True
 
-            if val_losses[3] > 1.05*veg_avg:
+            if val_losses[3] > threshold*veg_avg:
                 self.veg_dw = True
 
-            if val_losses[4] > 1.05*sky_avg:
+            if val_losses[4] > threshold*sky_avg:
                 self.sky_dw = True
 
             self.of_det_gnd.popleft()
@@ -1000,7 +1002,6 @@ class RecurrentMAE:
             self.of_det_bld.append(val_losses[2])
             self.of_det_veg.append(val_losses[3])
             self.of_det_sky.append(val_losses[4])
-
 
     def cost_definition(self,output,label_series):
 
