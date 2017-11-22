@@ -1378,7 +1378,7 @@ class RecurrentMAE:
                     # horizontal mirroring
                     ind_batch = np.linspace(0,self.batch_size-1,self.batch_size).astype(int)
                     ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
-
+                    ''''
 
                     imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
                     imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
@@ -1401,6 +1401,8 @@ class RecurrentMAE:
                     veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
                     sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
                     sky_batch_label = BR.horizontal_mirroring(sky_batch_label,ind_rand_who,option='RNN')
+                    
+                    '''
 
 
                     feed_dict = {self.imr_input:imr_in,
