@@ -24,23 +24,46 @@ def invert_depth(inv_depth):
             depth[i] = 1./inv_depth[i]
     return depth
 
-def horizontal_mirroring(x,ind_who,resolution = (18,60)):
+def horizontal_mirroring(x,ind_who,resolution = (18,60),option=None):
 
-    h = resolution[0]
-    w = resolution[1]
-    indmirror = np.linspace(0,h*w-1,h*w).astype(int)
-    indmirror = np.reshape(indmirror,(w,h))
-    indmirror = indmirror.T
-    indmirror = np.fliplr(indmirror)
-    indmirror = indmirror.T
-    indmirror = np.reshape(indmirror,(h*w))
+    if option == None:
+        h = resolution[0]
+        w = resolution[1]
+        indmirror = np.linspace(0,h*w-1,h*w).astype(int)
+        indmirror = np.reshape(indmirror,(w,h))
+        indmirror = indmirror.T
+        indmirror = np.fliplr(indmirror)
+        indmirror = indmirror.T
+        indmirror = np.reshape(indmirror,(h*w))
 
-    x1 = copy(x)
-    x = np.array(x)
-    for i in ind_who:
-        x1[i]=x[i][indmirror]
+        x1 = copy(x)
+        x = np.array(x)
+        for i in ind_who:
+            x1[i]=x[i][indmirror]
 
-    return x1
+        return x1
+
+    if option == 'RNN':
+
+        n_steps = x.shape[1]
+
+        h = resolution[0]
+        w = resolution[1]
+        indmirror = np.linspace(0,h*w-1,h*w).astype(int)
+        indmirror = np.reshape(indmirror,(w,h))
+        indmirror = indmirror.T
+        indmirror = np.fliplr(indmirror)
+        indmirror = indmirror.T
+        indmirror = np.reshape(indmirror,(h*w))
+
+        x1 = copy(x)
+        x = np.array(x)
+        for i in ind_who:
+            for rnn_step in range(0,n_steps):
+                x1[i][rnn_step]=x[i][rnn_step][indmirror]
+
+        return x1
+
 
 def zeroing_channel(x,ind_who,resolution = (18,60)):
 
