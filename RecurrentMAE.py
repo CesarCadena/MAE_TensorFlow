@@ -1633,7 +1633,6 @@ class RecurrentMAE:
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)
-                print('Memory Usage:', getrusage(resource.RUSAGE_SELF).ru_mxrss)
                 print('-----------------------------------------------------------------')
 
             if self.saving == True:
