@@ -1405,7 +1405,7 @@ class PretrainingMAE():
                 saver.save(sess,self.FLAGS.train_dir+'/pretrained_sky.ckpt')
                 print('SAVED MODEL')
 
-    def pretrain_shared_semantics(self):
+    def pretrain_shared_semantics(self,run = ''):
 
         gnd_pred = self.AE_gnd(self.input_gnd)
         obj_pred = self.AE_obj(self.input_obj)
@@ -1532,7 +1532,7 @@ class PretrainingMAE():
 
         saver_save = tf.train.Saver()
 
-        dir = 'models/pretraining/20171106-110735'
+        dir = 'models/pretraining/' + run
 
         with tf.Session(config=config) as sess:
 
