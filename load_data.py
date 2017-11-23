@@ -10,7 +10,7 @@ from copy import copy
 
 
 
-def load_data():
+def load_training_data():
     with open('../MAE_KITTI/kitti_split.txt') as file:
         datatext = file.readlines()
 
@@ -122,6 +122,94 @@ def load_data():
         seq1 = copy(seq)
         training.append(seq1)
 
+    return training
+
+
+
+
+def load_validation_data():
+    with open('../MAE_KITTI/kitti_split.txt') as file:
+        datatext = file.readlines()
+
+    data_train = []
+    for i in datatext:
+        if i == 'Test:\n':
+            break
+        if i == 'Train:\n':
+            continue
+        if i == '\n':
+            continue
+        data_train.append(i.replace('\n',''))
+
+
+    datatext = datatext[len(data_train)+4::]
+
+    data_test = []
+    for i in datatext:
+        if i == 'Test:\n':
+            continue
+        if i == 'Val:\n':
+            break
+        if i == '\n':
+            continue
+        data_test.append(i.replace('\n',''))
+
+    datatext = datatext[len(data_test)+3::]
+
+    data_val = []
+    for i in datatext:
+        if i == 'Val:\n':
+            continue
+        if i == '\n':
+            continue
+        data_val.append(i.replace('\n',''))
+
+    basedir = '../MAE_KITTI/data_18x60/'
+    basefile = 'data_kitti_'
+    filetypes = ['im02','im03','InvDepth02','InvDepth03','seg02','seg03']
+
+    data_training = []
+    for i in filetypes:
+        for j in data_train:
+            data_training.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+    data_testing = []
+    for i in filetypes:
+        for j in data_test:
+            data_testing.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+    data_validation = []
+    for i in filetypes:
+        for j in data_val:
+            data_validation.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+
+
+    # PREPARING TRAINING DATA
+
+    width = 60
+    height = 18
+
+    im_shape = (width,height)
+
+    n_training = len(data_train)
+    n_categories = int(len(data_training)/n_training)
+
+
+    frame =  {'xcr1': 0,
+              'xcg1': 0,
+              'xcb1': 0,
+              'xcr2': 0,
+              'xcg2': 0,
+              'xcb2': 0,
+              'xidsparse1': 0,
+              'xid1': 0,
+              'xmask1': 0,
+              'xidsparse2': 0,
+              'xid2': 0,
+              'xmask2': 0,
+              'sem1':0,
+              'sem2':0}
 
 
     validation = []
@@ -154,6 +242,92 @@ def load_data():
 
         seq1 = copy(seq)
         validation.append(seq1)
+
+    return validation
+
+def load_test_data():
+    with open('../MAE_KITTI/kitti_split.txt') as file:
+        datatext = file.readlines()
+
+    data_train = []
+    for i in datatext:
+        if i == 'Test:\n':
+            break
+        if i == 'Train:\n':
+            continue
+        if i == '\n':
+            continue
+        data_train.append(i.replace('\n',''))
+
+
+    datatext = datatext[len(data_train)+4::]
+
+    data_test = []
+    for i in datatext:
+        if i == 'Test:\n':
+            continue
+        if i == 'Val:\n':
+            break
+        if i == '\n':
+            continue
+        data_test.append(i.replace('\n',''))
+
+    datatext = datatext[len(data_test)+3::]
+
+    data_val = []
+    for i in datatext:
+        if i == 'Val:\n':
+            continue
+        if i == '\n':
+            continue
+        data_val.append(i.replace('\n',''))
+
+    basedir = '../MAE_KITTI/data_18x60/'
+    basefile = 'data_kitti_'
+    filetypes = ['im02','im03','InvDepth02','InvDepth03','seg02','seg03']
+
+    data_training = []
+    for i in filetypes:
+        for j in data_train:
+            data_training.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+    data_testing = []
+    for i in filetypes:
+        for j in data_test:
+            data_testing.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+    data_validation = []
+    for i in filetypes:
+        for j in data_val:
+            data_validation.append(io.loadmat(basedir+basefile+i+'_'+j+'_18x60.mat'))
+
+
+
+    # PREPARING TRAINING DATA
+
+    width = 60
+    height = 18
+
+    im_shape = (width,height)
+
+    n_training = len(data_train)
+    n_categories = int(len(data_training)/n_training)
+
+
+    frame =  {'xcr1': 0,
+              'xcg1': 0,
+              'xcb1': 0,
+              'xcr2': 0,
+              'xcg2': 0,
+              'xcb2': 0,
+              'xidsparse1': 0,
+              'xid1': 0,
+              'xmask1': 0,
+              'xidsparse2': 0,
+              'xid2': 0,
+              'xmask2': 0,
+              'sem1':0,
+              'sem2':0}
 
 
     testing = []
@@ -199,7 +373,7 @@ def load_data():
         seq1 = copy(seq)
         testing.append(seq1)
 
-    return training,validation,testing
+    return testing
 
 
 def load_split_data():

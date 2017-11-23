@@ -1,7 +1,7 @@
 
 import tensorflow as tf
 import numpy as np
-from load_data import load_data
+from load_data import load_training_data
 from input_distortion import input_distortion,pretraining_input_distortion
 from visualization import print_training_frames,print_validation_frames
 from copy import copy
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import datetime
 import os
 
-data_train,data_validate,data_test = load_data()
+data_train,data_validate,data_test = load_training_data()
 
 
 class PretrainingMAE():

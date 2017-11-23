@@ -1,6 +1,8 @@
 # model based on 'Multi-modal Auto-Encoders as Joint Estimators for Robotics Scene Understanding' by Cadena et al.
 # code developed by Silvan Weder
 from collections import deque
+import resource
+from resource import getrusage
 
 
 import tensorflow as tf
@@ -9,14 +11,12 @@ import os
 import evaluation_functions as eval
 import basic_routines as BR
 
-from load_data import load_data
+from load_data import load_training_data, load_validation_data, load_test_data
 from input_distortion import input_distortion
 from datetime import datetime
 from copy import copy
 
-# LOAD DATA
 
-data_train, data_validate, data_test = load_data()
 
 # deleted blue_dc_layer_bias from loader (wrong name in full model)
 # need to change that afterwards, when corrected full model is trained
@@ -25,11 +25,10 @@ data_train, data_validate, data_test = load_data()
 
 class RecurrentMAE:
 
-    def __init__(self,data_train,data_validate,data_test,resolution=(18,60)):
+    def __init__(self,data_train,data_validate,resolution=(18,60)):
 
         self.data_train = data_train
         self.data_validate = data_validate
-        self.data_test = data_test
 
         self.height = resolution[0]
         self.width = resolution[1]
@@ -62,7 +61,6 @@ class RecurrentMAE:
 
         self.prepare_training_data()
         self.prepare_validation_data()
-        self.prepare_test_data()
 
         # flags
         self.flag_is_running = False
@@ -71,7 +69,7 @@ class RecurrentMAE:
 
         # training options
         self.batch_size = 60
-        self.n_batches = int(len(self.imr_train)/self.batch_size)
+        self.n_batches = int(len(self.train_sequences)/self.batch_size)
 
 
         self.learning_rate = 1e-6
@@ -281,6 +279,8 @@ class RecurrentMAE:
         :return:
         '''
 
+        self.train_sequences = []
+
         self.imr_train = []
         self.img_train = []
         self.imb_train = []
@@ -293,7 +293,6 @@ class RecurrentMAE:
 
         self.depth_mask_train = []
 
-
         self.imr_train_label = []
         self.img_train_label = []
         self.imb_train_label = []
@@ -305,8 +304,39 @@ class RecurrentMAE:
         self.sky_train_label = []
 
 
-        for i in self.data_train:
-            for j in range(1,len(i)):
+
+        for sequence in range(0,len(self.data_train)):
+            for frame in range(0,len(self.data_train[sequence])):
+
+                frame_series = []
+
+                for timestep in range(0,self.n_rnn_steps):
+
+                    offset = self.n_rnn_steps-1-timestep
+                    index = frame - offset
+
+                    if index < 0:
+
+                        zero_padding = (-1,-1)
+                        frame_series.append(zero_padding)
+
+                    else:
+
+                        indices = (sequence,index)
+                        frame_series.append(indices)
+
+                self.train_sequences.append(copy(frame_series))
+
+
+        # randomly shuffle input sequences
+        rand_indices = np.arange(len(self.train_sequences)).astype(int)
+        np.random.shuffle(rand_indices)
+
+        self.train_sequences = np.asarray(self.train_sequences)[rand_indices]
+
+        '''
+        for i in range(0,len(self.data_train)):
+            for j in range(0,len(self.data_train[i])):
 
                 imr_series = []
                 img_series = []
@@ -398,6 +428,8 @@ class RecurrentMAE:
         self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
 
         self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
+        
+        '''
 
     def prepare_validation_data(self):
 
@@ -1328,42 +1360,24 @@ class RecurrentMAE:
                 in_state = np.zeros((self.batch_size,self.state_size))
 
 
-                for batch in range(self.n_batches):
-
-                    imr_batch = self.imr_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    img_batch = self.img_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    imb_batch = self.imb_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    depth_batch = self.depth_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    gnd_batch = self.gnd_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    obj_batch = self.obj_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    bld_batch = self.bld_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    veg_batch = self.veg_train[batch*self.batch_size:(batch+1)*self.batch_size]
-                    sky_batch = self.sky_train[batch*self.batch_size:(batch+1)*self.batch_size]
-
-                    depth_mask_batch = self.depth_mask_train[batch*self.batch_size:(batch+1)*self.batch_size]
-
-                    imr_batch_label = self.imr_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    img_batch_label = self.img_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    imb_batch_label = self.imb_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    depth_batch_label = self.depth_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    gnd_batch_label= self.gnd_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    obj_batch_label = self.obj_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    bld_batch_label = self.bld_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    veg_batch_label = self.veg_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
-                    sky_batch_label = self.sky_train_label[batch*self.batch_size:(batch+1)*self.batch_size]
+                for batch in range(0,self.n_batches):
 
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_batch),
-                                                                                                        copy(img_batch),
-                                                                                                        copy(imb_batch),
-                                                                                                        copy(depth_batch),
-                                                                                                        copy(gnd_batch),
-                                                                                                        copy(obj_batch),
-                                                                                                        copy(bld_batch),
-                                                                                                        copy(veg_batch),
-                                                                                                        copy(sky_batch),
-                                                                                                        resolution=(18,60),
-                                                                                                        rnn=True)
+
+                    batch_sequences = self.train_sequences[batch*self.batch_size:(batch+1)*self.batch_size]
+                    frames = BR.get_frames(batch_sequences,self.data_train,size_input=1080)
+
+                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(frames[0]),
+                                                                                                         copy(frames[1]),
+                                                                                                         copy(frames[2]),
+                                                                                                         copy(frames[3]),
+                                                                                                         copy(frames[5]),
+                                                                                                         copy(frames[6]),
+                                                                                                         copy(frames[7]),
+                                                                                                         copy(frames[8]),
+                                                                                                         copy(frames[9]),
+                                                                                                         resolution=(18,60),
+                                                                                                         rnn=True)
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = self.augment_data(imr_in,
                                                                                                          img_in,
@@ -1375,9 +1389,12 @@ class RecurrentMAE:
                                                                                                          veg_in,
                                                                                                          sky_in)
 
+
                     # horizontal mirroring
                     ind_batch = np.linspace(0,self.batch_size-1,self.batch_size).astype(int)
                     ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
+
+
                     ''''
 
                     imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
@@ -1414,16 +1431,16 @@ class RecurrentMAE:
                                  self.bld_input:bld_in,
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
-                                 self.depth_mask:depth_mask_batch,
-                                 self.imr_label:imr_batch_label,
-                                 self.img_label:img_batch_label,
-                                 self.imb_label:imb_batch_label,
-                                 self.depth_label:depth_batch_label,
-                                 self.gnd_label:gnd_batch_label,
-                                 self.obj_label:obj_batch_label,
-                                 self.bld_label:bld_batch_label,
-                                 self.veg_label:veg_batch_label,
-                                 self.sky_label:sky_batch_label,
+                                 self.depth_mask:frames[4],
+                                 self.imr_label:frames[0],
+                                 self.img_label:frames[1],
+                                 self.imb_label:frames[2],
+                                 self.depth_label:frames[3],
+                                 self.gnd_label:frames[5],
+                                 self.obj_label:frames[6],
+                                 self.bld_label:frames[7],
+                                 self.veg_label:frames[8],
+                                 self.sky_label:frames[9],
                                  self.init_states:in_state}
 
                     cost_dict = {self.c_w1:c_w1,
@@ -1616,13 +1633,17 @@ class RecurrentMAE:
                 time2 = datetime.now()
                 delta = time2-time1
                 print('Epoch Time [seconds]:', delta.seconds)
+                print('Memory Usage:', getrusage(resource.RUSAGE_SELF).ru_mxrss)
                 print('-----------------------------------------------------------------')
 
             if self.saving == True:
                 saver.save(sess,self.FLAGS.model_dir+'/fullmodel_rnn.ckpt')
                 print('SAVED MODEL')
 
-    def evaluate(self,run=False):
+    def evaluate(self,data_test,run=False):
+
+        self.data_test = data_test
+        self.prepare_test_data()
 
         encoding = self.encoding_network(self.imr_input,
                                          self.img_input,
@@ -1632,8 +1653,7 @@ class RecurrentMAE:
                                          self.obj_input,
                                          self.bld_input,
                                          self.veg_input,
-                                         self.sky_input,
-                                         mode='training')
+                                         self.sky_input)
 
         outputs, _current_state = self.Basic_RNN(encoding)
         output = self.decoding_network(outputs)
@@ -1715,11 +1735,14 @@ class RecurrentMAE:
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (REL):', error_rel/n_evaluations)
 
+# load data
 
+data_train = load_training_data()
+data_validate = load_validation_data()
 
 # running model
 
-rnn_mae = RecurrentMAE(data_train,data_validate,data_test)
+rnn_mae = RecurrentMAE(data_train,data_validate)
 rnn_mae.train_model()
 
 #rnn_mae.evaluate(run='20171103-074407')
