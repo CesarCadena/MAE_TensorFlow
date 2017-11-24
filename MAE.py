@@ -694,9 +694,12 @@ class MAE:
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
         with tf.Session(config=config) as sess:
 
+            print('[TRAINING]: start session - done')
+
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
+            print('[TRAINING]: restore variables')
             if load == 'pretrained':
                 folder = 'models/pretraining/pretrained_models/' + run
                 load_red.restore(sess, folder + 'pretrained_red.ckpt')
@@ -710,6 +713,7 @@ class MAE:
 
             tf.get_default_graph().finalize()
 
+            print('[TRAINING]: start training epochs')
             for epoch in range(0,self.hm_epochs):
 
                 sess.run(epoch_loss_reset)
