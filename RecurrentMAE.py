@@ -947,11 +947,11 @@ class RecurrentMAE:
         initializer = tf.zeros_initializer
 
         print(self.state_size)
-        with tf.variable_scope('RNN') as rnn:
+        with tf.variable_scope('LSTM') as lstm:
             LSTM_cell = tf.nn.rnn_cell.LSTMCell(num_units=self.size_coding,initializer=initializer,state_is_tuple=False)
 
             # get all variables of rnn network
-            self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
+            self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(lstm.name)]
 
 
         state = self.init_states
@@ -1397,26 +1397,26 @@ class RecurrentMAE:
 
                     ''''
 
-                    imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
-                    imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
-                    img_in = BR.horizontal_mirroring(img_in,ind_rand_who,option='RNN')
-                    img_batch_label = BR.horizontal_mirroring(img_batch_label,ind_rand_who,option='RNN')
-                    imb_in = BR.horizontal_mirroring(imb_in,ind_rand_who,option='RNN')
-                    imb_batch_label = BR.horizontal_mirroring(imb_batch_label,ind_rand_who,option='RNN')
+                imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
+                imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
+                img_in = BR.horizontal_mirroring(img_in,ind_rand_who,option='RNN')
+                img_batch_label = BR.horizontal_mirroring(img_batch_label,ind_rand_who,option='RNN')
+                imb_in = BR.horizontal_mirroring(imb_in,ind_rand_who,option='RNN')
+                imb_batch_label = BR.horizontal_mirroring(imb_batch_label,ind_rand_who,option='RNN')
 
-                    depth_in = BR.horizontal_mirroring(depth_in,ind_rand_who,option='RNN')
-                    depth_batch_label = BR.horizontal_mirroring(depth_batch_label,ind_rand_who,option='RNN')
-                    depth_mask_batch = BR.horizontal_mirroring(depth_mask_batch,ind_rand_who,option='RNN')
+                depth_in = BR.horizontal_mirroring(depth_in,ind_rand_who,option='RNN')
+                depth_batch_label = BR.horizontal_mirroring(depth_batch_label,ind_rand_who,option='RNN')
+                depth_mask_batch = BR.horizontal_mirroring(depth_mask_batch,ind_rand_who,option='RNN')
 
-                    gnd_in = BR.horizontal_mirroring(gnd_in,ind_rand_who,option='RNN')
-                    gnd_batch_label = BR.horizontal_mirroring(gnd_batch_label,ind_rand_who,option='RNN')
-                    obj_in = BR.horizontal_mirroring(obj_in,ind_rand_who,option='RNN')
-                    obj_batch_label = BR.horizontal_mirroring(obj_batch_label,ind_rand_who,option='RNN')
-                    bld_in = BR.horizontal_mirroring(bld_in,ind_rand_who,option='RNN')
-                    bld_batch_label = BR.horizontal_mirroring(bld_batch_label,ind_rand_who,option='RNN')
-                    veg_in = BR.horizontal_mirroring(veg_in,ind_rand_who,option='RNN')
-                    veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
-                    sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
+                gnd_in = BR.horizontal_mirroring(gnd_in,ind_rand_who,option='RNN')
+                gnd_batch_label = BR.horizontal_mirroring(gnd_batch_label,ind_rand_who,option='RNN')
+                obj_in = BR.horizontal_mirroring(obj_in,ind_rand_who,option='RNN')
+                obj_batch_label = BR.horizontal_mirroring(obj_batch_label,ind_rand_who,option='RNN')
+                bld_in = BR.horizontal_mirroring(bld_in,ind_rand_who,option='RNN')
+                bld_batch_label = BR.horizontal_mirroring(bld_batch_label,ind_rand_who,option='RNN')
+                veg_in = BR.horizontal_mirroring(veg_in,ind_rand_who,option='RNN')
+                veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
+                sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
                     sky_batch_label = BR.horizontal_mirroring(sky_batch_label,ind_rand_who,option='RNN')
                     
                     '''
