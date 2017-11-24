@@ -499,6 +499,8 @@ class MAE:
 
     def train_model(self,data_train,data_validate,load='none',run = ''):
 
+
+        print('[TRAINING]: prepare data')
         # prepare data
         self.prepare_training_data(data_train)
         self.prepare_validation_data(data_validate)
@@ -512,6 +514,8 @@ class MAE:
         self.hm_epoch_init = 20
 
         # validation options
+
+        print('[TRAINING]: define model')
 
         prediction = self.neural_model(self.imr_input,
                                        self.img_input,
@@ -586,6 +590,8 @@ class MAE:
         validations = np.arange(0, len(self.imr_val))
         set_val = np.random.choice(validations,len(self.imr_val),replace=False)
 
+
+        print('[TRAINING]: load pretrained models')
         if load == 'pretrained':
             load_red = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
                                        'red_ec_layer_bias':self.red_ec_layer['bias'],
@@ -682,7 +688,7 @@ class MAE:
 
 
 
-
+        print('[TRAINING]: start session')
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
