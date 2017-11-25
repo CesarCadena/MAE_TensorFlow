@@ -38,6 +38,13 @@ Sky_data=data['Sky']
 
 Depth_data=np.multiply(Depth_data,Depthmask_data)
 
+Depth_label=Depth_data
+
+
+
+
+
+
 
 print("##########building model ........#######")
 ### build full MAE  model 
@@ -339,7 +346,7 @@ with tf.Session(config=config) as sess:
 				   #Depthmask_input:Depthmask_data[i:i+1,:]
 				   }   
 
-		a=Depth_data[i:i+1,:]
+		a=Depth_label[i:i+1,:]
 		#np.multiply(Depth_data[i:i+1,:],Depthmask_data[i:i+1,:])
 		#print(a[0].shape)
 		#print(a[0])
