@@ -194,26 +194,15 @@ class MAE:
         self.sky_test = []
 
         for i in data_test:
-            for j in i:
-                self.imr_test.append(j['xcrLeft']/255.)
-                self.img_test.append(j['xcgLeft']/255.)
-                self.imb_test.append(j['xcbLeft']/255.)
-                self.depth_test.append(j['xidLeft'])
-                self.gnd_test.append((j['semLeft']==1).astype(int))
-                self.obj_test.append((j['semLeft']==2).astype(int))
-                self.bld_test.append((j['semLeft']==3).astype(int))
-                self.veg_test.append((j['semLeft']==4).astype(int))
-                self.sky_test.append((j['semLeft']==5).astype(int))
-
-                self.imr_test.append(j['xcrRight']/255.)
-                self.img_test.append(j['xcgRight']/255.)
-                self.imb_test.append(j['xcbRight']/255.)
-                self.depth_test.append(j['xidRight'])
-                self.gnd_test.append((j['semRight']==1).astype(int))
-                self.obj_test.append((j['semRight']==2).astype(int))
-                self.bld_test.append((j['semRight']==3).astype(int))
-                self.veg_test.append((j['semRight']==4).astype(int))
-                self.sky_test.append((j['semRight']==5).astype(int))
+            self.imr_test.append(i['xcr']/255.)
+            self.img_test.append(i['xcg']/255.)
+            self.imb_test.append(i['xcb']/255.)
+            self.depth_test.append(i['xid'])
+            self.gnd_test.append((i['sem']==1).astype(int))
+            self.obj_test.append((i['sem']==2).astype(int))
+            self.bld_test.append((i['sem']==3).astype(int))
+            self.veg_test.append((i['sem']==4).astype(int))
+            self.sky_test.append((i['sem']==5).astype(int))
 
     def prepare_test_frames(self,data_test):
 
@@ -975,7 +964,7 @@ class MAE:
             sess.run(tf.global_variables_initializer())
             load_weights.restore(sess,dir+'/fullmodel.ckpt')
 
-            n_evaluations = self.imr_test.shape[0]
+            n_evaluations = len(self.imr_test)
             print('Size of Test Set:',n_evaluations)
 
             error_rms = 0
@@ -998,11 +987,19 @@ class MAE:
 
                 # taking only rgb as input
                 depth_in = [[0]*self.size_input]
-                gnd_in = [[0]*self.size_input]
-                obj_in = [[0]*self.size_input]
-                bld_in = [[0]*self.size_input]
-                veg_in = [[0]*self.size_input]
-                sky_in = [[0]*self.size_input]
+                #gnd_in = [[0]*self.size_input]
+                #obj_in = [[0]*self.size_input]
+                #bld_in = [[0]*self.size_input]
+                #veg_in = [[0]*self.size_input]
+                #sky_in = [[0]*self.size_input]
+
+                gnd_in = [gnd_label]
+                obj_in = [obj_label]
+                bld_in = [bld_label]
+                veg_in = [veg_label]
+                sky_in = [sky_label]
+
+
 
                 feed_dict = {self.imr_input:[imr_label],
                              self.img_input:[img_label],

@@ -45,7 +45,7 @@ def horizontal_mirroring(x,ind_who,resolution = (18,60),option=None):
 
     if option == 'RNN':
 
-        n_steps = x.shape[1]
+        n_steps = len(x[0])
 
         h = resolution[0]
         w = resolution[1]

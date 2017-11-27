@@ -73,7 +73,7 @@ class RecurrentMAE:
 
 
         self.learning_rate = 1e-6
-        self.hm_epochs = 550
+        self.hm_epochs = 1000
 
 
         # variables for overfitting detection
@@ -1246,7 +1246,7 @@ class RecurrentMAE:
                                    'sky_dc_layer_weights':self.sky_dc_layer['weights'],
                                    'sky_dc_layer_bias':self.sky_dc_layer['bias'],
                                    'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                   'full_sem_dc_layer_bias':self.sem_dc_layer['bias'],
+                                   'sem_dc_layer_bias':self.sem_dc_layer['bias'],
                                    'full_ec_layer_weights':self.full_ec_layer['weights'],
                                    'full_ec_layer_bias':self.full_ec_layer['bias'],
                                    'full_dc_layer_weights':self.full_dc_layer['weights'],
@@ -1367,6 +1367,17 @@ class RecurrentMAE:
                     batch_sequences = self.train_sequences[batch*self.batch_size:(batch+1)*self.batch_size]
                     frames = BR.get_frames(batch_sequences,self.data_train,size_input=1080)
 
+                    imr_batch_label = frames[0]
+                    img_batch_label = frames[1]
+                    imb_batch_label = frames[2]
+                    depth_batch_label = frames[3]
+                    depth_mask_batch = frames[4]
+                    gnd_batch_label = frames[5]
+                    obj_batch_label = frames[6]
+                    bld_batch_label = frames[7]
+                    veg_batch_label = frames[8]
+                    sky_batch_label = frames[9]
+
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(frames[0]),
                                                                                                          copy(frames[1]),
                                                                                                          copy(frames[2]),
@@ -1395,31 +1406,29 @@ class RecurrentMAE:
                     ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
 
 
-                    ''''
 
-                imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
-                imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
-                img_in = BR.horizontal_mirroring(img_in,ind_rand_who,option='RNN')
-                img_batch_label = BR.horizontal_mirroring(img_batch_label,ind_rand_who,option='RNN')
-                imb_in = BR.horizontal_mirroring(imb_in,ind_rand_who,option='RNN')
-                imb_batch_label = BR.horizontal_mirroring(imb_batch_label,ind_rand_who,option='RNN')
 
-                depth_in = BR.horizontal_mirroring(depth_in,ind_rand_who,option='RNN')
-                depth_batch_label = BR.horizontal_mirroring(depth_batch_label,ind_rand_who,option='RNN')
-                depth_mask_batch = BR.horizontal_mirroring(depth_mask_batch,ind_rand_who,option='RNN')
+                    imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
+                    imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
+                    img_in = BR.horizontal_mirroring(img_in,ind_rand_who,option='RNN')
+                    img_batch_label = BR.horizontal_mirroring(img_batch_label,ind_rand_who,option='RNN')
+                    imb_in = BR.horizontal_mirroring(imb_in,ind_rand_who,option='RNN')
+                    imb_batch_label = BR.horizontal_mirroring(imb_batch_label,ind_rand_who,option='RNN')
 
-                gnd_in = BR.horizontal_mirroring(gnd_in,ind_rand_who,option='RNN')
-                gnd_batch_label = BR.horizontal_mirroring(gnd_batch_label,ind_rand_who,option='RNN')
-                obj_in = BR.horizontal_mirroring(obj_in,ind_rand_who,option='RNN')
-                obj_batch_label = BR.horizontal_mirroring(obj_batch_label,ind_rand_who,option='RNN')
-                bld_in = BR.horizontal_mirroring(bld_in,ind_rand_who,option='RNN')
-                bld_batch_label = BR.horizontal_mirroring(bld_batch_label,ind_rand_who,option='RNN')
-                veg_in = BR.horizontal_mirroring(veg_in,ind_rand_who,option='RNN')
-                veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
-                sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
+                    depth_in = BR.horizontal_mirroring(depth_in,ind_rand_who,option='RNN')
+                    depth_batch_label = BR.horizontal_mirroring(depth_batch_label,ind_rand_who,option='RNN')
+                    depth_mask_batch = BR.horizontal_mirroring(depth_mask_batch,ind_rand_who,option='RNN')
+
+                    gnd_in = BR.horizontal_mirroring(gnd_in,ind_rand_who,option='RNN')
+                    gnd_batch_label = BR.horizontal_mirroring(gnd_batch_label,ind_rand_who,option='RNN')
+                    obj_in = BR.horizontal_mirroring(obj_in,ind_rand_who,option='RNN')
+                    obj_batch_label = BR.horizontal_mirroring(obj_batch_label,ind_rand_who,option='RNN')
+                    bld_in = BR.horizontal_mirroring(bld_in,ind_rand_who,option='RNN')
+                    bld_batch_label = BR.horizontal_mirroring(bld_batch_label,ind_rand_who,option='RNN')
+                    veg_in = BR.horizontal_mirroring(veg_in,ind_rand_who,option='RNN')
+                    veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
+                    sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
                     sky_batch_label = BR.horizontal_mirroring(sky_batch_label,ind_rand_who,option='RNN')
-                    
-                    '''
 
 
                     feed_dict = {self.imr_input:imr_in,
@@ -1431,16 +1440,16 @@ class RecurrentMAE:
                                  self.bld_input:bld_in,
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
-                                 self.depth_mask:frames[4],
-                                 self.imr_label:frames[0],
-                                 self.img_label:frames[1],
-                                 self.imb_label:frames[2],
-                                 self.depth_label:frames[3],
-                                 self.gnd_label:frames[5],
-                                 self.obj_label:frames[6],
-                                 self.bld_label:frames[7],
-                                 self.veg_label:frames[8],
-                                 self.sky_label:frames[9],
+                                 self.depth_mask:depth_mask_batch,
+                                 self.imr_label:imr_batch_label,
+                                 self.img_label:img_batch_label,
+                                 self.imb_label:imb_batch_label,
+                                 self.depth_label:depth_batch_label,
+                                 self.gnd_label:gnd_batch_label,
+                                 self.obj_label:obj_batch_label,
+                                 self.bld_label:bld_batch_label,
+                                 self.veg_label:veg_batch_label,
+                                 self.sky_label:sky_batch_label,
                                  self.init_states:in_state}
 
                     cost_dict = {self.c_w1:c_w1,
