@@ -759,19 +759,20 @@ class MAE:
                     sky_in = horizontal_mirroring(sky_in,ind_rand_who)
                     sky_batch = horizontal_mirroring(sky_batch,ind_rand_who)
                     
-                    # zeroing depth inputs
-                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
-                    
-                    depth_in = zeroing_channel(depth_in,ind_rand_who)                   
-                    
-                    # zeroing semantic inputs
-                    ind_rand_who = np.random.choice(ind_batch,self.batch_size/2,replace=False)
-                    
-                    gnd_in = zeroing_channel(gnd_in,ind_rand_who)
-                    obj_in = zeroing_channel(obj_in,ind_rand_who)
-                    bld_in = zeroing_channel(bld_in,ind_rand_who)
-                    veg_in = zeroing_channel(veg_in,ind_rand_who)
-                    sky_in = zeroing_channel(sky_in,ind_rand_who)
+                    if epoch >= self.hm_epoch_init:
+                        # zeroing depth inputs
+                        ind_rand_who = np.random.choice(ind_batch,0.75*self.batch_size,replace=False)
+                        
+                        depth_in = zeroing_channel(depth_in,ind_rand_who)                   
+                        
+                        # zeroing semantic inputs
+                        ind_rand_who = np.random.choice(ind_batch,0.75*self.batch_size,replace=False)
+                        
+                        gnd_in = zeroing_channel(gnd_in,ind_rand_who)
+                        obj_in = zeroing_channel(obj_in,ind_rand_who)                    
+                        bld_in = zeroing_channel(bld_in,ind_rand_who)
+                        veg_in = zeroing_channel(veg_in,ind_rand_who)
+                        sky_in = zeroing_channel(sky_in,ind_rand_who)
                     
                     
                     feed_dict = {self.imr_input:imr_in,
