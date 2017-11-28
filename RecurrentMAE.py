@@ -15,6 +15,7 @@ from load_data import load_training_data, load_validation_data, load_test_data
 from input_distortion import input_distortion
 from datetime import datetime
 from copy import copy
+from models import RNN_MAE, full_MAE
 
 
 
@@ -590,534 +591,11 @@ class RecurrentMAE:
         self.veg_test = np.asarray(self.veg_test)[rand_indices]
         self.sky_test = np.asarray(self.sky_test)[rand_indices]
 
-    def encoding_network(self, imr, img, imb, depth, gnd, obj, bld, veg, sky):
-
-        '''
-        :param imr: red channel of rgb image
-        :param img: green channel of rgb image
-        :param imb: blue channel of rgb image
-        :param depth: inv depth values for image (loss is only computed at accepted points)
-        :param gnd: binary image for class ground in image semantics
-        :param obj: binary image for class object in image semantics
-        :param bld: binary image for class building in image semantics
-        :param veg: binary image for class vegetation in image semantics
-        :param sky: binary image for class sky in image semantics
-        :return: reconstructed images for all input modalities
-        '''
-
-        # definition of all variables in the neural network
-        # list to store all layers of the MAE neural network
-        self.layers = []
-
-        with tf.variable_scope('Encoder') as encoder:
-            # semantics weights
-            self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='gnd_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='gnd_ec_layer_bias')}
-            self.layers.append(self.gnd_ec_layer)
-
-            self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='obj_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='obj_ec_layer_bias')}
-            self.layers.append(self.obj_ec_layer)
-
-            self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='bld_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='bld_ec_layer_bias')}
-            self.layers.append(self.bld_ec_layer)
-
-            self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='veg_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='veg_ec_layer_bias')}
-            self.layers.append(self.veg_ec_layer)
-
-            self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='sky_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='sky_ec_layer_bias')}
-            self.layers.append(self.sky_ec_layer)
-
-            # semantics encoding
-            self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5 * self.size_coding, self.size_coding], stddev=0.01), name='sem_ec_layer_weights'),
-                                 'bias' : tf.Variable(tf.zeros([self.size_coding]),name='sem_ec_layer_bias')}
-            self.layers.append(self.sem_ec_layer)
-
-            # depth and rgb encoding weights
-            self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='red_ec_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_coding]),name='red_ec_layer_bias')}
-            self.layers.append(self.red_ec_layer)
-
-            self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='green_ec_layer_weights'),
-                                   'bias':tf.Variable(tf.zeros([self.size_coding]),name='green_ec_layer_bias')}
-            self.layers.append(self.green_ec_layer)
-
-            self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='blue_ec_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([self.size_coding]),name='blue_ec_layer_bias')}
-            self.layers.append(self.blue_ec_layer)
-
-            self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='depth_ec_layer_weights'),
-                                   'bias':tf.Variable(tf.zeros([self.size_coding]),name='depth_ec_layer_bias')}
-            self.layers.append(self.depth_ec_layer)
-
-             # full encoding
-
-            self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01),name='full_ec_layer_weights'),
-                                  'bias' : tf.Variable(tf.zeros([self.size_coding]),name='full_ec_layer_bias')}
-            self.layers.append(self.full_ec_layer)
-
-            self.encoder_variables = [v for v in tf.global_variables() if v.name.startswith(encoder.name)]
-
-        # split the input placeholder according to the length of the sequence
-
-        imr_series = tf.split(imr,self.n_rnn_steps,axis=1)
-        img_series = tf.split(img,self.n_rnn_steps,axis=1)
-        imb_series = tf.split(imb,self.n_rnn_steps,axis=1)
-        depth_series = tf.split(depth,self.n_rnn_steps,axis=1)
-        gnd_series = tf.split(gnd,self.n_rnn_steps,axis=1)
-        obj_series = tf.split(obj,self.n_rnn_steps,axis=1)
-        bld_series = tf.split(bld,self.n_rnn_steps,axis=1)
-        veg_series = tf.split(veg,self.n_rnn_steps,axis=1)
-        sky_series = tf.split(sky,self.n_rnn_steps,axis=1)
-
-        # output container definition
-        output = []
-
-        for i in range(0,self.n_rnn_steps):
-
-            imr_in = tf.squeeze(imr_series[i],axis=1)
-            img_in = tf.squeeze(img_series[i],axis=1)
-            imb_in = tf.squeeze(imb_series[i],axis=1)
-            depth_in = tf.squeeze(depth_series[i],axis=1)
-            gnd_in = tf.squeeze(gnd_series[i],axis=1)
-            obj_in = tf.squeeze(obj_series[i],axis=1)
-            bld_in = tf.squeeze(bld_series[i],axis=1)
-            veg_in = tf.squeeze(veg_series[i],axis=1)
-            sky_in = tf.squeeze(sky_series[i],axis=1)
-
-            # semantics neurons (relu activation)
-            self.gnd_encoding = tf.add(tf.matmul(gnd_in,self.gnd_ec_layer['weights']),
-                                       self.gnd_ec_layer['bias'])
-            self.gnd_encoding = tf.nn.relu(self.gnd_encoding)
-
-            self.obj_encoding = tf.add(tf.matmul(obj_in,self.obj_ec_layer['weights']),
-                                       self.obj_ec_layer['bias'])
-            self.obj_encoding = tf.nn.relu(self.obj_encoding)
-
-            self.bld_encoding = tf.add(tf.matmul(bld_in,self.bld_ec_layer['weights']),
-                                       self.bld_ec_layer['bias'])
-            self.bld_encoding = tf.nn.relu(self.bld_encoding)
-
-            self.veg_encoding = tf.add(tf.matmul(veg_in,self.veg_ec_layer['weights']),
-                                       self.veg_ec_layer['bias'])
-            self.veg_encoding = tf.nn.relu(self.veg_encoding)
-
-            self.sky_encoding = tf.add(tf.matmul(sky_in,self.sky_ec_layer['weights']),
-                                       self.sky_ec_layer['bias'])
-            self.sky_encoding = tf.nn.relu(self.sky_encoding)
-
-            # semantics concatenate
-            self.sem_concat = tf.concat([self.gnd_encoding,
-                                         self.obj_encoding,
-                                         self.bld_encoding,
-                                         self.veg_encoding,
-                                         self.sky_encoding],
-                                        axis=1)
-
-
-
-            # semantics neuron (relu activation)
-            self.sem_encoding = tf.add(tf.matmul(self.sem_concat, self.sem_ec_layer['weights']),
-                                       self.sem_ec_layer['bias'])
-            self.sem_encoding = tf.nn.relu(self.sem_encoding)
-
-
-
-
-            # depth and rgb neurons (relu activation)
-            self.red_encoding = tf.add(tf.matmul(imr_in,self.red_ec_layer['weights']),
-                                       self.red_ec_layer['bias'])
-            self.red_encoding = tf.nn.relu(self.red_encoding)
-
-            self.green_encoding = tf.add(tf.matmul(img_in,self.green_ec_layer['weights']),
-                                         self.green_ec_layer['bias'])
-            self.green_encoding = tf.nn.relu(self.green_encoding)
-
-            self.blue_encoding = tf.add(tf.matmul(imb_in,self.blue_ec_layer['weights']),
-                                        self.blue_ec_layer['bias'])
-            self.blue_encoding = tf.nn.relu(self.blue_encoding)
-
-            self.depth_encoding = tf.add(tf.matmul(depth_in,self.depth_ec_layer['weights']),
-                                         self.depth_ec_layer['bias'])
-
-            # full concatenation
-
-            self.full_concat = tf.concat([self.depth_encoding,self.red_encoding,self.green_encoding,self.blue_encoding,self.sem_encoding],
-                                         axis=1)
-
-            # full encoding neurons
-
-            self.full_encoding = tf.add(tf.matmul(self.full_concat,self.full_ec_layer['weights']),
-                                        self.full_ec_layer['bias'])
-            self.full_encoding = tf.nn.relu(self.full_encoding)
-
-            output.append(self.full_encoding)
-
-        return output
-
-    def decoding_network(self,inputs):
-
-        # definition of variables for whole decoding network
-        # full decoding
-
-        with tf.variable_scope('Decoder') as decoder:
-
-            self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01),name='full_dc_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_dc_layer_bias')}
-            self.layers.append(self.full_dc_layer)
-
-            # rgb and depth decoding layers
-
-            self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='red_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='red_dc_layer_bias')}
-            self.layers.append(self.red_dc_layer)
-
-            self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='green_dc_layer_weights'),
-                                   'bias':tf.Variable(tf.zeros([self.size_input]),name='green_dc_layer_bias')}
-            self.layers.append(self.green_dc_layer)
-
-            self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='blue_dc_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_bias')}
-            self.layers.append(self.blue_dc_layer)
-
-            self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='depth_dc_layer_weights'),
-                                   'bias':tf.Variable(tf.zeros([self.size_input]),name='depth_dc_layer_bias')}
-            self.layers.append(self.depth_dc_layer)
-
-            # decoding layer full semantics
-
-            self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
-                                      'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_sem_dc_layer_bias')}
-            self.layers.append(self.sem_dc_layer)
-
-            # decoding layers semantics
-
-            self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='gnd_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='gnd_dc_layer_bias')}
-            self.layers.append(self.gnd_dc_layer)
-
-            self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='obj_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='obj_dc_layer_bias')}
-            self.layers.append(self.obj_dc_layer)
-
-            self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='bld_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='bld_dc_layer_bias')}
-            self.layers.append(self.bld_dc_layer)
-
-            self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='veg_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='veg_dc_layer_bias')}
-            self.layers.append(self.veg_dc_layer)
-
-            self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='sky_dc_layer_weights'),
-                                 'bias':tf.Variable(tf.zeros([self.size_input]),name='sky_dc_layer_bias')}
-            self.layers.append(self.sky_dc_layer)
-
-            self.decoder_variables = [v for v in tf.global_variables() if v.name.startswith(decoder.name)]
-
-        # full decoding layer
-
-        self.full_decoding = tf.add(tf.matmul(inputs,self.full_dc_layer['weights']),self.full_dc_layer['bias'])
-        self.full_decoding = tf.nn.relu(self.full_decoding)
-
-        # slicing full decoding
-
-        self.depth_full_dc,self.red_full_dc,self.green_full_dc,self.blue_full_dc,self.sem_full_dc = tf.split(self.full_decoding,5,1)
-
-
-        # decoding neurons
-
-        self.red_output = tf.add(tf.matmul(self.red_full_dc,self.red_dc_layer['weights']),
-                                           self.red_dc_layer['bias'])
-        self.red_output = tf.sigmoid(self.red_output)
-
-        self.green_output = tf.add(tf.matmul(self.green_full_dc, self.green_dc_layer['weights']),
-                                           self.green_dc_layer['bias'])
-        self.green_output = tf.sigmoid(self.green_output)
-
-        self.blue_output = tf.add(tf.matmul(self.blue_full_dc, self.blue_dc_layer['weights']),
-                                          self.blue_dc_layer['bias'])
-        self.blue_output = tf.sigmoid(self.blue_output)
-
-        self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
-                                           self.depth_dc_layer['bias'])
-        self.depth_output = tf.nn.relu(self.depth_output)
-
-        imr_out = self.red_output
-        img_out = self.green_output
-        imb_out = self.blue_output
-        depth_out = self.depth_output
-
-        # decoding neurons full semantics
-
-        self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
-                               self.sem_dc_layer['bias'])
-        self.full_sem = tf.nn.relu(self.full_sem)
-
-        # splitting full semantics
-
-        self.gnd_dc, self.obj_dc, self.bld_dc, self.veg_dc, self.sky_dc = tf.split(self.full_sem,5,axis=1)
-
-        # decoding neurons semantics
-
-        self.gnd_output = tf.add(tf.matmul(self.gnd_dc,self.gnd_dc_layer['weights']),
-                                         self.gnd_dc_layer['bias'])
-        self.gnd_output = tf.sigmoid(self.gnd_output)
-
-        self.obj_output = tf.add(tf.matmul(self.obj_dc,self.obj_dc_layer['weights']),
-                                         self.obj_dc_layer['bias'])
-        self.obj_output = tf.sigmoid(self.obj_output)
-
-        self.bld_output = tf.add(tf.matmul(self.bld_dc,self.bld_dc_layer['weights']),
-                                         self.bld_dc_layer['bias'])
-        self.bld_output = tf.sigmoid(self.bld_output)
-
-        self.veg_output = tf.add(tf.matmul(self.veg_dc,self.veg_dc_layer['weights']),
-                                         self.veg_dc_layer['bias'])
-        self.veg_output = tf.sigmoid(self.veg_output)
-
-        self.sky_output = tf.add(tf.matmul(self.sky_dc,self.sky_dc_layer['weights']),
-                                         self.sky_dc_layer['bias'])
-        self.sky_output = tf.sigmoid(self.sky_output)
-
-        gnd_out = self.gnd_output
-        obj_out = self.obj_output
-        bld_out = self.bld_output
-        veg_out = self.veg_output
-        sky_out = self.sky_output
-
-        output = [imr_out,img_out,imb_out,depth_out,gnd_out,obj_out,bld_out,veg_out,sky_out]
-        return output
-
-    def Basic_RNN(self, inputs):
-
-        # container for recurrent weights
-        self.rnn_weights_H = []
-        self.rnn_weights_W = []
-        self.rnn_bias_B = []
-
-        # set state size
-        state_size = self.state_size
-
-        with tf.variable_scope('RNN') as rnn:
-            for i in range(0,self.n_rnn_steps):
-
-                # initialization of recurrent weights
-                self.rnn_weights_H.append(tf.Variable(0.0001*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
-                self.rnn_weights_W.append(tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
-                                                                 tf.zeros([self.size_coding,self.state_size-self.size_coding])],axis=1),
-                                                      dtype=tf.float32,
-                                                      name='rnn_W_' + str(i)))
-
-                self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
-
-            # initialization of weights from current timestep
-            self.rnn_weights_W.append(tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
-                                                             tf.zeros([self.size_coding,self.state_size-self.size_coding])],axis=1),
-                                                  dtype=tf.float32,
-                                                  name='rnn_W_out'))
-
-            self.rnn_bias_B.append(tf.Variable(tf.zeros([state_size],dtype=tf.float32),name='rnn_B_' + str(i)))
-
-            self.rnn_weights_V = tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
-                                                        tf.zeros([self.state_size-self.size_coding,self.size_coding])],axis=0),
-                                             dtype=tf.float32,
-                                             name='rnn_V_out')
-
-            # get all variables of rnn network
-            self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(rnn.name)]
-
-        # initialize state of recurrent network from initializing placeholder
-        state = self.init_states
-
-        # running recurrent layer
-        for i in range(0,self.n_rnn_steps):
-            state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i]),self.rnn_weights_H[i])
-            state = tf.nn.relu(state)
-
-        output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1]),self.rnn_weights_V)
-        output = tf.nn.relu(output)
-
-        return output
-
-    def LSTM_RNN(self,inputs):
-
-        # options
-        size_states = 1024
-        size_coding = 1024
-
-        # define initializer for input weights
-        if size_states == size_coding:
-            initializer_U = 0.0001*tf.diag(tf.ones([size_coding]))
-        else:
-            initializer_U = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_coding,size_states-size_coding])],axis=1)
-
-        # forget gate
-        # bias, input weights and recurrent weights for forget gate
-        self.b_f = []
-        self.U_f = []
-        self.W_f = []
-
-        # internal state
-        # bias, input weights and recurrent weights for forget gate
-        self.b = []
-        self.U = []
-        self.W = []
-
-        # external input gate
-        # with bias, input weights and recurrent weights for external input gate
-        self.b_g = []
-        self.U_g = []
-        self.W_g = []
-
-        # output gate
-        # bias, input weights and recurrent weights for output gate
-        self.b_o = []
-        self.U_o = []
-        self.W_o = []
-
-        # define all variables
-        with tf.variable_scope('LSTM') as lstm:
-
-            for step in range(0,self.n_rnn_steps):
-
-                # forget gate
-                self.b_f.append(tf.get_variable(name='b_f_'+str(step),
-                                                shape=[size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-                self.U_f.append(tf.get_variable(name='U_f_'+str(step),
-                                                dtype=tf.float32,
-                                                initializer=initializer_U))
-
-                self.W_f.append(tf.get_variable(name='W_f_'+str(step),
-                                                shape=[size_states,size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-
-                # internal state
-                self.b.append(tf.get_variable(name='b_'+str(step),
-                                              shape=[size_states],
-                                              dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
-
-                self.U.append(tf.get_variable(name='U_'+str(step),
-                                              dtype=tf.float32,
-                                              initializer=initializer_U))
-
-                self.W.append(tf.get_variable(name='W_'+str(step),
-                                              shape=[size_states,size_states],
-                                              dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
-
-                # external input gate
-                self.b_g.append(tf.get_variable(name='b_g_'+str(step),
-                                                shape=[size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-                self.U_g.append(tf.get_variable(name='U_g_'+str(step),
-                                                dtype=tf.float32,
-                                                initializer=initializer_U))
-
-                self.W_g.append(tf.get_variable(name='W_g_'+str(step),
-                                                shape=[size_states,size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-                # output gate
-                self.b_o.append(tf.get_variable(name='b_o_'+str(step),
-                                                shape=[size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-                self.U_o.append(tf.get_variable(name='U_o_'+str(step),
-                                                dtype=tf.float32,
-                                                initializer=initializer_U))
-
-                self.W_o.append(tf.get_variable(name='W_o_'+str(step),
-                                                shape=[size_states,size_states],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
-
-            self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(lstm.name)]
-
-        # state-to-coding weights initializer
-        if size_states == size_coding:
-            initializer_O = tf.diag(tf.ones([size_coding]))
-        else:
-            initializer_O = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_states-size_coding,size_coding])],axis=0)
-
-        # state-to-coding weights
-        self.O_w = tf.get_variable(name='O_w',
-                                   dtype=tf.float32,
-                                   initializer=initializer_O)
-
-        self.O_b = tf.get_variable(name='O_b',
-                                   shape=[size_coding],
-                                   dtype=tf.float32,
-                                   initializer=tf.zeros_initializer())
-
-        # state initialization
-        h_t = self.init_states
-        s_t = self.init_states
-
-        # cell definition
-        for step in range(0,self.n_rnn_steps):
-
-            # forget gate
-            f_t = tf.sigmoid(self.b_f[step] + tf.matmul(inputs[step],self.U_f[step]) + tf.matmul(h_t,self.W_f[step]))
-
-            # internal states
-            i_t = tf.sigmoid(self.b_g[step] + tf.matmul(inputs[step],self.U_g[step]) + tf.matmul(h_t,self.W_g[step]))
-
-            # external intput gate
-            g_t = tf.tanh(self.b[step] + tf.matmul(inputs[step],self.U[step]) + tf.matmul(h_t,self.W[step]))
-
-            # memory update
-            s_t = tf.multiply(f_t,s_t) + tf.multiply(i_t,g_t)
-
-            # output gate
-            o_t = tf.sigmoid(self.b_o[step] + tf.matmul(inputs[step],self.U_o[step]) + tf.matmul(h_t,self.W_o[step]))
-
-            # state update
-            h_t = tf.multiply(o_t,tf.tanh(s_t))
-
-
-        # reconstruct coding
-        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
-
-        return output
-
     def network(self, input):
 
-
-        encoding = self.encoding_network(input[0],
-                                         input[1],
-                                         input[2],
-                                         input[3],
-                                         input[4],
-                                         input[5],
-                                         input[6],
-                                         input[7],
-                                         input[8])
-
-        outputs = self.Basic_RNN(encoding)
-
-        output = self.decoding_network(outputs)
-
+        output = RNN_MAE(input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7],input[8],
+                         n_rnn_steps=self.n_rnn_steps,init_states=self.init_states)
         return output
-
-    def collect_variables(self):
-
-        # collect all variables for weight regularization
-        for i in self.layers:
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
 
     def overfitting_detection(self,val_losses,epoch):
 
@@ -1195,20 +673,11 @@ class RecurrentMAE:
                self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
                self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
-
-
-        self.collect_variables()
-
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
-        # comment when using current LSTM implementation
-        rnn_reg_term = tf.contrib.layers.apply_regularization(regularizer,self.rnn_variables)
-
         cost += reg_term
-        # comment when using current LSTM implementation
-        cost += rnn_reg_term
 
         return cost, loss
 
@@ -1246,10 +715,15 @@ class RecurrentMAE:
         c_w4 = 1.0
         c_w5 = 1.0
 
+        # get rnn variables
+        self.rnn_variables_H = [v for v in tf.global_variables() if v.name.startswith('RNN/H')]
+        self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith('RNN')]
+        self.decoder_variables = [v for v in tf.global_variables() if v.name.startswith('Decoding')]
+        self.encoder_variables = [v for v in tf.global_variables() if v.name.startswith('Encoding')]
 
         # comment when using LSTM
         rnn_weight_norms = []
-        for i in self.rnn_weights_H:
+        for i in self.rnn_variables_H:
             rnn_weight_norms.append(tf.norm(i,ord='euclidean'))
 
         # comment when using LSTM
@@ -1325,12 +799,6 @@ class RecurrentMAE:
 
         self.training_cost = cost
 
-        # optimizer for draft LSTM network
-        #optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-        #optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-        #optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-        #optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
         optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
@@ -1339,50 +807,55 @@ class RecurrentMAE:
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
 
-        load_MAE = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
-                                   'red_ec_layer_bias':self.red_ec_layer['bias'],
-                                   'red_dc_layer_weights':self.red_dc_layer['weights'],
-                                   'red_dc_layer_bias':self.red_dc_layer['bias'],
-                                   'green_ec_layer_weights':self.green_ec_layer['weights'],
-                                   'green_ec_layer_bias':self.green_ec_layer['bias'],
-                                   'green_dc_layer_weights':self.green_dc_layer['weights'],
-                                   'green_dc_layer_bias':self.green_dc_layer['bias'],
-                                   'blue_ec_layer_weights':self.blue_ec_layer['weights'],
-                                   'blue_ec_layer_bias':self.blue_ec_layer['bias'],
-                                   'blue_dc_layer_weights':self.blue_dc_layer['weights'],
-                                   'blue_dc_layer_bias':self.blue_dc_layer['bias'],
-                                   'depth_ec_layer_weights':self.depth_ec_layer['weights'],
-                                   'depth_ec_layer_bias':self.depth_ec_layer['bias'],
-                                   'depth_dc_layer_weights':self.depth_dc_layer['weights'],
-                                   'depth_dc_layer_bias':self.depth_dc_layer['bias'],
-                                   'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
-                                   'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
-                                   'obj_ec_layer_weights':self.obj_ec_layer['weights'],
-                                   'obj_ec_layer_bias':self.obj_ec_layer['bias'],
-                                   'bld_ec_layer_weights':self.bld_ec_layer['weights'],
-                                   'bld_ec_layer_bias':self.bld_ec_layer['bias'],
-                                   'veg_ec_layer_weights':self.veg_ec_layer['weights'],
-                                   'veg_ec_layer_bias':self.veg_ec_layer['bias'],
-                                   'sky_ec_layer_weights':self.sky_ec_layer['weights'],
-                                   'sky_ec_layer_bias':self.sky_ec_layer['bias'],
-                                   'sem_ec_layer_weights':self.sem_ec_layer['weights'],
-                                   'sem_ec_layer_bias':self.sem_ec_layer['bias'],
-                                   'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
-                                   'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
-                                   'obj_dc_layer_weights':self.obj_dc_layer['weights'],
-                                   'obj_dc_layer_bias':self.obj_dc_layer['bias'],
-                                   'bld_dc_layer_weights':self.bld_dc_layer['weights'],
-                                   'bld_dc_layer_bias':self.bld_dc_layer['bias'],
-                                   'veg_dc_layer_weights':self.veg_dc_layer['weights'],
-                                   'veg_dc_layer_bias':self.veg_dc_layer['bias'],
-                                   'sky_dc_layer_weights':self.sky_dc_layer['weights'],
-                                   'sky_dc_layer_bias':self.sky_dc_layer['bias'],
-                                   'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                   'sem_dc_layer_bias':self.sem_dc_layer['bias'],
-                                   'full_ec_layer_weights':self.full_ec_layer['weights'],
-                                   'full_ec_layer_bias':self.full_ec_layer['bias'],
-                                   'full_dc_layer_weights':self.full_dc_layer['weights'],
-                                   'full_dc_layer_bias':self.full_dc_layer['bias']})
+        with tf.variable_scope('Encoding',reuse=True):
+
+            load_ec_MAE = tf.train.Saver({'red_ec_layer_weights':tf.get_variable('red_ec_layer_weights'),
+                                          'red_ec_layer_bias':tf.get_variable('red_ec_layer_bias'),
+                                          'green_ec_layer_weights':tf.get_variable('green_ec_layer_weights'),
+                                          'green_ec_layer_bias':tf.get_variable('green_ec_layer_bias'),
+                                          'blue_ec_layer_weights':tf.get_variable('blue_ec_layer_weights'),
+                                          'blue_ec_layer_bias':tf.get_variable('blue_ec_layer_bias'),
+                                          'depth_ec_layer_weights':tf.get_variable('depth_ec_layer_weights'),
+                                          'depth_ec_layer_bias':tf.get_variable('depth_ec_layer_bias'),
+                                          'gnd_ec_layer_weights':tf.get_variable('gnd_ec_layer_weights'),
+                                          'gnd_ec_layer_bias':tf.get_variable('gnd_ec_layer_bias'),
+                                          'obj_ec_layer_weights':tf.get_variable('obj_ec_layer_weights'),
+                                          'obj_ec_layer_bias':tf.get_variable('obj_ec_layer_bias'),
+                                          'bld_ec_layer_weights':tf.get_variable('bld_ec_layer_weights'),
+                                          'bld_ec_layer_bias':tf.get_variable('bld_ec_layer_bias'),
+                                          'veg_ec_layer_weights':tf.get_variable('veg_ec_layer_weights'),
+                                          'veg_ec_layer_bias':tf.get_variable('veg_ec_layer_bias'),
+                                          'sky_ec_layer_weights':tf.get_variable('sky_ec_layer_weights'),
+                                          'sky_ec_layer_bias':tf.get_variable('sky_ec_layer_bias'),
+                                          'sem_ec_layer_weights':tf.get_variable('sem_ec_layer_weights'),
+                                          'sem_ec_layer_bias':tf.get_variable('sem_ec_layer_bias'),
+                                          'full_ec_layer_weights':tf.get_variable('full_ec_layer_weights'),
+                                          'full_ec_layer_bias':tf.get_variable('full_ec_layer_bias')})
+
+        with tf.variable_scope('Decoding',reuse=True):
+
+            load_dc_MAE = tf.train.Saver({'red_dc_layer_weights':tf.get_variable('red_dc_layer_weights'),
+                                          'red_dc_layer_bias':tf.get_variable('red_dc_layer_bias'),
+                                          'green_dc_layer_weights':tf.get_variable('green_dc_layer_weights'),
+                                          'green_dc_layer_bias':tf.get_variable('green_dc_layer_bias'),
+                                          'blue_dc_layer_weights':tf.get_variable('blue_dc_layer_weights'),
+                                          'blue_dc_layer_bias':tf.get_variable('blue_dc_layer_bias'),
+                                          'depth_dc_layer_weights':tf.get_variable('depth_dc_layer_weights'),
+                                          'depth_dc_layer_bias':tf.get_variable('depth_dc_layer_bias'),
+                                          'gnd_dc_layer_weights':tf.get_variable('gnd_dc_layer_weights'),
+                                          'gnd_dc_layer_bias':tf.get_variable('gnd_dc_layer_bias'),
+                                          'obj_dc_layer_weights':tf.get_variable('obj_dc_layer_weights'),
+                                          'obj_dc_layer_bias':tf.get_variable('obj_dc_layer_bias'),
+                                          'bld_dc_layer_weights':tf.get_variable('bld_dc_layer_weights'),
+                                          'bld_dc_layer_bias':tf.get_variable('bld_dc_layer_bias'),
+                                          'veg_dc_layer_weights':tf.get_variable('veg_dc_layer_weights'),
+                                          'veg_dc_layer_bias':tf.get_variable('veg_dc_layer_bias'),
+                                          'sky_dc_layer_weights':tf.get_variable('sky_dc_layer_weights'),
+                                          'sky_dc_layer_bias':tf.get_variable('sky_dc_layer_bias'),
+                                          'sem_dc_layer_weights':tf.get_variable('sem_dc_layer_weights'),
+                                          'sem_dc_layer_bias':tf.get_variable('sem_dc_layer_bias'),
+                                          'full_dc_layer_weights':tf.get_variable('full_dc_layer_weights'),
+                                          'full_dc_layer_bias':tf.get_variable('full_dc_layer_bias')})
 
         saver = tf.train.Saver()
 
@@ -1396,7 +869,8 @@ class RecurrentMAE:
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
-            load_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+            load_ec_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+            load_dc_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
 
             tf.get_default_graph().finalize()
 
