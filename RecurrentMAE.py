@@ -819,8 +819,7 @@ class RecurrentMAE:
 
         # full decoding layer
 
-        self.full_decoding = tf.add(tf.matmul(inputs,self.full_dc_layer['weights']),
-                                            self.full_dc_layer['bias'])
+        self.full_decoding = tf.add(tf.matmul(inputs,self.full_dc_layer['weights']),self.full_dc_layer['bias'])
         self.full_decoding = tf.nn.relu(self.full_decoding)
 
         # slicing full decoding
@@ -939,7 +938,7 @@ class RecurrentMAE:
 
         output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1]),self.rnn_weights_V)
 
-        return output, state
+        return output
 
     def LSTM_RNN(self,inputs):
 
