@@ -905,7 +905,7 @@ class RecurrentMAE:
             for i in range(0,self.n_rnn_steps):
 
                 # initialization of recurrent weights
-                self.rnn_weights_H.append(tf.Variable(tf.zeros([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
+                self.rnn_weights_H.append(tf.Variable(0.0001*tf.ones([state_size,state_size],dtype=tf.float32),name='rnn_H_' + str(i)))
                 self.rnn_weights_W.append(tf.Variable(tf.concat([tf.diag(tf.ones([self.size_coding])),
                                                                  tf.zeros([self.size_coding,self.state_size-self.size_coding])],axis=1),
                                                       dtype=tf.float32,
