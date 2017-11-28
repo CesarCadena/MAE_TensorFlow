@@ -13,6 +13,8 @@ from input_distortion import input_distortion
 from basic_routines import horizontal_mirroring, zeroing_channel
 from datetime import datetime
 from copy import copy
+from models import full_MAE
+
 
 
 class MAE:
@@ -482,9 +484,15 @@ class MAE:
 
     def collect_variables(self):
 
+        for variable in tf.global_variables():
+            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,variable)
+
+        '''
         for i in self.layers:
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
             tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
+            
+        '''
 
     def train_model(self,data_train,data_validate,load='none',run = ''):
 
@@ -506,6 +514,7 @@ class MAE:
 
         print('[TRAINING]: define model')
 
+        '''
         prediction = self.neural_model(self.imr_input,
                                        self.img_input,
                                        self.imb_input,
@@ -516,6 +525,19 @@ class MAE:
                                        self.veg_input,
                                        self.sky_input,
                                        mode='training')
+                                       
+                                       
+        '''
+
+        prediction = full_MAE(self.imr_input,
+                              self.img_input,
+                              self.imb_input,
+                              self.depth_input,
+                              self.gnd_input,
+                              self.obj_input,
+                              self.bld_input,
+                              self.veg_input,
+                              self.sky_input)
 
 
         self.collect_variables()
@@ -563,16 +585,23 @@ class MAE:
         sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Full_Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation_Loss_Full_Model',val_loss)
 
-        optimizer0 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=[self.full_ec_layer['weights'],
-                                                                                                      self.full_ec_layer['bias'],
-                                                                                                      self.full_dc_layer['weights'],
-                                                                                                      self.full_dc_layer['bias']])
 
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        var_list = []
 
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+        with tf.variable_scope("Encoding",reuse=True):
+            var_list.append(tf.get_variable('full_ec_layer_weights'))
+            var_list.append(tf.get_variable('full_ec_layer_bias'))
+
+        with tf.variable_scope("Decoding",reuse=True):
+            var_list.append(tf.get_variable('full_dc_layer_weights'))
+            var_list.append(tf.get_variable('full_dc_layer_bias'))
+
+        with tf.name_scope('Optimizer'):
+            optimizer0 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+            optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=var_list)
+            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+            optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
 
         ind_batch = np.arange(0,self.batch_size)
 
@@ -582,97 +611,126 @@ class MAE:
 
         print('[TRAINING]: load pretrained models')
         if load == 'pretrained':
-            load_red = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
-                                       'red_ec_layer_bias':self.red_ec_layer['bias'],
-                                       'red_dc_layer_weights':self.red_dc_layer['weights'],
-                                       'red_dc_layer_bias':self.red_dc_layer['bias']})
 
-            load_green = tf.train.Saver({'green_ec_layer_weights':self.green_ec_layer['weights'],
-                                         'green_ec_layer_bias':self.green_ec_layer['bias'],
-                                         'green_dc_layer_weights':self.green_dc_layer['weights'],
-                                         'green_dc_layer_bias':self.green_dc_layer['bias']})
+            with tf.variable_scope("Encoding",reuse=True):
+                load_imr_ec = tf.train.Saver({'red_ec_layer_weights':tf.get_variable('red_ec_layer_weights'),
+                                              'red_ec_layer_bias':tf.get_variable('red_ec_layer_bias')})
 
-            load_blue = tf.train.Saver({'blue_ec_layer_weights':self.blue_ec_layer['weights'],
-                                        'blue_ec_layer_bias':self.blue_ec_layer['bias'],
-                                        'blue_dc_layer_weights':self.blue_dc_layer['weights'],
-                                        'blue_dc_layer_bias':self.blue_dc_layer['bias'],})
+                load_img_ec = tf.train.Saver({'green_ec_layer_weights':tf.get_variable('green_ec_layer_weights'),
+                                              'green_ec_layer_bias':tf.get_variable('green_ec_layer_bias')})
 
-            load_depth = tf.train.Saver({'depth_ec_layer_weights':self.depth_ec_layer['weights'],
-                                         'depth_ec_layer_bias':self.depth_ec_layer['bias'],
-                                         'depth_dc_layer_weights':self.depth_dc_layer['weights'],
-                                         'depth_dc_layer_bias':self.depth_dc_layer['bias']})
+                load_imb_ec = tf.train.Saver({'blue_ec_layer_weights':tf.get_variable('blue_ec_layer_weights'),
+                                              'blue_ec_layer_bias':tf.get_variable('blue_ec_layer_bias')})
 
+                load_dpt_ec = tf.train.Saver({'depth_ec_layer_weights':tf.get_variable('depth_ec_layer_weights'),
+                                              'depth_ec_layer_bias':tf.get_variable('depth_ec_layer_bias')})
 
-            load_shared_sem = tf.train.Saver({'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
-                                              'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
-                                              'obj_ec_layer_weights':self.obj_ec_layer['weights'],
-                                              'obj_ec_layer_bias':self.obj_ec_layer['bias'],
-                                              'bld_ec_layer_weights':self.bld_ec_layer['weights'],
-                                              'bld_ec_layer_bias':self.bld_ec_layer['bias'],
-                                              'veg_ec_layer_weights':self.veg_ec_layer['weights'],
-                                              'veg_ec_layer_bias':self.veg_ec_layer['bias'],
-                                              'sky_ec_layer_weights':self.sky_ec_layer['weights'],
-                                              'sky_ec_layer_bias':self.sky_ec_layer['bias'],
-                                              'sem_ec_layer_weights':self.sem_ec_layer['weights'],
-                                              'sem_ec_layer_bias':self.sem_ec_layer['bias'],
-                                              'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
-                                              'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
-                                              'obj_dc_layer_weights':self.obj_dc_layer['weights'],
-                                              'obj_dc_layer_bias':self.obj_dc_layer['bias'],
-                                              'bld_dc_layer_weights':self.bld_dc_layer['weights'],
-                                              'bld_dc_layer_bias':self.bld_dc_layer['bias'],
-                                              'veg_dc_layer_weights':self.veg_dc_layer['weights'],
-                                              'veg_dc_layer_bias':self.veg_dc_layer['bias'],
-                                              'sky_dc_layer_weights':self.sky_dc_layer['weights'],
-                                              'sky_dc_layer_bias':self.sky_dc_layer['bias'],
-                                              'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                              'sem_dc_layer_bias':self.sem_dc_layer['bias']})
+                load_gnd_ec = tf.train.Saver({'gnd_ec_layer_weights':tf.get_variable('gnd_ec_layer_weights'),
+                                              'gnd_ec_layer_bias':tf.get_variable('gnd_ec_layer_bias')})
+
+                load_obj_ec = tf.train.Saver({'obj_ec_layer_weights':tf.get_variable('obj_ec_layer_weights'),
+                                              'obj_ec_layer_bias':tf.get_variable('obj_ec_layer_bias')})
+
+                load_bld_ec = tf.train.Saver({'bld_ec_layer_weights':tf.get_variable('bld_ec_layer_weights'),
+                                              'bld_ec_layer_bias':tf.get_variable('bld_ec_layer_bias')})
+
+                load_veg_ec = tf.train.Saver({'veg_ec_layer_weights':tf.get_variable('veg_ec_layer_weights'),
+                                              'veg_ec_layer_bias':tf.get_variable('veg_ec_layer_bias')})
+
+                load_sky_ec = tf.train.Saver({'sky_ec_layer_weights':tf.get_variable('sky_ec_layer_weights'),
+                                              'sky_ec_layer_bias':tf.get_variable('sky_ec_layer_bias')})
+
+                load_sem_ec = tf.train.Saver({'sem_ec_layer_weights':tf.get_variable('sem_ec_layer_weights'),
+                                              'sem_ec_layer_bias':tf.get_variable('sem_ec_layer_bias')})
+
+                load_shd_ec = tf.train.Saver({'full_ec_layer_weights':tf.get_variable('sky_ec_layer_weights'),
+                                              'full_ec_layer_bias':tf.get_variable('sky_ec_layer_bias')})
+
+            with tf.variable_scope("Decoding",reuse=True):
+                load_imr_dc = tf.train.Saver({'red_dc_layer_weights':tf.get_variable('red_dc_layer_weights'),
+                                              'red_dc_layer_bias':tf.get_variable('red_dc_layer_bias')})
+
+                load_img_dc = tf.train.Saver({'green_dc_layer_weights':tf.get_variable('green_dc_layer_weights'),
+                                              'green_dc_layer_bias':tf.get_variable('green_dc_layer_bias')})
+
+                load_imb_dc = tf.train.Saver({'blue_dc_layer_weights':tf.get_variable('blue_dc_layer_weights'),
+                                              'blue_dc_layer_bias':tf.get_variable('blue_dc_layer_bias')})
+
+                load_dpt_dc = tf.train.Saver({'depth_dc_layer_weights':tf.get_variable('depth_dc_layer_weights'),
+                                              'depth_dc_layer_bias':tf.get_variable('depth_dc_layer_bias')})
+
+                load_gnd_dc = tf.train.Saver({'gnd_dc_layer_weights':tf.get_variable('gnd_dc_layer_weights'),
+                                              'gnd_dc_layer_bias':tf.get_variable('gnd_dc_layer_bias')})
+
+                load_obj_dc = tf.train.Saver({'obj_dc_layer_weights':tf.get_variable('obj_dc_layer_weights'),
+                                              'obj_dc_layer_bias':tf.get_variable('obj_dc_layer_bias')})
+
+                load_bld_dc = tf.train.Saver({'bld_dc_layer_weights':tf.get_variable('bld_dc_layer_weights'),
+                                              'bld_dc_layer_bias':tf.get_variable('bld_dc_layer_bias')})
+
+                load_veg_dc = tf.train.Saver({'veg_dc_layer_weights':tf.get_variable('veg_dc_layer_weights'),
+                                              'veg_dc_layer_bias':tf.get_variable('veg_dc_layer_bias')})
+
+                load_sky_dc = tf.train.Saver({'sky_dc_layer_weights':tf.get_variable('sky_dc_layer_weights'),
+                                              'sky_dc_layer_bias':tf.get_variable('sky_dc_layer_bias')})
+
+                load_sem_dc = tf.train.Saver({'sem_dc_layer_weights':tf.get_variable('sem_dc_layer_weights'),
+                                              'sem_dc_layer_bias':tf.get_variable('sem_dc_layer_bias')})
+
+                load_shd_dc = tf.train.Saver({'full_dc_layer_weights':tf.get_variable('sky_dc_layer_weights'),
+                                              'full_dc_layer_bias':tf.get_variable('sky_dc_layer_bias')})
+
             saver = tf.train.Saver()
+
         if load == 'continue':
-            load_full = tf.train.Saver({'red_ec_layer_weights':self.red_ec_layer['weights'],
-                                        'red_ec_layer_bias':self.red_ec_layer['bias'],
-                                        'red_dc_layer_weights':self.red_dc_layer['weights'],
-                                        'red_dc_layer_bias':self.red_dc_layer['bias'],
-                                        'green_ec_layer_weights':self.green_ec_layer['weights'],
-                                        'green_ec_layer_bias':self.green_ec_layer['bias'],
-                                        'green_dc_layer_weights':self.green_dc_layer['weights'],
-                                        'green_dc_layer_bias':self.green_dc_layer['bias'],
-                                        'blue_ec_layer_weights':self.blue_ec_layer['weights'],
-                                        'blue_ec_layer_bias':self.blue_ec_layer['bias'],
-                                        'blue_dc_layer_weights':self.blue_dc_layer['weights'],
-                                        'blue_dc_layer_bias':self.blue_dc_layer['bias'],
-                                        'depth_ec_layer_weights':self.depth_ec_layer['weights'],
-                                        'depth_ec_layer_bias':self.depth_ec_layer['bias'],
-                                        'depth_dc_layer_weights':self.depth_dc_layer['weights'],
-                                        'depth_dc_layer_bias':self.depth_dc_layer['bias'],
-                                        'gnd_ec_layer_weights':self.gnd_ec_layer['weights'],
-                                        'gnd_ec_layer_bias':self.gnd_ec_layer['bias'],
-                                        'obj_ec_layer_weights':self.obj_ec_layer['weights'],
-                                        'obj_ec_layer_bias':self.obj_ec_layer['bias'],
-                                        'bld_ec_layer_weights':self.bld_ec_layer['weights'],
-                                        'bld_ec_layer_bias':self.bld_ec_layer['bias'],
-                                        'veg_ec_layer_weights':self.veg_ec_layer['weights'],
-                                        'veg_ec_layer_bias':self.veg_ec_layer['bias'],
-                                        'sky_ec_layer_weights':self.sky_ec_layer['weights'],
-                                        'sky_ec_layer_bias':self.sky_ec_layer['bias'],
-                                        'sem_ec_layer_weights':self.sem_ec_layer['weights'],
-                                        'sem_ec_layer_bias':self.sem_ec_layer['bias'],
-                                        'full_ec_layer_weights':self.full_ec_layer['weights'],
-                                        'full_ec_layer_bias':self.full_ec_layer['bias'],
-                                        'gnd_dc_layer_weights':self.gnd_dc_layer['weights'],
-                                        'gnd_dc_layer_bias':self.gnd_dc_layer['bias'],
-                                        'obj_dc_layer_weights':self.obj_dc_layer['weights'],
-                                        'obj_dc_layer_bias':self.obj_dc_layer['bias'],
-                                        'bld_dc_layer_weights':self.bld_dc_layer['weights'],
-                                        'bld_dc_layer_bias':self.bld_dc_layer['bias'],
-                                        'veg_dc_layer_weights':self.veg_dc_layer['weights'],
-                                        'veg_dc_layer_bias':self.veg_dc_layer['bias'],
-                                        'sky_dc_layer_weights':self.sky_dc_layer['weights'],
-                                        'sky_dc_layer_bias':self.sky_dc_layer['bias'],
-                                        'sem_dc_layer_weights':self.sem_dc_layer['weights'],
-                                        'sem_dc_layer_bias':self.sem_dc_layer['bias'], #typo -> should be sem_dc_layer_bias
-                                        'full_dc_layer_weights':self.full_dc_layer['weights'],
-                                        'full_dc_layer_bias':self.full_dc_layer['bias']})
+
+            with tf.variable_scope('Encoding',reuse=True):
+                load_ec_full = tf.train.Saver({'red_ec_layer_weights':tf.get_variable('red_ec_layer_weights'),
+                                               'red_ec_layer_bias':tf.get_variable('red_ec_layer_bias'),
+                                               'green_ec_layer_weights':tf.get_variable('green_ec_layer_weights'),
+                                               'green_ec_layer_bias':tf.get_variable('green_ec_layer_bias'),
+                                               'blue_ec_layer_weights':tf.get_variable('blue_ec_layer_weights'),
+                                               'blue_ec_layer_bias':tf.get_variable('blue_ec_layer_bias'),
+                                               'depth_ec_layer_weights':tf.get_variable('depth_ec_layer_weights'),
+                                               'depth_ec_layer_bias':tf.get_variable('depth_ec_layer_bias'),
+                                               'gnd_ec_layer_weights':tf.get_variable('gnd_ec_layer_weights'),
+                                               'gnd_ec_layer_bias':tf.get_variable('gnd_ec_layer_bias'),
+                                               'obj_ec_layer_weights':tf.get_variable('obj_ec_layer_weights'),
+                                               'obj_ec_layer_bias':tf.get_variable('obj_ec_layer_bias'),
+                                               'bld_ec_layer_weights':tf.get_variable('bld_ec_layer_weights'),
+                                               'bld_ec_layer_bias':tf.get_variable('bld_ec_layer_bias'),
+                                               'veg_ec_layer_weights':tf.get_variable('veg_ec_layer_weights'),
+                                               'veg_ec_layer_bias':tf.get_variable('veg_ec_layer_bias'),
+                                               'sky_ec_layer_weights':tf.get_variable('sky_ec_layer_weights'),
+                                               'sky_ec_layer_bias':tf.get_variable('sky_ec_layer_bias'),
+                                               'sem_ec_layer_weights':tf.get_variable('sem_ec_layer_weights'),
+                                               'sem_ec_layer_bias':tf.get_variable('sem_ec_layer_bias'),
+                                               'full_ec_layer_weights':tf.get_variable('full_ec_layer_weights'),
+                                               'full_ec_layer_bias':tf.get_variable('full_ec_layer_bias')})
+
+            with tf.variable_scope('Decoding',reuse=True):
+                load_dc_full = tf.train.Saver({'red_dc_layer_weights':tf.get_variable('red_dc_layer_weights'),
+                                               'red_dc_layer_bias':tf.get_variable('red_dc_layer_bias'),
+                                               'green_dc_layer_weights':tf.get_variable('green_dc_layer_weights'),
+                                               'green_dc_layer_bias':tf.get_variable('green_dc_layer_bias'),
+                                               'blue_dc_layer_weights':tf.get_variable('blue_dc_layer_weights'),
+                                               'blue_dc_layer_bias':tf.get_variable('blue_dc_layer_bias'),
+                                               'depth_dc_layer_weights':tf.get_variable('depth_dc_layer_weights'),
+                                               'depth_dc_layer_bias':tf.get_variable('depth_dc_layer_bias'),
+                                               'gnd_dc_layer_weights':tf.get_variable('gnd_dc_layer_weights'),
+                                               'gnd_dc_layer_bias':tf.get_variable('gnd_dc_layer_bias'),
+                                               'obj_dc_layer_weights':tf.get_variable('obj_dc_layer_weights'),
+                                               'obj_dc_layer_bias':tf.get_variable('obj_dc_layer_bias'),
+                                               'bld_dc_layer_weights':tf.get_variable('bld_dc_layer_weights'),
+                                               'bld_dc_layer_bias':tf.get_variable('bld_dc_layer_bias'),
+                                               'veg_dc_layer_weights':tf.get_variable('veg_dc_layer_weights'),
+                                               'veg_dc_layer_bias':tf.get_variable('veg_dc_layer_bias'),
+                                               'sky_dc_layer_weights':tf.get_variable('sky_dc_layer_weights'),
+                                               'sky_dc_layer_bias':tf.get_variable('sky_dc_layer_bias'),
+                                               'sem_dc_layer_weights':tf.get_variable('sem_dc_layer_weights'),
+                                               'sem_dc_layer_bias':tf.get_variable('sem_dc_layer_bias'),
+                                               'full_dc_layer_weights':tf.get_variable('full_dc_layer_weights'),
+                                               'full_dc_layer_bias':tf.get_variable('full_dc_layer_bias')})
             saver = tf.train.Saver()
 
 
@@ -691,14 +749,29 @@ class MAE:
             print('[TRAINING]: restore variables')
             if load == 'pretrained':
                 folder = 'models/pretraining/pretrained_models/' + run
-                load_red.restore(sess, folder + 'pretrained_red.ckpt')
-                load_green.restore(sess, folder + 'pretrained_green.ckpt')
-                load_blue.restore(sess, folder + 'pretrained_blue.ckpt')
-                load_depth.restore(sess, folder + 'pretrained_depth.ckpt')
-                load_shared_sem.restore(sess, folder + 'pretrained_shared_semantics.ckpt')
+                load_imr_ec.restore(sess, folder + 'pretrained_red.ckpt')
+                load_imr_dc.restore(sess,folder + 'pretrained_red.ckpt')
+                load_img_ec.restore(sess, folder + 'pretrained_green.ckpt')
+                load_img_dc.restore(sess,folder + 'pretrained_green.ckpt')
+                load_imb_ec.restore(sess, folder + 'pretrained_blue.ckpt')
+                load_imb_dc.restore(sess,folder + 'pretrained_blue.ckpt')
+                load_dpt_ec.restore(sess, folder + 'pretrained_depth.ckpt')
+                load_dpt_dc.restore(sess,folder + 'pretrained_depth.ckpt')
+                load_gnd_ec.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_gnd_dc.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_obj_ec.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_obj_dc.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_bld_ec.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_bld_dc.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_veg_ec.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_veg_dc.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_sky_ec.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+                load_sky_dc.restore(sess,folder + 'pretrained_shared_semantics.ckpt')
+
             if load == 'continue':
                 folder = 'models/full/' + run + '/'
-                load_full.restore(sess, folder + 'fullmodel.ckpt')
+                load_ec_full.restore(sess, folder + 'fullmodel.ckpt')
+                load_dc_full.restore(sess, folder + 'fullmodel.ckpt')
 
             tf.get_default_graph().finalize()
 

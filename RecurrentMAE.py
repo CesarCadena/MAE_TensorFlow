@@ -52,7 +52,7 @@ class RecurrentMAE:
          # recurrent options
 
         self.n_rnn_steps = 5
-        self.state_size = 2*1024
+        self.state_size = 1024
 
 
         # prepare data
@@ -943,24 +943,154 @@ class RecurrentMAE:
 
     def LSTM_RNN(self,inputs):
 
-        inputs = tf.stack(inputs)
-        initializer = tf.zeros_initializer
+        # options
+        size_states = 1024
+        size_coding = 1024
 
-        print(self.state_size)
+        # define initializer for input weights
+        if size_states == size_coding:
+            initializer_U = 0.0001*tf.diag(tf.ones([size_coding]))
+        else:
+            initializer_U = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_coding,size_states-size_coding])],axis=1)
+
+        # forget gate
+        # bias, input weights and recurrent weights for forget gate
+        self.b_f = []
+        self.U_f = []
+        self.W_f = []
+
+        # internal state
+        # bias, input weights and recurrent weights for forget gate
+        self.b = []
+        self.U = []
+        self.W = []
+
+        # external input gate
+        # with bias, input weights and recurrent weights for external input gate
+        self.b_g = []
+        self.U_g = []
+        self.W_g = []
+
+        # output gate
+        # bias, input weights and recurrent weights for output gate
+        self.b_o = []
+        self.U_o = []
+        self.W_o = []
+
+        # define all variables
         with tf.variable_scope('LSTM') as lstm:
-            LSTM_cell = tf.nn.rnn_cell.LSTMCell(num_units=self.size_coding,initializer=initializer,state_is_tuple=False)
 
-            # get all variables of rnn network
+            for step in range(0,self.n_rnn_steps):
+
+                # forget gate
+                self.b_f.append(tf.get_variable(name='b_f_'+str(step),
+                                                shape=[size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_f.append(tf.get_variable(name='U_f_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=initializer_U))
+
+                self.W_f.append(tf.get_variable(name='W_f_'+str(step),
+                                                shape=[size_states,size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+
+                # internal state
+                self.b.append(tf.get_variable(name='b_'+str(step),
+                                              shape=[size_states],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
+
+                self.U.append(tf.get_variable(name='U_'+str(step),
+                                              dtype=tf.float32,
+                                              initializer=initializer_U))
+
+                self.W.append(tf.get_variable(name='W_'+str(step),
+                                              shape=[size_states,size_states],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
+
+                # external input gate
+                self.b_g.append(tf.get_variable(name='b_g_'+str(step),
+                                                shape=[size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_g.append(tf.get_variable(name='U_g_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=initializer_U))
+
+                self.W_g.append(tf.get_variable(name='W_g_'+str(step),
+                                                shape=[size_states,size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                # output gate
+                self.b_o.append(tf.get_variable(name='b_o_'+str(step),
+                                                shape=[size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_o.append(tf.get_variable(name='U_o_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=initializer_U))
+
+                self.W_o.append(tf.get_variable(name='W_o_'+str(step),
+                                                shape=[size_states,size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
             self.rnn_variables = [v for v in tf.global_variables() if v.name.startswith(lstm.name)]
 
+        # state-to-coding weights initializer
+        if size_states == size_coding:
+            initializer_O = tf.diag(tf.ones([size_coding]))
+        else:
+            initializer_O = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_states-size_coding,size_coding])],axis=0)
 
-        state = self.init_states
-        output, state = tf.nn.dynamic_rnn(LSTM_cell,inputs,initial_state=state,time_major=True)
+        # state-to-coding weights
+        self.O_w = tf.get_variable(name='O_w',
+                                   dtype=tf.float32,
+                                   initializer=initializer_O)
 
-        output = tf.unstack(output,axis=0)
+        self.O_b = tf.get_variable(name='O_b',
+                                   shape=[size_coding],
+                                   dtype=tf.float32,
+                                   initializer=tf.zeros_initializer())
+
+        # state initialization
+        h_t = self.init_states
+        s_t = self.init_states
+
+        # cell definition
+        for step in range(0,self.n_rnn_steps):
+
+            # forget gate
+            f_t = tf.sigmoid(self.b_f[step] + tf.matmul(inputs[step],self.U_f[step]) + tf.matmul(h_t,self.W_f[step]))
+
+            # internal states
+            i_t = tf.sigmoid(self.b_g[step] + tf.matmul(inputs[step],self.U_g[step]) + tf.matmul(h_t,self.W_g[step]))
+
+            # external intput gate
+            g_t = tf.tanh(self.b[step] + tf.matmul(inputs[step],self.U[step]) + tf.matmul(h_t,self.W[step]))
+
+            # memory update
+            s_t = tf.multiply(f_t,s_t) + tf.multiply(i_t,g_t)
+
+            # output gate
+            o_t = tf.sigmoid(self.b_o[step] + tf.matmul(inputs[step],self.U_o[step]) + tf.matmul(h_t,self.W_o[step]))
+
+            # state update
+            h_t = tf.multiply(o_t,tf.tanh(s_t))
 
 
-        return output[-1], state
+        # reconstruct coding
+        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
+
+        return output
 
     def network(self, input):
 
@@ -975,11 +1105,11 @@ class RecurrentMAE:
                                          input[7],
                                          input[8])
 
-        outputs, _current_state = self.Basic_RNN(encoding)
+        outputs = self.Basic_RNN(encoding)
 
         output = self.decoding_network(outputs)
 
-        return output, _current_state
+        return output
 
     def collect_variables(self):
 
@@ -1006,7 +1136,7 @@ class RecurrentMAE:
             veg_avg = sum(self.of_det_veg)/float(window_size)
             sky_avg = sum(self.of_det_sky)/float(window_size)
 
-            threshold = 1.15
+            threshold = 1.5
 
             if val_losses[0] > threshold*gnd_avg:
                 self.gnd_dw = True
@@ -1047,7 +1177,7 @@ class RecurrentMAE:
         cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+               tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
@@ -1057,7 +1187,7 @@ class RecurrentMAE:
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+               tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
@@ -1103,7 +1233,7 @@ class RecurrentMAE:
         input = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
 
-        output, _current_state = self.network(input)
+        output = self.network(input)
 
         label_series = self.split_label_series()
 
@@ -1111,7 +1241,7 @@ class RecurrentMAE:
 
         c_w1 = 1.0
         c_w2 = 1.0
-        c_w3 = 1.0
+        c_w3 = 0.1
         c_w4 = 1.0
         c_w5 = 1.0
 
@@ -1126,6 +1256,7 @@ class RecurrentMAE:
         for i in range(0,len(rnn_weight_norms)):
             name = 'RNN Weight Norm ' + str(i)
             rnn_weight_sum.append(tf.summary.scalar(name,rnn_weight_norms[i]))
+
 
         normalization = tf.placeholder('float')
 
@@ -1199,7 +1330,7 @@ class RecurrentMAE:
         #optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
         #optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_weights_H)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
         optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
         optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
@@ -1462,16 +1593,16 @@ class RecurrentMAE:
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 10:
-                        _ , c, l, in_state = sess.run([optimizer1, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                        _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 10 and epoch < 30:
-                        _ , c, l, in_state = sess.run([optimizer2, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 30 and epoch < 60:
-                        _ , c, l, in_state = sess.run([optimizer3, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
-                        _ , c, l, in_state = sess.run([optimizer4, cost, epoch_loss_update,_current_state], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer4, cost, epoch_loss_update], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
