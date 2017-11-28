@@ -935,8 +935,10 @@ class RecurrentMAE:
         # running recurrent layer
         for i in range(0,self.n_rnn_steps):
             state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.rnn_weights_W[i])),self.rnn_bias_B[i]),self.rnn_weights_H[i])
+            state = tf.nn.relu(state)
 
         output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.rnn_weights_W[-1]),state),self.rnn_bias_B[-1]),self.rnn_weights_V)
+        output = tf.nn.relu(output)
 
         return output
 
