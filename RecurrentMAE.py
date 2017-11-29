@@ -282,30 +282,6 @@ class RecurrentMAE:
 
         self.train_sequences = []
 
-        self.imr_train = []
-        self.img_train = []
-        self.imb_train = []
-        self.depth_train = []
-        self.gnd_train = []
-        self.obj_train = []
-        self.bld_train = []
-        self.veg_train = []
-        self.sky_train = []
-
-        self.depth_mask_train = []
-
-        self.imr_train_label = []
-        self.img_train_label = []
-        self.imb_train_label = []
-        self.depth_train_label = []
-        self.gnd_train_label = []
-        self.obj_train_label = []
-        self.bld_train_label = []
-        self.veg_train_label = []
-        self.sky_train_label = []
-
-
-
         for sequence in range(0,len(self.data_train)):
             for frame in range(0,len(self.data_train[sequence])):
 
@@ -334,103 +310,6 @@ class RecurrentMAE:
         np.random.shuffle(rand_indices)
 
         self.train_sequences = np.asarray(self.train_sequences)[rand_indices]
-
-        '''
-        for i in range(0,len(self.data_train)):
-            for j in range(0,len(self.data_train[i])):
-
-                imr_series = []
-                img_series = []
-                imb_series = []
-                depth_series = []
-                depth_mask_series = []
-                gnd_series = []
-                obj_series = []
-                bld_series = []
-                veg_series = []
-                sky_series = []
-
-                for k in range(0,self.n_rnn_steps):
-                    offset = self.n_rnn_steps-1-k
-                    check = j - offset
-                    if check < 0:
-
-                        zero_padding = np.zeros((self.size_input,))
-
-                        imr_series.append(zero_padding)
-                        img_series.append(zero_padding)
-                        imb_series.append(zero_padding)
-                        depth_series.append(zero_padding)
-                        depth_mask_series.append(zero_padding)
-                        gnd_series.append(zero_padding)
-                        obj_series.append(zero_padding)
-                        bld_series.append(zero_padding)
-                        veg_series.append(zero_padding)
-                        sky_series.append(zero_padding)
-
-                    else:
-
-                        imr_series.append(i[j-offset]['xcr1']/255.)
-                        img_series.append(i[j-offset]['xcg1']/255.)
-                        imb_series.append(i[j-offset]['xcb1']/255.)
-                        depth_series.append(i[j-offset]['xid1'])
-                        depth_mask_series.append(i[j-offset]['xmask1'])
-                        gnd_series.append((i[j-offset]['sem1']==1).astype(int))
-                        obj_series.append((i[j-offset]['sem1']==2).astype(int))
-                        bld_series.append((i[j-offset]['sem1']==3).astype(int))
-                        veg_series.append((i[j-offset]['sem1']==4).astype(int))
-                        sky_series.append((i[j-offset]['sem1']==5).astype(int))
-
-
-                self.imr_train.append(copy(imr_series))
-                self.img_train.append(copy(img_series))
-                self.imb_train.append(copy(imb_series))
-                self.depth_train.append(copy(depth_series))
-                self.depth_mask_train.append(copy(depth_mask_series))
-                self.gnd_train.append(copy(gnd_series))
-                self.obj_train.append(copy(obj_series))
-                self.bld_train.append(copy(bld_series))
-                self.veg_train.append(copy(veg_series))
-                self.sky_train.append(copy(sky_series))
-
-                self.imr_train_label.append(copy(imr_series))
-                self.img_train_label.append(copy(img_series))
-                self.imb_train_label.append(copy(imb_series))
-                self.depth_train_label.append(copy(depth_series))
-                self.gnd_train_label.append(copy(gnd_series))
-                self.obj_train_label.append(copy(obj_series))
-                self.bld_train_label.append(copy(bld_series))
-                self.veg_train_label.append(copy(veg_series))
-                self.sky_train_label.append(copy(sky_series))
-
-
-        # randomly shuffle input frames
-        rand_indices = np.arange(len(self.imr_train)).astype(int)
-        np.random.shuffle(rand_indices)
-
-        self.imr_train = np.asarray(self.imr_train)[rand_indices]
-        self.img_train = np.asarray(self.img_train)[rand_indices]
-        self.imb_train = np.asarray(self.imb_train)[rand_indices]
-        self.depth_train = np.asarray(self.depth_train)[rand_indices]
-        self.gnd_train = np.asarray(self.gnd_train)[rand_indices]
-        self.obj_train = np.asarray(self.obj_train)[rand_indices]
-        self.bld_train = np.asarray(self.bld_train)[rand_indices]
-        self.veg_train = np.asarray(self.veg_train)[rand_indices]
-        self.sky_train = np.asarray(self.sky_train)[rand_indices]
-
-        self.imr_train_label = np.asarray(self.imr_train_label)[rand_indices]
-        self.img_train_label = np.asarray(self.img_train_label)[rand_indices]
-        self.imb_train_label = np.asarray(self.imb_train_label)[rand_indices]
-        self.depth_train_label = np.asarray(self.depth_train_label)[rand_indices]
-        self.gnd_train_label = np.asarray(self.gnd_train_label)[rand_indices]
-        self.obj_train_label = np.asarray(self.obj_train_label)[rand_indices]
-        self.bld_train_label = np.asarray(self.bld_train_label)[rand_indices]
-        self.veg_train_label = np.asarray(self.veg_train_label)[rand_indices]
-        self.sky_train_label = np.asarray(self.sky_train_label)[rand_indices]
-
-        self.depth_mask_train = np.asarray(self.depth_mask_train)[rand_indices]
-        
-        '''
 
     def prepare_validation_data(self):
 
@@ -656,8 +535,8 @@ class RecurrentMAE:
         cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
-               10*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
+               100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+               100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
