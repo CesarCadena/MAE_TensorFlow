@@ -136,7 +136,7 @@ class Basic_RNN:
 
         # initializer definition
         self.initializer_W = tf.concat([tf.diag(tf.ones([self.coding_size])),tf.zeros([self.coding_size,self.state_size-self.coding_size])],axis=1)
-        self.initializer_H = tf.zeros([state_size,state_size])
+        self.initializer_H = 10e-5*tf.diag(tf.ones([state_size]))
         self.initializer_V = tf.concat([tf.diag(tf.ones([self.coding_size])),tf.zeros([self.state_size-self.coding_size,self.coding_size])],axis=0)
 
         # definition of rnn variables
