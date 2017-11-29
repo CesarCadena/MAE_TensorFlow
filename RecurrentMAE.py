@@ -656,7 +656,8 @@ class RecurrentMAE:
         cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
+               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+               10*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
@@ -711,7 +712,7 @@ class RecurrentMAE:
 
         c_w1 = 1.0
         c_w2 = 1.0
-        c_w3 = 0.1
+        c_w3 = 1.0
         c_w4 = 1.0
         c_w5 = 1.0
 
