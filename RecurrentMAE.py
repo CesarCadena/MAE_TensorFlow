@@ -77,7 +77,7 @@ class RecurrentMAE:
 
 
         self.learning_rate = 1e-6
-        self.hm_epochs = 1000
+        self.hm_epochs = 200
 
 
         # variables for overfitting detection
