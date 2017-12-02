@@ -201,169 +201,177 @@ class Basic_RNN:
 
         return output
 
-def LSTM_RNN(inputs,size_states=None,size_coding=None,n_rnn_steps=None, init_states=None, scope=None):
-    # options
-    if size_states == None:
-        raise ValueError('no state size passed')
 
-    if size_coding == None:
-        raise ValueError('no coding size passed')
+class LSTM_RNN:
 
-    if n_rnn_steps == None:
-        raise ValueError('number of rnn steps not passed')
+    def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None):
 
-    if init_states == None:
-        raise ValueError('no state initialization passed')
+        # options
+        if state_size == None:
+            raise ValueError('no state size passed')
+        self.size_states = state_size
 
-    if scope == None:
-        raise ValueError('no cell scope passed')
+        if coding_size == None:
+            raise ValueError('no coding size passed')
+        self.size_coding = coding_size
 
-    # define initializer for input weights
-    if size_states == size_coding:
-        initializer_U = 0.0001*tf.diag(tf.ones([size_coding]))
-    else:
-        initializer_U = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_coding,size_states-size_coding])],axis=1)
+        if n_rnn_steps == None:
+            raise ValueError('number of rnn steps not passed')
+        self.n_rnn_steps = n_rnn_steps
 
-    # state-to-coding weights initializer
-    if size_states == size_coding:
-        initializer_O = tf.diag(tf.ones([size_coding]))
-    else:
-        initializer_O = tf.concat([tf.diag(tf.ones([size_coding])),tf.zeros([size_states-size_coding,size_coding])],axis=0)
+        if scope == None:
+            raise ValueError('no cell scope passed')
+        self.scope = scope
 
-    # forget gate
-    # bias, input weights and recurrent weights for forget gate
-    b_f = []
-    U_f = []
-    W_f = []
+        # define initializer for input weights
+        if state_size == coding_size:
+            self.initializer_U = 0.0001*tf.diag(tf.ones([coding_size]))
+            #self.initializer_U = tf.diag(tf.zeros([coding_size]))
+        else:
+            self.initializer_U = tf.concat([tf.diag(tf.ones([coding_size])), tf.zeros([coding_size, state_size - coding_size])], axis=1)
 
-    # internal state
-    # bias, input weights and recurrent weights for forget gate
-    b = []
-    U = []
-    W = []
-
-    # external input gate
-    # with bias, input weights and recurrent weights for external input gate
-    b_g = []
-    U_g = []
-    W_g = []
-
-    # output gate
-    # bias, input weights and recurrent weights for output gate
-    b_o = []
-    U_o = []
-    W_o = []
-
-    # define all variables
-    with tf.variable_scope(scope) as lstm:
-
-        for step in range(0,n_rnn_steps):
-
-            # forget gate
-            b_f.append(tf.get_variable(name='b_f_'+str(step),
-                                       shape=[size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-            U_f.append(tf.get_variable(name='U_f_'+str(step),
-                                       dtype=tf.float32,
-                                       initializer=initializer_U))
-
-            W_f.append(tf.get_variable(name='W_f_'+str(step),
-                                       shape=[size_states,size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-
-            # internal state
-            b.append(tf.get_variable(name='b_'+str(step),
-                                     shape=[size_states],
-                                     dtype=tf.float32,
-                                     initializer=tf.zeros_initializer()))
-
-            U.append(tf.get_variable(name='U_'+str(step),
-                                     dtype=tf.float32,
-                                     initializer=initializer_U))
-
-            W.append(tf.get_variable(name='W_'+str(step),
-                                     shape=[size_states,size_states],
-                                     dtype=tf.float32,
-                                     initializer=tf.zeros_initializer()))
-
-            # external input gate
-            b_g.append(tf.get_variable(name='b_g_'+str(step),
-                                       shape=[size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-            U_g.append(tf.get_variable(name='U_g_'+str(step),
-                                       dtype=tf.float32,
-                                       initializer=initializer_U))
-
-            W_g.append(tf.get_variable(name='W_g_'+str(step),
-                                       shape=[size_states,size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-            # output gate
-            b_o.append(tf.get_variable(name='b_o_'+str(step),
-                                       shape=[size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-            U_o.append(tf.get_variable(name='U_o_'+str(step),
-                                       dtype=tf.float32,
-                                       initializer=initializer_U))
-
-            W_o.append(tf.get_variable(name='W_o_'+str(step),
-                                       shape=[size_states,size_states],
-                                       dtype=tf.float32,
-                                       initializer=tf.zeros_initializer()))
-
-             # state-to-coding weights
-            O_w = tf.get_variable(name='O_w',
-                                  dtype=tf.float32,
-                                  initializer=initializer_O)
-
-            O_b = tf.get_variable(name='O_b',
-                                  shape=[size_coding],
-                                  dtype=tf.float32,
-                                  initializer=tf.zeros_initializer())
-
-        rnn_variables = [v for v in tf.global_variables() if v.name.startswith(lstm.name)]
-
-
-
-    # state initialization
-    h_t = init_states
-    s_t = init_states
-
-    # cell definition
-    for step in range(0,n_rnn_steps):
+        # state-to-coding weights initializer
+        if state_size == coding_size:
+            self.initializer_O = tf.diag(tf.ones([coding_size]))
+            #self.initializer_O = tf.diag(tf.zeros([coding_size]))
+        else:
+            self.initializer_O = tf.concat([tf.diag(tf.ones([coding_size])), tf.zeros([state_size - coding_size, coding_size])], axis=0)
 
         # forget gate
-        f_t = tf.sigmoid(b_f[step] + tf.matmul(inputs[step],U_f[step]) + tf.matmul(h_t,W_f[step]))
+        # bias, input weights and recurrent weights for forget gate
+        self.b_f = []
+        self.U_f = []
+        self.W_f = []
 
-        # internal states
-        i_t = tf.sigmoid(b_g[step] + tf.matmul(inputs[step],U_g[step]) + tf.matmul(h_t,W_g[step]))
+        # internal state
+        # bias, input weights and recurrent weights for forget gate
+        self.b = []
+        self.U = []
+        self.W = []
 
-        # external intput gate
-        g_t = tf.tanh(b[step] + tf.matmul(inputs[step],U[step]) + tf.matmul(h_t,W[step]))
-
-        # memory update
-        s_t = tf.multiply(f_t,s_t) + tf.multiply(i_t,g_t)
+        # external input gate
+        # with bias, input weights and recurrent weights for external input gate
+        self.b_g = []
+        self.U_g = []
+        self.W_g = []
 
         # output gate
-        o_t = tf.sigmoid(b_o[step] + tf.matmul(inputs[step],U_o[step]) + tf.matmul(h_t,W_o[step]))
+        # bias, input weights and recurrent weights for output gate
+        self.b_o = []
+        self.U_o = []
+        self.W_o = []
 
-        # state update
-        h_t = tf.multiply(o_t,tf.tanh(s_t))
+        # define all variables
+        with tf.variable_scope(scope) as lstm:
+
+            for step in range(0,self.n_rnn_steps):
+
+                # forget gate
+                self.b_f.append(tf.get_variable(name='b_f_'+str(step),
+                                                shape=[state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_f.append(tf.get_variable(name='U_f_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=self.initializer_U))
+
+                self.W_f.append(tf.get_variable(name='W_f_'+str(step),
+                                                shape=[state_size, state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
 
 
-    # reconstruct coding
-    output = tf.add(tf.matmul(h_t,O_w),O_b)
+                # internal state
+                self.b.append(tf.get_variable(name='b_'+str(step),
+                                              shape=[state_size],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
 
-    return output
+                self.U.append(tf.get_variable(name='U_'+str(step),
+                                              dtype=tf.float32,
+                                              initializer=self.initializer_U))
+
+                self.W.append(tf.get_variable(name='W_'+str(step),
+                                              shape=[state_size, state_size],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
+
+                # external input gate
+                self.b_g.append(tf.get_variable(name='b_g_'+str(step),
+                                                shape=[state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_g.append(tf.get_variable(name='U_g_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=self.initializer_U))
+
+                self.W_g.append(tf.get_variable(name='W_g_'+str(step),
+                                                shape=[state_size, state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                # output gate
+                self.b_o.append(tf.get_variable(name='b_o_'+str(step),
+                                                shape=[state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_o.append(tf.get_variable(name='U_o_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=self.initializer_U))
+
+                self.W_o.append(tf.get_variable(name='W_o_'+str(step),
+                                                shape=[state_size, state_size],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+             # state-to-coding weights
+            self.O_w = tf.get_variable(name='O_w',
+                                       dtype=tf.float32,
+                                       initializer=self.initializer_O)
+
+            self.O_b = tf.get_variable(name='O_b',
+                                       shape=[coding_size],
+                                       dtype=tf.float32,
+                                       initializer=tf.zeros_initializer())
+
+    def run(self,inputs,init_states=None):
+
+        if init_states == None:
+            raise ValueError('no state initialization passed')
+
+        # state initialization
+        h_t = init_states
+        s_t = init_states
+
+        # cell definition
+        for step in range(0,self.n_rnn_steps):
+
+            # forget gate
+            f_t = tf.sigmoid(self.b_f[step] + tf.matmul(inputs[step],self.U_f[step]) + tf.matmul(h_t,self.W_f[step]))
+
+            # internal states
+            i_t = tf.sigmoid(self.b_g[step] + tf.matmul(inputs[step],self.U_g[step]) + tf.matmul(h_t,self.W_g[step]))
+
+            # external intput gate
+            g_t = tf.tanh(self.b[step] + tf.matmul(inputs[step],self.U[step]) + tf.matmul(h_t,self.W[step]))
+
+            # memory update
+            s_t = tf.multiply(f_t,s_t) + tf.multiply(i_t,g_t)
+
+            # output gate
+            o_t = tf.sigmoid(self.b_o[step] + tf.matmul(inputs[step],self.U_o[step]) + tf.matmul(h_t,self.W_o[step]))
+
+            # state update
+            h_t = tf.multiply(o_t,tf.tanh(s_t))
+
+
+        # reconstruct coding
+        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
+
+        return output
 
 
 def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
@@ -440,12 +448,14 @@ def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
     return output
 
 
-def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None):
+def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None,option=None):
 
     if n_rnn_steps == None:
         raise ValueError('no number of rnn steps passed')
     if init_states == None:
         raise ValueError('no state initialization passed')
+    if option == None:
+        raise ValueError('no RNN option passed')
 
     # initialize model
     IMR_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='red')
@@ -462,7 +472,10 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
 
     SHD_EC = Encoding(activation='relu',shape_input=5*1024,shape_coding=1024,name='full')
 
-    RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
+    if option == 'basic':
+        RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
+    if option == 'lstm':
+        RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN')
 
     SHD_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=5*1024,name='full')
 
@@ -549,21 +562,3 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
     # generate output list
     output = [imr_hat,img_hat,imb_hat,dpt_hat,gnd_hat,obj_hat,bld_hat,veg_hat,sky_hat]
     return output
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
