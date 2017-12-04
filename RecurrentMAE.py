@@ -476,7 +476,7 @@ class RecurrentMAE:
     def network(self, input):
 
         output = RNN_MAE(input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7],input[8],
-                         n_rnn_steps=self.n_rnn_steps,init_states=self.init_states,option='lstm')
+                         n_rnn_steps=self.n_rnn_steps,init_states=self.init_states,option='basic')
         return output
 
     def overfitting_detection(self,val_losses,epoch):

@@ -142,7 +142,7 @@ class Basic_RNN:
         # definition of rnn variables
         with tf.variable_scope(scope) as rnn:
 
-            for step in range(0,self.n_rnn_steps):
+            for step in range(0,self.n_rnn_steps-1):
 
                 self.H.append(tf.get_variable(name='H_'+str(step),
                                               dtype=tf.float32,
@@ -191,8 +191,10 @@ class Basic_RNN:
         # initialize state of recurrent network from initializing placeholder
         state = init_states
 
+        print(len(inputs))
+
         # running recurrent layer
-        for i in range(0,self.n_rnn_steps):
+        for i in range(0,self.n_rnn_steps-1):
             state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[i])),self.B[i]),self.H[i])
             state = tf.nn.relu(state)
 
@@ -420,12 +422,12 @@ def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
     sem = tf.concat([gnd_ec,obj_ec,bld_ec,veg_ec,sky_ec],axis=1)
     sem = SEM_EC.run(sem)
 
-    shd = tf.concat([imr_ec,img_ec,imb_ec,dpt_ec,sem],axis=1)
+    shd = tf.concat([dpt_ec,imr_ec,img_ec,imb_ec,sem],axis=1)
 
     shd_ec = SHD_EC.run(shd)
     shd_dc = SHD_DC.run(shd_ec)
 
-    imr_dc,img_dc,imb_dc,dpt_dc,sem_dc = tf.split(shd_dc,num_or_size_splits=5,axis=1)
+    dpt_dc,imr_dc,img_dc,imb_dc,sem_dc = tf.split(shd_dc,num_or_size_splits=5,axis=1)
 
     sem_dc = SEM_DC.run(sem_dc)
 
