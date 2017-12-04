@@ -191,8 +191,6 @@ class Basic_RNN:
         # initialize state of recurrent network from initializing placeholder
         state = init_states
 
-        print(len(inputs))
-
         # running recurrent layer
         for i in range(0,self.n_rnn_steps-1):
             state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[i])),self.B[i]),self.H[i])
@@ -228,14 +226,12 @@ class LSTM_RNN:
         # define initializer for input weights
         if state_size == coding_size:
             self.initializer_U = 0.0001*tf.diag(tf.ones([coding_size]))
-            #self.initializer_U = tf.diag(tf.zeros([coding_size]))
         else:
             self.initializer_U = tf.concat([tf.diag(tf.ones([coding_size])), tf.zeros([coding_size, state_size - coding_size])], axis=1)
 
         # state-to-coding weights initializer
         if state_size == coding_size:
             self.initializer_O = tf.diag(tf.ones([coding_size]))
-            #self.initializer_O = tf.diag(tf.zeros([coding_size]))
         else:
             self.initializer_O = tf.concat([tf.diag(tf.ones([coding_size])), tf.zeros([state_size - coding_size, coding_size])], axis=0)
 
@@ -352,29 +348,149 @@ class LSTM_RNN:
         for step in range(0,self.n_rnn_steps):
 
             # forget gate
-            f_t = tf.sigmoid(self.b_f[step] + tf.matmul(inputs[step],self.U_f[step]) + tf.matmul(h_t,self.W_f[step]))
+            f_t = tf.sigmoid(tf.add(tf.add(self.b_f[step],tf.matmul(inputs[step],self.U_f[step])),tf.matmul(h_t,self.W_f[step])))
 
             # internal states
-            i_t = tf.sigmoid(self.b_g[step] + tf.matmul(inputs[step],self.U_g[step]) + tf.matmul(h_t,self.W_g[step]))
+            i_t = tf.sigmoid(tf.add(tf.add(self.b_g[step],tf.matmul(inputs[step],self.U_g[step])),tf.matmul(h_t,self.W_g[step])))
 
             # external intput gate
-            g_t = tf.tanh(self.b[step] + tf.matmul(inputs[step],self.U[step]) + tf.matmul(h_t,self.W[step]))
+            g_t = tf.tanh(tf.add(tf.add(self.b[step],tf.matmul(inputs[step],self.U[step])),tf.matmul(h_t,self.W[step])))
 
             # memory update
-            s_t = tf.multiply(f_t,s_t) + tf.multiply(i_t,g_t)
+            s_t = tf.add(tf.multiply(f_t,s_t),tf.multiply(i_t,g_t))
 
             # output gate
-            o_t = tf.sigmoid(self.b_o[step] + tf.matmul(inputs[step],self.U_o[step]) + tf.matmul(h_t,self.W_o[step]))
+            o_t = tf.sigmoid(tf.add(tf.add(self.b_o[step],tf.matmul(inputs[step],self.U_o[step])),tf.matmul(h_t,self.W_o[step])))
 
             # state update
             h_t = tf.multiply(o_t,tf.tanh(s_t))
 
 
         # reconstruct coding
-        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
+        output = tf.nn.relu(tf.add(tf.matmul(h_t,self.O_w),self.O_b))
 
         return output
 
+class Gated_RNN:
+
+    def __init__(self,state_size=None, coding_size=None, n_rnn_steps=None, scope=None):
+
+        # options
+        if state_size == None:
+            raise ValueError('no state size passed')
+        self.size_states = state_size
+
+        if coding_size == None:
+            raise ValueError('no coding size passed')
+        self.size_coding = coding_size
+
+        if n_rnn_steps == None:
+            raise ValueError('number of rnn steps not passed')
+        self.n_rnn_steps = n_rnn_steps
+
+        if scope == None:
+            raise ValueError('no cell scope passed')
+        self.scope = scope
+
+        # weight containers
+
+        self.W_z = []
+        self.U_z = []
+        self.b_z = []
+
+        self.W_r = []
+        self.U_r = []
+        self.b_r = []
+
+        self.W = []
+        self.U = []
+        self.b = []
+
+        # initializers
+
+        if state_size == coding_size:
+            initializer_U = tf.diag(tf.ones([state_size]))
+            initializer_O = tf.diag(tf.ones([coding_size]))
+        else:
+            initializer_U = tf.concat(tf.diag(tf.ones([coding_size])),tf.zeros([coding_size,state_size-coding_size]),axis=1)
+            initializer_O = tf.concat(tf.diag(tf.ones([coding_size])),tf.zeros([state_size-coding_size,coding_size]),axis=0)
+
+        # define all variables
+        with tf.variable_scope(scope) as gated:
+
+            for step in range(0,self.n_rnn_steps):
+
+                self.W_z.append(tf.get_variable(name='W_z_'+str(step),
+                                                shape=[self.size_states,self.size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_z.append(tf.get_variable(name='U_z_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=initializer_U))
+
+                self.b_z.append(tf.get_variable(name='b_z_'+str(step),
+                                                shape=[self.size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.W_r.append(tf.get_variable(name='W_r_'+str(step),
+                                                shape=[self.size_states,self.size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.U_r.append(tf.get_variable(name='U_r_'+str(step),
+                                                dtype=tf.float32,
+                                                initializer=initializer_U))
+
+                self.b_r.append(tf.get_variable(name='b_r_'+str(step),
+                                                shape=[self.size_states],
+                                                dtype=tf.float32,
+                                                initializer=tf.zeros_initializer()))
+
+                self.W.append(tf.get_variable(name='W_'+str(step),
+                                              shape=[self.size_states,self.size_states],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
+
+                self.U.append(tf.get_variable(name='U_'+str(step),
+                                              dtype=tf.float32,
+                                              initializer=initializer_U))
+
+                self.b.append(tf.get_variable(name='b_'+str(step),
+                                              shape=[self.size_states],
+                                              dtype=tf.float32,
+                                              initializer=tf.zeros_initializer()))
+
+            self.W_o_t = tf.get_variable(name='W_o_t',
+                                         dtype=tf.float32,
+                                         initializer=initializer_O)
+
+            self.b_o_t = tf.get_variable(name='W_b_t',
+                                         shape=[coding_size],
+                                         dtype=tf.float32,
+                                         initializer=tf.zeros_initializer())
+
+    def run(self,inputs,init_states=None):
+
+        if init_states == None:
+            raise ValueError('no state initialization passed')
+
+        h_t = init_states
+
+        for step in range(0,self.n_rnn_steps):
+
+            z_t = tf.sigmoid(self.b_z[step] + tf.matmul(h_t,self.W_z[step]) + tf.matmul(inputs[step],self.U_z[step]))
+            r_t = tf.sigmoid(self.b_r[step] + tf.matmul(h_t,self.W_r[step]) + tf.matmul(inputs[step],self.U_r[step]))
+
+            r_t_tilde = tf.multiply(r_t,h_t)
+            h_t_tilde = tf.tanh(self.b[step] + tf.matmul(r_t_tilde,self.W[step]) + tf.matmul(inputs[step],self.U[step]))
+
+            h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
+
+        output = tf.add(tf.matmul(h_t,self.W_o_t),self.b_o_t)
+
+        return output
 
 def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
 
@@ -478,6 +594,8 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
         RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
     if option == 'lstm':
         RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN')
+    if option == 'gated':
+        RNN = Gated_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
 
     SHD_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=5*1024,name='full')
 
