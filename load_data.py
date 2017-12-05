@@ -527,6 +527,71 @@ def load_frames_data(test_frames):
 
     return all_frames
 
+def load_test_sequences(test_frames,n_steps,resolution=(18,60)):
+
+    basedir = '../MAE_KITTI/data_18x60/'
+    basefile = 'data_kitti_'
+    filetypes = ['im','InvDepth','seg']
+
+    all_sequences = []
+    frame =  {'xcr': 0,
+              'xcg': 0,
+              'xcb': 0,
+              'xidsparse': 0,
+              'xid': 0,
+              'xmask': 0,
+              'sem':0}
+
+    shape = (resolution[0]*resolution[1],)
+
+    for j in test_frames:
+        seq_num = int(j[22:32])
+
+        sequence = []
+
+        for s in range(0,n_steps):
+            offset = n_steps-(s+1)
+
+            frame_id = seq_num-offset
+            if frame_id < 0:
+                for i in filetypes:
+
+
+                    if i == 'im':
+                        frame['xcr'] = np.zeros(shape)
+                        frame['xcg'] = np.zeros(shape)
+                        frame['xcb'] = np.zeros(shape)
+                    if i == 'InvDepth':
+                        frame['xidsparse'] = np.zeros(shape)
+                        frame['xid'] = np.zeros(shape)
+                        frame['xmask'] = np.zeros(shape)
+                    if i == 'seg':
+                        frame['sem'] = np.zeros(shape)
+                continue
+
+            for i in filetypes:
+                data = io.loadmat(basedir+basefile+i+j[33:]+'_'+j[:21]+'_18x60.mat')
+
+                if i == 'im':
+                    frame['xcr'] = data['xcr'][:,frame_id]
+                    frame['xcg'] = data['xcg'][:,frame_id]
+                    frame['xcb'] = data['xcb'][:,frame_id]
+                if i == 'InvDepth':
+                    frame['xidsparse'] = data['xidsparse'][:,frame_id]
+                    frame['xid'] = data['xid'][:,frame_id]
+                    frame['xmask'] = data['xmask'][:,frame_id]
+                if i == 'seg':
+                    frame['sem'] = data['xss'][:,frame_id]
+
+            frame1 = copy(frame)
+            sequence.append(frame1)
+
+
+        all_sequences.append(sequence)
+
+    return all_sequences
+
+
 
 
 

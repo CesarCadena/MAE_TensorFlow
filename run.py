@@ -9,6 +9,7 @@ from input_distortion import input_distortion,pretraining_input_distortion
 from copy import copy
 
 from MAE import MAE
+from RecurrentMAE import RecurrentMAE
 
 # Load data for training
 print('load data')
@@ -25,11 +26,12 @@ data_test = load_frames_data(test_frames)
 
 print('initialize model')
 # Define Full Model
-mae = MAE()
+#mae = MAE()
+rnn_mae = RecurrentMAE(rnn_option='lstm',n_rnn_steps=5)
 
 # Train MultiModal AutoEncoder
 print('start training')
-mae.train_model(data_train,data_val,load = 'pretrained')
+rnn_mae.train_model(data_train,data_val)
 del data_train, data_val
 
 

@@ -26,10 +26,8 @@ from models import RNN_MAE, full_MAE
 
 class RecurrentMAE:
 
-    def __init__(self,data_train,data_validate,rnn_option='basic',n_rnn_steps=5,resolution=(18,60)):
+    def __init__(self,rnn_option='basic',n_rnn_steps=5,resolution=(18,60)):
 
-        self.data_train = data_train
-        self.data_validate = data_validate
 
         self.height = resolution[0]
         self.width = resolution[1]
@@ -64,17 +62,10 @@ class RecurrentMAE:
         # mirroring
         self.mirroring = False
 
-        self.prepare_training_data()
-        self.prepare_validation_data()
-
         # flags
         self.flag_is_running = False
 
         self.placeholder_definition()
-
-        # training options
-        self.batch_size = 60
-        self.n_batches = int(len(self.train_sequences)/self.batch_size)
 
 
         self.learning_rate = 1e-6
@@ -397,6 +388,7 @@ class RecurrentMAE:
         self.imb_test = []
         self.depth_test = []
         self.depth_mask_test = []
+        self.depth_sparse_test = []
         self.gnd_test = []
         self.obj_test = []
         self.bld_test = []
@@ -405,60 +397,46 @@ class RecurrentMAE:
 
 
         for i in self.data_test:
+
+            imr_series = []
+            img_series = []
+            imb_series = []
+            depth_series = []
+            depth_sparse_series = []
+            depth_mask_series = []
+            gnd_series = []
+            obj_series = []
+            bld_series = []
+            veg_series = []
+            sky_series = []
+
+            print(len(i))
+
             for j in range(len(i)):
-                imr_series = []
-                img_series = []
-                imb_series = []
-                depth_series = []
-                depth_mask_series = []
-                gnd_series = []
-                obj_series = []
-                bld_series = []
-                veg_series = []
-                sky_series = []
 
-                for k in range(0,self.n_rnn_steps):
+                imr_series.append(i[j]['xcr']/255.)
+                img_series.append(i[j]['xcg']/255.)
+                imb_series.append(i[j]['xcb']/255.)
+                depth_series.append(i[j]['xid'])
+                depth_sparse_series.append(i[j]['xidsparse'])
+                depth_mask_series.append(i[j]['xmask'])
+                gnd_series.append((i[j]['sem']==1).astype(int))
+                obj_series.append((i[j]['sem']==2).astype(int))
+                bld_series.append((i[j]['sem']==3).astype(int))
+                veg_series.append((i[j]['sem']==4).astype(int))
+                sky_series.append((i[j]['sem']==5).astype(int))
 
-                    offset = self.n_rnn_steps-1-k
-                    check = j - offset
 
-                    if check < 0:
-
-                        zero_padding = np.zeros((self.size_input,))
-
-                        imr_series.append(zero_padding)
-                        img_series.append(zero_padding)
-                        imb_series.append(zero_padding)
-                        depth_series.append(zero_padding)
-                        depth_mask_series.append(zero_padding)
-                        gnd_series.append(zero_padding)
-                        obj_series.append(zero_padding)
-                        bld_series.append(zero_padding)
-                        veg_series.append(zero_padding)
-                        sky_series.append(zero_padding)
-
-                    else:
-
-                        imr_series.append(i[j-offset]['xcr1']/255.)
-                        img_series.append(i[j-offset]['xcg1']/255.)
-                        imb_series.append(i[j-offset]['xcb1']/255.)
-                        depth_series.append(i[j-offset]['xid1'])
-                        depth_mask_series.append(i[j-offset]['xmask1'])
-                        gnd_series.append((i[j-offset]['sem1']==1).astype(int))
-                        obj_series.append((i[j-offset]['sem1']==2).astype(int))
-                        bld_series.append((i[j-offset]['sem1']==3).astype(int))
-                        veg_series.append((i[j-offset]['sem1']==4).astype(int))
-                        sky_series.append((i[j-offset]['sem1']==5).astype(int))
-
-                self.imr_test.append(copy(imr_series))
-                self.img_test.append(copy(img_series))
-                self.imb_test.append(copy(imb_series))
-                self.depth_test.append(copy(depth_series))
-                self.gnd_test.append(copy(gnd_series))
-                self.obj_test.append(copy(obj_series))
-                self.bld_test.append(copy(bld_series))
-                self.veg_test.append(copy(veg_series))
-                self.sky_test.append(copy(sky_series))
+            self.imr_test.append(copy(imr_series))
+            self.img_test.append(copy(img_series))
+            self.imb_test.append(copy(imb_series))
+            self.depth_test.append(copy(depth_series))
+            self.depth_sparse_test.append(copy(depth_sparse_series))
+            self.gnd_test.append(copy(gnd_series))
+            self.obj_test.append(copy(obj_series))
+            self.bld_test.append(copy(bld_series))
+            self.veg_test.append(copy(veg_series))
+            self.sky_test.append(copy(sky_series))
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_test)).astype(int)
@@ -473,6 +451,8 @@ class RecurrentMAE:
         self.bld_test = np.asarray(self.bld_test)[rand_indices]
         self.veg_test = np.asarray(self.veg_test)[rand_indices]
         self.sky_test = np.asarray(self.sky_test)[rand_indices]
+
+        print(self.imr_test.shape)
 
     def network(self, input):
 
@@ -582,7 +562,18 @@ class RecurrentMAE:
 
         return label_series
 
-    def train_model(self):
+    def train_model(self,data_train,data_validate):
+
+        self.data_train = data_train
+        self.data_validate = data_validate
+
+        self.prepare_training_data()
+        self.prepare_validation_data()
+
+        # training options
+        self.batch_size = 60
+        self.n_batches = int(len(self.train_sequences)/self.batch_size)
+
 
         input = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
@@ -951,13 +942,13 @@ class RecurrentMAE:
                     feed_dict.update(cost_dict)
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 100:
+                    if epoch < 75:
                         _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 100 and epoch < 150:
+                    if epoch >= 75 and epoch < 125:
                         _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 150 and epoch < 200:
+                    if epoch >= 125 and epoch < 150:
                         _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
@@ -1140,6 +1131,8 @@ class RecurrentMAE:
 
     def evaluate(self,data_test,run=False):
 
+        print('start evaluation')
+
         self.data_test = data_test
         self.prepare_test_data()
 
@@ -1158,7 +1151,7 @@ class RecurrentMAE:
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,dir+'/fullmodel.ckpt') # runs from 06112017 it ist fullmodel_rnn
+            load_weights.restore(sess,dir+'/fullmodel_rnn.ckpt') # runs from 06112017 it ist fullmodel_rnn
 
             n_evaluations = 697
             print('Size of Test Set:',n_evaluations)
@@ -1226,13 +1219,13 @@ class RecurrentMAE:
 
 # load data
 
-data_train = load_training_data()
-data_validate = load_validation_data()
+#data_train = load_training_data()
+#data_validate = load_validation_data()
 
 # running model
 
-rnn_mae = RecurrentMAE(data_train,data_validate)
-rnn_mae.train_model()
+#rnn_mae = RecurrentMAE(data_train,data_validate)
+#rnn_mae.train_model()
 
 #rnn_mae.evaluate(run='20171103-074407')
 
