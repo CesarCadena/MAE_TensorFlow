@@ -52,7 +52,7 @@ class RecurrentMAE:
 
          # recurrent options
 
-        self.n_rnn_steps = 10
+        self.n_rnn_steps = 5
         self.state_size = 1024
 
 
