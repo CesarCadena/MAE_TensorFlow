@@ -1216,18 +1216,6 @@ class RecurrentMAE:
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (REL):', error_rel/n_evaluations)
 
-# load data
-
-#data_train = load_training_data()
-#data_validate = load_validation_data()
-
-# running model
-
-#rnn_mae = RecurrentMAE(data_train,data_validate)
-#rnn_mae.train_model()
-
-#rnn_mae.evaluate(run='20171103-074407')
-
 
 
 

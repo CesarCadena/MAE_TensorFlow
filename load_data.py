@@ -567,6 +567,9 @@ def load_test_sequences(test_frames,n_steps,resolution=(18,60)):
                         frame['xmask'] = np.zeros(shape)
                     if i == 'seg':
                         frame['sem'] = np.zeros(shape)
+
+                frame1 = copy(frame)
+                sequence.append(frame1)
                 continue
 
             for i in filetypes:
