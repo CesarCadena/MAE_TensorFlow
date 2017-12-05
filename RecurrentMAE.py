@@ -1187,8 +1187,6 @@ class RecurrentMAE:
                                                                                                     resolution=(18,60),
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
-                
-
 
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
