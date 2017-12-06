@@ -675,9 +675,8 @@ class RecurrentMAE:
         self.training_cost = cost
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
-        optimizer4 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -942,17 +941,14 @@ class RecurrentMAE:
                     feed_dict.update(cost_dict)
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 75:
+                    if epoch < 20:
                         _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 75 and epoch < 125:
+                    if epoch >= 20 and epoch < 100:
                         _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 125 and epoch < 150:
-                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
-
                     else:
-                        _ , c, l = sess.run([optimizer4, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
