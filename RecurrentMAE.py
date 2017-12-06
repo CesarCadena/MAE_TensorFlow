@@ -60,7 +60,7 @@ class RecurrentMAE:
         self.n_augmentations = 3
 
         # mirroring
-        self.mirroring = False
+        self.mirroring = True
 
         # flags
         self.flag_is_running = False
