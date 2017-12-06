@@ -17,6 +17,8 @@ from datetime import datetime
 from copy import copy
 from models import RNN_MAE, full_MAE
 
+from visualization import display_sequence_mirroring
+
 
 
 # deleted blue_dc_layer_bias from loader (wrong name in full model)
@@ -161,7 +163,7 @@ class RecurrentMAE:
             veg_series_aug = copy(veg[series])
             sky_series_aug = copy(sky[series])
 
-            u = np.random.randint(0,8)
+            u = np.random.randint(0,10)
 
             for rnn_step in range(0,self.n_rnn_steps):
 
@@ -253,6 +255,21 @@ class RecurrentMAE:
 
                 if u == 8:
                     pass
+
+                if u == 9:
+
+                    if rnn_step%2 == 0:
+
+                        depth_series_aug[rnn_step] = zeros
+                        gnd_series_aug[rnn_step] = zeros
+                        obj_series_aug[rnn_step] = zeros
+                        bld_series_aug[rnn_step] = zeros
+                        veg_series_aug[rnn_step] = zeros
+                        sky_series_aug[rnn_step] = zeros
+
+                    else:
+                        pass
+
 
 
             imr_aug.append(copy(imr_series_aug))
@@ -885,9 +902,6 @@ class RecurrentMAE:
                         ind_batch = np.linspace(0,self.batch_size-1,self.batch_size).astype(int)
                         ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
 
-
-
-
                         imr_in = BR.horizontal_mirroring(imr_in,ind_rand_who,option='RNN')
                         imr_batch_label = BR.horizontal_mirroring(imr_batch_label,ind_rand_who,option='RNN')
                         img_in = BR.horizontal_mirroring(img_in,ind_rand_who,option='RNN')
@@ -909,6 +923,8 @@ class RecurrentMAE:
                         veg_batch_label = BR.horizontal_mirroring(veg_batch_label,ind_rand_who,option='RNN')
                         sky_in = BR.horizontal_mirroring(sky_in,ind_rand_who,option='RNN')
                         sky_batch_label = BR.horizontal_mirroring(sky_batch_label,ind_rand_who,option='RNN')
+
+
 
 
                     feed_dict = {self.imr_input:imr_in,

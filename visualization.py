@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib.style as style
-import tensorflow as tf
 
+
+from copy import copy
 
 def display_sequence(seq,shape):
 
@@ -222,6 +221,91 @@ def print_validation_frames(input_frame,output_frame,label_frame,shape,channel='
         plt.show()
         plt.pause(0.0001)
         plt.close('all')
+
+
+def display_sequence_mirroring(imr,imb,img,dpt,gnd,obj,bld,veg,sky,imr_m,imb_m,img_m,dpt_m,gnd_m,obj_m,bld_m,veg_m,sky_m):
+
+    n_steps = len(imr)
+
+    shape = (60,18)
+
+    rgb = []
+    rgb_m = []
+
+    for step in range(0,n_steps):
+        rgb.append(np.dstack((np.reshape(imr[step],shape).T,np.reshape(img[step],shape).T,np.reshape(imb[step],shape).T)))
+        rgb_m.append(np.dstack((np.reshape(imr_m[step],shape).T,np.reshape(img_m[step],shape).T,np.reshape(imb_m[step],shape).T)))
+
+
+    fig,axes = plt.subplots(2,n_steps)
+
+    for step in range(0,n_steps):
+        axes[0,step].imshow(rgb[step])
+        axes[1,step].imshow(rgb_m[step])
+
+    plt.show()
+
+    fig,axes = plt.subplots(2,n_steps)
+
+    for i in range(0,n_steps):
+        for j in range(0,1080):
+            if dpt[i][j] == -1:
+                dpt[i][j] = 0
+            if dpt_m[i][j] == -1:
+                dpt_m[i][j] = 0
+
+    for step in range(0,n_steps):
+        axes[0,step].imshow(np.reshape(dpt[step],shape).T,cmap='gist_ncar')
+        axes[1,step].imshow(np.reshape(dpt_m[step],shape).T,cmap='gist_ncar')
+
+    plt.show()
+
+    fig,axes = plt.subplots(2,n_steps)
+
+    for step in range(0,n_steps):
+
+        frame = np.zeros((1,1080)).astype(int)
+        frame_m = copy(frame)
+
+        for i in range(0,1080):
+            if gnd[step][i] == 1:
+                frame[0,i] = 1
+
+            if obj[step][i] == 1:
+                frame[0,i] = 2
+
+            if bld[step][i] == 1:
+                frame[0,i] = 3
+
+            if veg[step][i] == 1:
+                frame[0,i] = 4
+
+            if sky[step][i] == 1:
+                frame[0,i] = 5
+
+            if gnd_m[step][i] == 1:
+                frame_m[0,i] = 1
+
+            if obj_m[step][i] == 1:
+                frame_m[0,i] = 2
+
+            if bld_m[step][i] == 1:
+                frame_m[0,i] = 3
+
+            if veg_m[step][i] == 1:
+                frame_m[0,i] = 4
+
+            if sky_m[step][i] == 1:
+                frame_m[0,i] = 5
+
+
+        axes[0,step].imshow(np.reshape(frame,shape).T,cmap='Dark2')
+        axes[1,step].imshow(np.reshape(frame_m,shape).T,cmap='Dark2')
+
+    plt.show()
+
+
+
 
 
 #def full_model_visualiuzation(input_frame,output_frame,label_frame,shape,resolution=(18,60)):
