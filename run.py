@@ -27,7 +27,7 @@ data_test = load_frames_data(test_frames)
 print('initialize model')
 # Define Full Model
 #mae = MAE()
-rnn_mae = RecurrentMAE(rnn_option='lstm',n_rnn_steps=5)
+rnn_mae = RecurrentMAE(n_epochs=1000,rnn_option='gated',n_rnn_steps=5)
 
 # Train MultiModal AutoEncoder
 print('start training')
