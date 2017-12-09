@@ -5,17 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
-
 batch_size=20
 num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
+"""
 #print("loading data.....")
 #prepare the  data 
-
-
-
 data=process_data('training')
 Red_data=data['Red']
 Green_data=data['Green']
@@ -26,12 +23,10 @@ Green_data=np.reshape(Green_data,[-1,60,18,1])
 data=np.concatenate([Red_data,Blue_data,Green_data],axis=3)
 print(data.shape)
 #np.save('../rgb(num,60,18,3)',data)
-
-
-#data=np.load('../rgb(num,60,18,3).npy')
-print('finish')
+"""
+data=np.load('../rgb(num,60,18,3).npy')
+print('finish loading data ')
 print(data.shape)
-
 # build the model 
 # define functions
 def weight_variable(name,shape):
@@ -42,14 +37,15 @@ def bias_variable(name,shape):
     initial=0.1+tf.zeros(shape)
     return tf.get_variable(name=name,dtype=tf.float32,
                           initializer=initial,trainable=True)
-
 def conv2d(x,W):
     return tf.nn.conv2d(x,W,strides=[1,3,3,1],padding='SAME')
 
+def max_unpool_2x2(x, shape):
+    inference =tf.image.resize_nearest_neighbor(x,tf.stack([shape[0]*2,shape[1]*2]))
+    return inference
 
 def de_conv2d(x,W):
     return tf.nn.conv2d_transpose(x,W,output_shape=[batch_size,60,18,3],strides=[1,3,3,1],padding='SAME')
-
 
 
 def input_hidden_rgb(x):
@@ -59,31 +55,35 @@ def input_hidden_rgb(x):
             b_conv1= bias_variable(name='bias',shape=[64])
             layer_conv1=tf.nn.relu(conv2d(x,w_conv1)+b_conv1)
 
-    with tf.name_scope("rgb_flat"):
+    with tf.name_scope("conv_layer1_pooling"):
+        pooling_layer1=tf.nn.max_pool(layer_conv1,ksize=[1,2,2,1],
+                                       strides=[1,2,2,1],padding='SAME')
+    with tf.name_scope("rgb_flatten"):
         with tf.variable_scope("rgb_flat"):
-            w_fc=weight_variable(name='weights',shape=[20*6*64,1024])
+            w_fc=weight_variable(name='weights',shape=[10*3*64,1024])
             b_fc=bias_variable(name='bias',shape=[1024])
-            h_fc=tf.nn.relu(tf.matmul(tf.reshape(layer_conv1,[-1,20*6*64]),w_fc)+b_fc)
-    return h_fc
+            hidden_layer=tf.nn.relu(tf.matmul(tf.reshape(pooling_layer1,[-1,10*3*64]),w_fc)+b_fc)
+    return hidden_layer
 
 
 def hidden_output_rgb(x):
-    with tf.name_scope("rgb_flat_to_deconv"):
-        with tf.variable_scope("rgb_flat_to_deconv"):
-            w_flat_deconv=weight_variable(name='weights',shape=[1024,20*6*64])
-            b_flat_deconv=bias_variable(name='bias',shape=[20*6*64])
+    with tf.name_scope("rgb_flatten_to_deconv"):
+
+        with tf.variable_scope("rgb_flatten_to_deconv"):
+            w_flat_deconv=weight_variable(name='weights',shape=[1024,10*3*64])
+            b_flat_deconv=bias_variable(name='bias',shape=[10*3*64])
             de_flat_layer=tf.nn.relu(tf.matmul(x,w_flat_deconv)+b_flat_deconv)
-            de_layer1=tf.reshape(de_flat_layer,[-1,20,6,64])
+            de_layer1=tf.reshape(de_flat_layer,[-1,10,3,64])
+
+        unpooling_layer1=max_unpool_2x2(de_layer1,shape=[10,3])
+     
 
     with tf.name_scope("rgb_deconv_output"):
         with tf.variable_scope("rgb_deconv_output"):
             w_deconv=weight_variable(name='weights',shape=[5,5,3,64])
             b_deconv=weight_variable(name='bias',shape=[3])
-            out=tf.nn.relu(de_conv2d(de_layer1,w_deconv)+b_deconv)
+            out=tf.nn.relu(de_conv2d(unpooling_layer1,w_deconv)+b_deconv)
     return out
-
-
-
 
 with tf.name_scope("input"):
     x = tf.placeholder(tf.float32, shape=[None,60,18,3])
@@ -109,11 +109,9 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 saver=tf.train.Saver()
-
 rgb_path="../rgb_model"
 if not os.path.isdir(rgb_path):
     os.mkdir(rgb_path)
-
 
 with tf.Session(config=config) as sess:
     sess.run(init)
@@ -121,13 +119,9 @@ with tf.Session(config=config) as sess:
     for ipoch in range(10):
         perm_indices=np.random.permutation(train_indices)
         for step in range(int(train_size/batch_size)):
-
             offset=(step*batch_size)%(train_size-batch_size)
             batch_indices=perm_indices[offset:(offset+batch_size)]
-
-            sess.run(train_step,feed_dict={x:data[batch_indices],keep_prob:0.5})
+            _,l=sess.run([loss,train_step],feed_dict={x:data[batch_indices],keep_prob:0.5})
         saver.save(sess,rgb_path+'/rgb.ckpt')
-            print (step)
-
-        print('ipoch:',ipoch)
+        print('ipoch:,loss:',ipoch,l)
 
