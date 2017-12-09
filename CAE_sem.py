@@ -11,9 +11,10 @@ num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
-print("loading data.....")
 
-"""
+#print("loading data.....")
+
+
 # preprocess data 
 data=process_data('training')
 Ground_data=data['Ground']
@@ -28,10 +29,10 @@ Vegetation_data=np.reshape(Vegetation_data,[-1,60,18,1])
 Sky_data=np.reshape(Sky_data,[-1,60,18,1])
 data=np.concatenate([Ground_data,Objects_data,Building_data,Vegetation_data,Sky_data],axis=3)
 print(data.shape)
-np.save('../sem(num,60,18,3)',data)
-"""
+#np.save('../sem(num,60,18,3)',data)
 
-data=np.load('../sem(num,60,18,5).npy')
+
+#data=np.load('../sem(num,60,18,5).npy')
 
 def weight_variable(name,shape):
     initial=tf.truncated_normal(shape,stddev=0.1)
@@ -93,17 +94,18 @@ def sem_loss(y_label,y_pred):
 with tf.name_scope("sem_input"):
         x = tf.placeholder(tf.float32, shape=[None,60,18,5])
 
-h_fc=input_hidden(x)
+h_fc=input_hidden_sem(x)
 with tf.name_scope("sem_dropout"):
     with tf.variable_scope("sem_dropout"):
         keep_prob=tf.placeholder(tf.float32)
         h_fc_drop=tf.nn.dropout(h_fc,keep_prob)
-out=hidden_output(h_fc_drop)
+out=hidden_output_sem(h_fc_drop)
 
 
 with tf.name_scope("loss"):
     #loss=tf.reduce_sum(tf.nn.l2_loss(out-x))
     loss=sem_loss(x,out)
+
 
 with tf.name_scope("train"):
     train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
@@ -112,11 +114,15 @@ train_size=data.shape[0]
 train_indices=range(train_size)
 init=tf.global_variables_initializer()
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction =0.5
+config.gpu_options.per_process_gpu_memory_fraction =0.4
+saver=tf.train.Saver()
+sem_path="../sem_model"
+if not os.path.isdir(sem_path):
+    os.mkdir(sem_path)
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    for ipoch in range(1):
+    for ipoch in range(10):
         perm_indices=np.random.permutation(train_indices)
         for step in range(int(train_size/batch_size)):
 
@@ -124,4 +130,5 @@ with tf.Session(config=config) as sess:
             batch_indices=perm_indices[offset:(offset+batch_size)]
 
             _,l=sess.run([train_step,loss],feed_dict={x:data[batch_indices],keep_prob:0.5})
+        saver.save(sess,sem_path+'/sem.ckpt')
         print('ipoch:',ipoch ,'loss:',l)

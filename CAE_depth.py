@@ -13,18 +13,17 @@ RESTORE=0
 SEED = None
 
 
-print("loading data.....")
-"""
+#print("loading data.....")
+
 data=process_data('training')
 Depth_data=data['Depth']
 Depthmask_data=data['Depthmask']
 Depth_data=np.multiply(Depth_data,Depthmask_data)
 Depth_data=np.reshape(Depth_data,[-1,60,18,1])
-print(data.shape)
-np.save('../depth(num,60,18,1)',Depth_data)
-"""
-data=np.load('../depth(num,60,18,1).npy')
-print(data.shape)
+#np.save('../depth(num,60,18,1)',Depth_data)
+
+#data=np.load('../depth(num,60,18,1).npy')
+#print(data.shape)
 
 ## build handy functions
 def weight_variable(name,shape):
@@ -75,6 +74,8 @@ def hidden_output_depth(x):
     return out
 
 
+
+
 with tf.name_scope("depth_input"):
         x = tf.placeholder(tf.float32, shape=[None,60,18,1])
 
@@ -94,11 +95,17 @@ with tf.name_scope("depth_train"):
     train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
 
-train_size=data.shape[0]
+train_size=Depth_data.shape[0]
 train_indices=range(train_size)
 init=tf.global_variables_initializer()
+
+
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction =0.5
+config.gpu_options.per_process_gpu_memory_fraction =0.4
+saver=tf.train.Saver()
+depth_path="../depth_model"
+if not os.path.isdir(depth_path):
+    os.mkdir(depth_path)
 
 
 tf.summary.scalar('loss',loss)
@@ -114,14 +121,13 @@ with tf.Session(config=config) as sess:
     for ipoch in range(1):
         perm_indices=np.random.permutation(train_indices)
 
-        for step in range(int(train_size/batch_size)):
+        for step in range(1):#int(train_size/batch_size)):
 
             offset=(step*batch_size)%(train_size-batch_size)
             batch_indices=perm_indices[offset:(offset+batch_size)]
             
-            _,summary=sess.run([train_step,summary_op],feed_dict={x:data[batch_indices],keep_prob:0.5})
-
+            _,summary=sess.run([train_step,summary_op],feed_dict={x:Depth_data[batch_indices],keep_prob:0.5})
             writer.add_summary(summary,step)
 
+        saver.save(sess,depth_path+'/depth.ckpt')
         print('ipoch:',ipoch)
-

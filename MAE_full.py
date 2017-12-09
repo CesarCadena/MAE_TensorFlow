@@ -12,13 +12,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
+
 tf.reset_default_graph()
 
 
-batch_size=128
-num_epochs=50
+batch_size=20
+num_epochs=100
 hidden_size=1024
 RESTORE=0
+SEED = None
 
 
 print("###########loading data.........##########")
@@ -34,8 +36,34 @@ Objects_data=data['Objects']
 Building_data=data['Building']
 Vegetation_data=data['Vegetation']
 Sky_data=data['Sky']
-
 Depth_data=np.multiply(Depth_data,Depthmask_data)
+
+
+
+# data augmentation with lack of depth and semantic channels
+
+Red_data=np.concatenate((Red_data,Red_data),axis=0)
+Blue_data=np.concatenate((Blue_data,Blue_data),axis=0)
+Green_data=np.concatenate((Green_data,Green_data),axis=0)
+
+Depth_data=np.concatenate((Depth_data,Depth_data*0),axis=0)
+Depth_data_label=np.concatenate((Depth_data,Depth_data),axis=0)
+
+Ground_data=np.concatenate((Ground_data,Ground_data*0),axis=0)
+Ground_data_label=np.concatenate((Ground_data,Ground_data),axis=0)
+
+Objects_data=np.concatenate((Objects_data,Objects_data*0),axis=0)
+Objects_data_label=np.concatenate((Objects_data,Objects_data),axis=0)
+
+Building_data=np.concatenate((Building_data,Building_data*0),axis=0)
+Building_data_label=np.concatenate((Building_data,Building_data),axis=0)
+
+Vegetation_data=np.concatenate((Vegetation_data,Vegetation_data*0),axis=0)
+Vegetation_data_label=np.concatenate((Vegetation_data,Vegetation_data),axis=0)
+
+Sky_data=np.concatenate((Sky_data,Sky_data*0),axis=0)
+Sky_data_label=np.concatenate((Sky_data,Sky_data),axis=0)
+
 
 
 print("##########building model ........#######")
@@ -51,6 +79,13 @@ Building_input=tf.placeholder(tf.float32,shape=[None,1080])
 Vegetation_input=tf.placeholder(tf.float32,shape=[None,1080])
 Sky_input=tf.placeholder(tf.float32,shape=[None,1080])
 #auxiliary channel
+
+Depth_label=tf.placeholder(tf.float32,shape=[None,1080])
+Ground_label=tf.placeholder(tf.float32,shape=[None,1080])
+Objects_label=tf.placeholder(tf.float32,shape=[None,1080])
+Building_label=tf.placeholder(tf.float32,shape=[None,1080])
+Vegetation_label=tf.placeholder(tf.float32,shape=[None,1080])
+Sky_label=tf.placeholder(tf.float32,shape=[None,1080])
 #Depthmask_input=tf.placeholder(tf.float32,shape=[None,1080])
 
 
@@ -213,21 +248,23 @@ Sky_out=tf.nn.sigmoid(tf.matmul(decoder_Sky,Sky_outweights)+Sky_outbias)
 
 # be careful with this loss function
 
+
 loss=(tf.nn.l2_loss(Red_input-Red_out)
      +tf.nn.l2_loss(Blue_input-Blue_out)
      +tf.nn.l2_loss(Green_input-Green_out)
-     +100*tf.nn.l2_loss(Depth_input-Depth_out)
-     -tf.reduce_sum(np.multiply(Ground_input,tf.log(tf.clip_by_value(Ground_out,1e-10,1)))
-                          +np.multiply(1-Ground_input,tf.log(tf.clip_by_value(1-Ground_out,1e-10,1)))
-                          )-tf.reduce_sum(np.multiply(Objects_input,tf.log(tf.clip_by_value(Objects_out,1e-10,1)))
-                          +np.multiply(1-Objects_input,tf.log(tf.clip_by_value(1-Objects_out,1e-10,1)))
-                          )-tf.reduce_sum(np.multiply(Building_input,tf.log(tf.clip_by_value(Building_out,1e-10,1)))
-                          +np.multiply(1-Building_input,tf.log(tf.clip_by_value(1-Building_out,1e-10,1)))
-                          )-tf.reduce_sum(np.multiply(Sky_input,tf.log(tf.clip_by_value(Sky_out,1e-10,1)))
-                          +np.multiply(1-Sky_input,tf.log(tf.clip_by_value(1-Sky_out,1e-10,1)))
-                          )-tf.reduce_sum(np.multiply(Vegetation_input,tf.log(tf.clip_by_value(Vegetation_out,1e-10,1)))
-                          +np.multiply(1-Vegetation_input,tf.log(tf.clip_by_value(1-Vegetation_out,1e-10,1)))
+     +100*tf.nn.l2_loss(Depth_label-Depth_out)
+     -tf.reduce_sum(np.multiply(Ground_label,tf.log(tf.clip_by_value(Ground_out,1e-10,1)))
+                          +np.multiply(1-Ground_label,tf.log(tf.clip_by_value(1-Ground_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Objects_label,tf.log(tf.clip_by_value(Objects_out,1e-10,1)))
+                          +np.multiply(1-Objects_label,tf.log(tf.clip_by_value(1-Objects_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Building_label,tf.log(tf.clip_by_value(Building_out,1e-10,1)))
+                          +np.multiply(1-Building_label,tf.log(tf.clip_by_value(1-Building_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Sky_label,tf.log(tf.clip_by_value(Sky_out,1e-10,1)))
+                          +np.multiply(1-Sky_label,tf.log(tf.clip_by_value(1-Sky_out,1e-10,1)))
+                          )-tf.reduce_sum(np.multiply(Vegetation_label,tf.log(tf.clip_by_value(Vegetation_out,1e-10,1)))
+                          +np.multiply(1-Vegetation_label,tf.log(tf.clip_by_value(1-Vegetation_out,1e-10,1)))
                           ))
+
 
 regularizer = tf.contrib.layers.l2_regularizer(scale=5e-04)
 regularization= tf.contrib.layers.apply_regularization(regularizer,
@@ -313,6 +350,7 @@ init=tf.global_variables_initializer()
 
 train_size=Ground_data.shape[0]
 train_indices=range(train_size)
+
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.5
 
@@ -334,7 +372,7 @@ with tf.Session(config=config) as sess:
     #summary_op=tf.summary.merge_all()
     #summary_writer=tf.summary.FileWriter(FLAGS.train_dir,graph=sess.graph)
 
-    for ipoch in range(30):
+    for ipoch in range(500):
         
         perm_indices=np.random.permutation(train_indices)
 
@@ -354,6 +392,13 @@ with tf.Session(config=config) as sess:
                        Green_input:Green_data[batch_indices,:],
                        Blue_input:Blue_data[batch_indices,:],
                        Depth_input:Depth_data[batch_indices,:],
+
+                       Depth_label:Depth_data_label[batch_indices,:],
+                       Sky_label:Sky_data_label[batch_indices,:],
+                       Building_label:Building_data_label[batch_indices,:],
+                       Vegetation_label:Vegetation_data_label[batch_indices,:],
+                       Objects_label:Objects_data_label[batch_indices,:],
+                       Ground_label:Ground_data_label[batch_indices,:],
                        #Depthmask_input:Depthmask_data[batch_indices,:]
                       }   
     
@@ -365,7 +410,7 @@ with tf.Session(config=config) as sess:
 
 
 
-    for ipoch in range(30,num_epochs):
+    for ipoch in range(500,num_epochs):
         
         perm_indices=np.random.permutation(train_indices)
 
@@ -385,6 +430,13 @@ with tf.Session(config=config) as sess:
                        Green_input:Green_data[batch_indices,:],
                        Blue_input:Blue_data[batch_indices,:],
                        Depth_input:Depth_data[batch_indices,:],
+
+                       Depth_label:Depth_data_label[batch_indices,:],
+                       Sky_label:Sky_data_label[batch_indices,:],
+                       Building_label:Building_data_label[batch_indices,:],
+                       Vegetation_label:Vegetation_data_label[batch_indices,:],
+                       Objects_label:Objects_data_label[batch_indices,:],
+                       Ground_label:Ground_data_label[batch_indices,:],
                        #Depthmask_input:Depthmask_data[batch_indices,:]
                       }   
     
@@ -398,8 +450,3 @@ with tf.Session(config=config) as sess:
 
     print("final loss is :%d\n." % l)
     print("Model saved in file: %s" % save_path)
-
-
-
-
-

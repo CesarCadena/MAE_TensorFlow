@@ -11,12 +11,11 @@ num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
-print("loading data.....")
+#print("loading data.....")
+#prepare the  data 
 
 
 
-#  prepare the  data 
-"""
 data=process_data('training')
 Red_data=data['Red']
 Green_data=data['Green']
@@ -26,11 +25,12 @@ Blue_data=np.reshape(Blue_data,[-1,60,18,1])
 Green_data=np.reshape(Green_data,[-1,60,18,1])
 data=np.concatenate([Red_data,Blue_data,Green_data],axis=3)
 print(data.shape)
-np.save('../rgb(num,60,18,3)',data)
-"""
+#np.save('../rgb(num,60,18,3)',data)
 
-data=np.load('../rgb(num,60,18,3).npy')
 
+#data=np.load('../rgb(num,60,18,3).npy')
+print('finish')
+print(data.shape)
 
 # build the model 
 # define functions
@@ -106,12 +106,19 @@ train_size=data.shape[0]
 train_indices=range(train_size)
 init=tf.global_variables_initializer()
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction =0.5
+config.gpu_options.per_process_gpu_memory_fraction =0.4
+
+saver=tf.train.Saver()
+
+rgb_path="../rgb_model"
+if not os.path.isdir(rgb_path):
+    os.mkdir(rgb_path)
+
 
 with tf.Session(config=config) as sess:
     sess.run(init)
 
-    for ipoch in range(2):
+    for ipoch in range(10):
         perm_indices=np.random.permutation(train_indices)
         for step in range(int(train_size/batch_size)):
 
@@ -119,4 +126,8 @@ with tf.Session(config=config) as sess:
             batch_indices=perm_indices[offset:(offset+batch_size)]
 
             sess.run(train_step,feed_dict={x:data[batch_indices],keep_prob:0.5})
+        saver.save(sess,rgb_path+'/rgb.ckpt')
+            print (step)
+
         print('ipoch:',ipoch)
+

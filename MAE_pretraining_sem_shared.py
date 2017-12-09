@@ -6,9 +6,11 @@ import scipy.io
 import os
 import sys
 tf.reset_default_graph()
-batch_size=128
+batch_size=60
 hidden_size=1024
-num_epoch=50
+num_epoch=100
+
+
 
 print("###########loading data ..........########")
 FLAG='training'

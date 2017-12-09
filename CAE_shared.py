@@ -5,13 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
-
-from  CAE_rgb  import  input_hidden_rgb,hidden_output_rgb,sem_loss
-from  CAE_sem  import  input_hidden_sem,hidden_output_sem
+from  CAE_rgb  import  input_hidden_rgb,hidden_output_rgb
+from  CAE_sem  import  input_hidden_sem,hidden_output_sem,sem_loss
 from  CAE_depth  import  input_hidden_depth,hidden_output_depth
 
-#import CAE_sem.py as CAE_sem
-#import CAE_depth.py as CAE_depth
 
 batch_size=20
 num_epochs=100
@@ -19,7 +16,7 @@ hidden_size=1024
 RESTORE=0
 SEED = None
 
-# process  data  
+# ##########    process  data  #####################################
 data=process_data('training')
 #RGB data
 Red_data=data['Red']
@@ -29,8 +26,8 @@ Red_data=np.reshape(Red_data,[-1,60,18,1])
 Blue_data=np.reshape(Blue_data,[-1,60,18,1])
 Green_data=np.reshape(Green_data,[-1,60,18,1])
 RGB_data=np.concatenate([Red_data,Blue_data,Green_data],axis=3)
-#RGB_datashape:(num,60,18,3)
 
+#RGB_datashape:(num,60,18,3)
 #semantic data 
 Ground_data=data['Ground']
 Objects_data=data['Objects']
@@ -44,17 +41,18 @@ Vegetation_data=np.reshape(Vegetation_data,[-1,60,18,1])
 Sky_data=np.reshape(Sky_data,[-1,60,18,1])
 Sem_data=np.concatenate([Ground_data,Objects_data,Building_data,Vegetation_data,Sky_data],axis=3)
 #Sem_data shape :(num,60,18,5)
-
 # depth data 
 Depth_data=data['Depth']
 Depthmask_data=data['Depthmask']
 Depth_data=np.multiply(Depth_data,Depthmask_data)
 Depth_data=np.reshape(Depth_data,[-1,60,18,1])
 #  depth data shape:(num,60,18,1)
-
 print(RGB_data.shape)
 print(Sem_data.shape)
 print(Depth_data.shape)
+##############################  Finish data processing ###########################3
+
+
 def weight_variable(name,shape):
     initial=tf.truncated_normal(shape,stddev=0.1)
     return tf.get_variable(name=name,dtype=tf.float32,
@@ -63,8 +61,6 @@ def bias_variable(name,shape):
     initial=0.1+tf.zeros(shape)
     return tf.get_variable(name=name,dtype=tf.float32,
                           initializer=initial,trainable=True)
-
-
 
 #### build the model
 with tf.name_scope("sem_input"):
@@ -90,10 +86,10 @@ with tf.name_scope('seperate_shared'):
     fullshared=tf.nn.relu(tf.matmul(All_input,w)+b)
 
 
-with tf.name_scope('shared_seperate'):
     with tf.variable_scope("shared_seperate"):
         w=weight_variable(name='weights',shape=[1024,3*1024])
         b=bias_variable(name='bias',shape=[3*1024])
+
     All_out=tf.matmul(fullshared,w)+b
 
 fc_out_rgb,fc_out_sem,fc_out_depth=tf.split(All_out,[1024,1024,1024],1)
@@ -111,11 +107,11 @@ with tf.name_scope("loss"):
 
 
 
-varlist=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope=['seperate_shared','shared_seperate'])
-
+varlist1=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope='seperate_shared')
+varlist2=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope='shared_seperate')
 
 with tf.name_scope("depth_train"):
-    train_step = tf.train.AdamOptimizer(1e-4).minimize(loss,var_list=varlist)
+    train_step = tf.train.AdamOptimizer(1e-6).minimize(loss,var_list=[varlist1,varlist2])
 
 
 
@@ -124,28 +120,56 @@ train_indices=range(train_size)
 init=tf.global_variables_initializer()
 
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction =0.5
-
+config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 tf.summary.scalar('loss',loss)
 summary_op=tf.summary.merge_all()
 
 
-with tf.Session(config=config) as sess:
+rgb_path="../rgb_model"
+rgb_var=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="rgb_")
+saver_rgb=tf.train.Saver(rgb_var)
 
+depth_path="../depth_model"
+depth_var=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="depth_")
+saver_depth=tf.train.Saver(depth_var)
+
+sem_path="../sem_model"
+sem_var=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="sem_")
+saver_sem=tf.train.Saver(sem_var)
+
+
+cnn_path="../cnn_model"
+if not os.path.isdir(cnn_path):
+    os.mkdir(cnn_path)
+saver_cnn=tf.train.Saver()
+
+
+
+with tf.Session(config=config) as sess:
     sess.run(init)
     writer=tf.summary.FileWriter('../graphs',sess.graph)
+
+    saver_rgb.restore(sess,rgb_path+'/rgb.ckpt')
+    saver_sem.restore(sess,sem_path+'/sem.ckpt')
+    saver_depth.restore(sess,depth_path+'/depth.ckpt')
+
 
     for ipoch in range(1):
         perm_indices=np.random.permutation(train_indices)
 
-        for step in range(int(train_size/batch_size)):
+        for step in range(1):#int(train_size/batch_size)):
 
             offset=(step*batch_size)%(train_size-batch_size)
             batch_indices=perm_indices[offset:(offset+batch_size)]
+
+            feed_dict={x_sem:Sem_data[batch_indices],
+                       x_rgb:RGB_data[batch_indices],
+                       x_depth:Depth_data[batch_indices],
+                       }
             
-            _,summary=sess.run([train_step,summary_op],feed_dict={x:data[batch_indices],keep_prob:0.5})
+            _,summary=sess.run([train_step,summary_op],feed_dict=feed_dict)
 
             writer.add_summary(summary,step)
-
+        saver_cnn.save(sess,cnn_path+'/cnn.ckpy')
         print('ipoch:',ipoch)
