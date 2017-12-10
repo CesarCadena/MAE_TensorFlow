@@ -28,7 +28,7 @@ from visualization import display_sequence_mirroring
 
 class RecurrentMAE:
 
-    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,resolution=(18,60)):
+    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,mirroring=False,resolution=(18,60)):
 
         if n_epochs == None:
             raise ValueError('no number of epochs passed')
@@ -65,7 +65,7 @@ class RecurrentMAE:
         self.n_augmentations = 3
 
         # mirroring
-        self.mirroring = True
+        self.mirroring = mirroring
 
         # flags
         self.flag_is_running = False
