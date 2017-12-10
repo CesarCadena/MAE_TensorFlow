@@ -197,8 +197,7 @@ class Basic_RNN:
             state = tf.nn.relu(state)
 
         output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.W_t),state),self.B_t),self.V_t)
-        output = tf.nn.relu(output)
-
+        
         return output
 
 
@@ -367,7 +366,7 @@ class LSTM_RNN:
 
 
         # reconstruct coding
-        output = tf.nn.relu(tf.add(tf.matmul(h_t,self.O_w),self.O_b))
+        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
 
         return output
 
