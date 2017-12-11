@@ -1,20 +1,18 @@
 # model based on 'Multi-modal Auto-Encoders as Joint Estimators for Robotics Scene Understanding' by Cadena et al.
 # code developed by Silvan Weder
 from collections import deque
-import resource
-from resource import getrusage
-
+from datetime import datetime
+from copy import copy
 
 import tensorflow as tf
 import numpy as np
+
 import os
+import json
+
 import evaluation_functions as eval
 import basic_routines as BR
-
-from load_data import load_training_data, load_validation_data, load_test_data
 from input_distortion import input_distortion
-from datetime import datetime
-from copy import copy
 from models import RNN_MAE, full_MAE
 
 from visualization import display_sequence_mirroring
@@ -28,10 +26,13 @@ from visualization import display_sequence_mirroring
 
 class RecurrentMAE:
 
-    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,mirroring=False,resolution=(18,60)):
+    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,mirroring=False, learning_rate=None, resolution=(18,60)):
 
         if n_epochs == None:
             raise ValueError('no number of epochs passed')
+
+        if learning_rate == None:
+            raise ValueError('no learning rate given')
 
 
         self.height = resolution[0]
@@ -73,7 +74,7 @@ class RecurrentMAE:
         self.placeholder_definition()
 
 
-        self.learning_rate = 1e-6
+        self.learning_rate = learning_rate
         self.hm_epochs = n_epochs
 
 
@@ -113,6 +114,14 @@ class RecurrentMAE:
         tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
 
         self.FLAGS = tf.app.flags.FLAGS
+
+        self.specifications = {'mode': self.rnn_option,
+                                'number of rnn steps': self.n_rnn_steps,
+                                'mirroring': str(self.mirroring),
+                                'learning rate': self.learning_rate,
+                                'number of epochs': self.hm_epochs}
+
+        json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
     def placeholder_definition(self):
 
@@ -753,6 +762,10 @@ class RecurrentMAE:
 
         saver = tf.train.Saver()
 
+        rmse_min = np.infty
+        rel_min = np.infty
+        no_update_count = 0
+
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
         
@@ -849,8 +862,6 @@ class RecurrentMAE:
             print('RMSE Error over Validation Set:', error_rms/self.n_training_validations)
             print('Relative Error over Validation Set:', error_rel/self.n_training_validations)
             print('-----------------------------------------------------------------')
-
-
 
 
             for epoch in range(0,self.hm_epochs):
@@ -1140,9 +1151,28 @@ class RecurrentMAE:
                 print('Epoch Time [seconds]:', delta.seconds)
                 print('-----------------------------------------------------------------')
 
-            if self.saving == True:
-                saver.save(sess,self.FLAGS.model_dir+'/fullmodel_rnn.ckpt')
-                print('SAVED MODEL')
+
+
+                if epoch%10 == 0:
+
+                    if error_rms < rmse_min and error_rel < rel_min:
+
+                        no_update_count = 0
+
+                        rmse_min = error_rms
+                        rel_min = error_rel
+
+                        self.specifications['number of epochs'] = epoch
+                        self.specifications['Validation RMSE'] = error_rms/self.n_training_validations
+                        self.specifications['Validation Rel Error'] = error_rel/self.n_training_validations
+
+                        saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
+                        json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
+                    else:
+                        no_update_count += 1
+                        if no_update_count == 15:
+                            break
+
 
     def evaluate(self,data_test,run=False):
 
