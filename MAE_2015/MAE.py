@@ -8,7 +8,7 @@ import os
 import evaluation_functions as Eval
 import basic_routines as BR
 
-from visualization import display_frame,plot_training_loss
+#from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion, pretraining_input_distortion
 from basic_routines import horizontal_mirroring, zeroing_channel
 from datetime import datetime

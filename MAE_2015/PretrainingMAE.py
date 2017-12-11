@@ -1,7 +1,7 @@
 
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import datetime
 import os
 
@@ -9,7 +9,7 @@ import sys
 sys.path.append('./tools')
 
 from input_distortion import input_distortion,pretraining_input_distortion
-from visualization import print_training_frames,print_validation_frames
+#from visualization import print_training_frames,print_validation_frames
 from basic_routines import horizontal_mirroring
 from copy import copy
 
