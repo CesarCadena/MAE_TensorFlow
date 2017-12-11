@@ -685,7 +685,7 @@ class MAE:
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
         with tf.Session(config=config) as sess:
 
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)

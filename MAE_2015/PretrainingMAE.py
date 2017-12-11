@@ -25,7 +25,7 @@ class PretrainingMAE():
         # training options
 
         self.batch_size = 100
-        self.hm_epochs = 300
+        self.hm_epochs = 500
 
         self.input_size = 1080
         self.hidden_size = 1024
@@ -390,7 +390,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Red_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -418,7 +418,7 @@ class PretrainingMAE():
         loss_val_update = val_loss.assign_add(loss/1080.)
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
         with tf.Session(config=config) as sess:
             saver = tf.train.Saver()
@@ -502,7 +502,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Green_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -531,7 +531,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -616,7 +616,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Blue_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -645,7 +645,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
         with tf.Session(config=config) as sess:
             saver = tf.train.Saver()
@@ -732,7 +732,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Depth_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -761,7 +761,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
         with tf.Session(config=config) as sess:
             saver = tf.train.Saver()
@@ -855,7 +855,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Ground_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -884,7 +884,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -969,7 +969,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Object_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -998,7 +998,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -1083,7 +1083,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Building_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -1112,7 +1112,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -1197,7 +1197,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Vegetation_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -1226,7 +1226,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -1311,7 +1311,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Sky_Channel',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -1340,7 +1340,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
         with tf.Session(config=config) as sess:
@@ -1466,7 +1466,7 @@ class PretrainingMAE():
         sum_val_loss = tf.summary.scalar('Validation_Loss_Shared_Semantics',val_loss)
 
         if self.decay == 'constant':
-            learning_rate = 0.0001
+            learning_rate = 0.001
 
         if self.decay == 'piecewise':
             global_step = tf.Variable(0,trainable=False)
@@ -1499,7 +1499,7 @@ class PretrainingMAE():
 
 
         config = tf.ConfigProto(log_device_placement=False)
-        config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        #config.gpu_options.per_process_gpu_memory_fraction = 0.5
 
 
 
@@ -1604,7 +1604,7 @@ class PretrainingMAE():
                                      self.input_sky:sky_in,
                                      self.label_sky:sky_batch}
 
-                    if epoch < 10:
+                    if epoch < 20:
                         _, c = sess.run([opt1,epoch_loss_update],feed_dict=feed_dict_sem)
                     else:
                         _, c = sess.run([opt2,epoch_loss_update],feed_dict=feed_dict_sem)
