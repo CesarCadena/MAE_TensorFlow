@@ -1153,7 +1153,7 @@ class RecurrentMAE:
 
 
 
-                if epoch%10 == 0:
+                if epoch%5 == 0:
 
                     if error_rms < rmse_min and error_rel < rel_min:
 
@@ -1163,8 +1163,8 @@ class RecurrentMAE:
                         rel_min = error_rel
 
                         self.specifications['number of epochs'] = epoch
-                        self.specifications['Validation RMSE'] = error_rms/self.n_training_validations
-                        self.specifications['Validation Rel Error'] = error_rel/self.n_training_validations
+                        self.specifications['Validation RMSE'] = error_rms
+                        self.specifications['Validation Rel Error'] = error_rel
 
                         saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
