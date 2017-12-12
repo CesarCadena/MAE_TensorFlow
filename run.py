@@ -1,14 +1,4 @@
-import matplotlib.pyplot as plt
-import tensorflow as tf
-import numpy as np
-import gc
-import sys
-
 from load_data import load_split_data, load_set_data, load_test_frames, load_frames_data
-from input_distortion import input_distortion,pretraining_input_distortion
-from copy import copy
-
-from MAE import MAE
 from RecurrentMAE import RecurrentMAE
 
 # Load data for training
@@ -27,7 +17,7 @@ data_test = load_frames_data(test_frames)
 print('initialize model')
 # Define Full Model
 #mae = MAE()
-rnn_mae = RecurrentMAE(n_epochs=1000,rnn_option='gated',n_rnn_steps=5,mirroring=True,learning_rate=1e-06)
+rnn_mae = RecurrentMAE(n_epochs=1000,rnn_option='basic',n_rnn_steps=5,mirroring=True,learning_rate=1e-09)
 
 # Train MultiModal AutoEncoder
 print('start training')
