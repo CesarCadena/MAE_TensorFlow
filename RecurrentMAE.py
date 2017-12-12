@@ -1170,7 +1170,7 @@ class RecurrentMAE:
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
                     else:
                         no_update_count += 1
-                        if no_update_count == 15:
+                        if no_update_count == 40:
                             break
 
 
