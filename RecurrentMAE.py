@@ -26,7 +26,8 @@ from visualization import display_sequence_mirroring
 
 class RecurrentMAE:
 
-    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,mirroring=False, learning_rate=None, resolution=(18,60)):
+    def __init__(self,n_epochs=None,rnn_option='basic',n_rnn_steps=5,mirroring=False, learning_rate=None,
+                 load_previous=False,resolution=(18,60)):
 
         if n_epochs == None:
             raise ValueError('no number of epochs passed')
@@ -95,6 +96,9 @@ class RecurrentMAE:
         # model savings
         self.saving = True
         now = datetime.now()
+
+        # model loading
+        self.load_previous = load_previous
 
         self.folder_model = 'models/'
         self.folder_logs = 'logs/'
@@ -776,8 +780,13 @@ class RecurrentMAE:
             train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
-            load_ec_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
-            load_dc_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+            if self.load_previous == False:
+                load_ec_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+                load_dc_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+
+            if self.load_previous == True:
+                load_ec_MAE.restore(sess,'models/rnn/previous/model.ckpt')
+                load_dc_MAE.restore(sess,'models/rnn/previous/model.ckpt')
 
             tf.get_default_graph().finalize()
 
@@ -1153,7 +1162,7 @@ class RecurrentMAE:
 
 
 
-                if epoch%5 == 0:
+                if epoch%5 == 0 and epoch > 40:
 
                     if error_rms < rmse_min and error_rel < rel_min:
 
@@ -1167,6 +1176,7 @@ class RecurrentMAE:
                         self.specifications['Validation Rel Error'] = error_rel
 
                         saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
+                        saver.save(sess,'models/rnn/previous/model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
                     else:
                         no_update_count += 1
