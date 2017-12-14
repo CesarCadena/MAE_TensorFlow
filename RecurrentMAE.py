@@ -608,8 +608,10 @@ class RecurrentMAE:
         self.n_batches = int(len(self.train_sequences)/self.batch_size)
 
 
-        input = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
-                 self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+        input = [self.imr_input,self.img_input,
+                 self.imb_input,self.depth_input,
+                 self.gnd_input,self.obj_input,
+                 self.bld_input,self.veg_input,self.sky_input]
 
         output = self.network(input)
 
