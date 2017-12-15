@@ -570,7 +570,7 @@ class RecurrentMAE:
                self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
                self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.00005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
