@@ -198,7 +198,7 @@ class Basic_RNN:
 
         output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.W_t),state),self.B_t),self.V_t)
         
-        return output
+        return tf.nn.relu(output)
 
 
 class LSTM_RNN:

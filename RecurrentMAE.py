@@ -80,18 +80,32 @@ class RecurrentMAE:
 
 
         # variables for overfitting detection
+        self.of_det_imr = deque([])
+        self.of_det_img = deque([])
+        self.of_det_imb = deque([])
         self.of_det_gnd = deque([])
         self.of_det_obj = deque([])
         self.of_det_bld = deque([])
         self.of_det_veg = deque([])
         self.of_det_sky = deque([])
 
-
+        self.imr_dw = False
+        self.img_dw = False
+        self.imb_dw = False
         self.gnd_dw = False
         self.obj_dw = False
         self.bld_dw = False
         self.veg_dw = False
         self.sky_dw = False
+
+        self.imr_avg_min = np.infty
+        self.img_avg_min = np.infty
+        self.imb_avg_min = np.infty
+        self.gnd_avg_min = np.infty
+        self.obj_avg_min = np.infty
+        self.bld_avg_min = np.infty
+        self.veg_avg_min = np.infty
+        self.sky_avg_min = np.infty
 
         # model savings
         self.saving = True
@@ -493,52 +507,98 @@ class RecurrentMAE:
                          n_rnn_steps=self.n_rnn_steps,init_states=self.init_states,option=self.rnn_option)
         return output
 
-    def overfitting_detection(self,val_losses,epoch):
+    def overfitting_detection(self,val_losses):
 
         window_size = 10
 
         if len(self.of_det_gnd) < window_size:
-            self.of_det_gnd.append(val_losses[0])
-            self.of_det_obj.append(val_losses[1])
-            self.of_det_bld.append(val_losses[2])
-            self.of_det_veg.append(val_losses[3])
-            self.of_det_sky.append(val_losses[4])
+            self.of_det_imr.append(val_losses[0])
+            self.of_det_img.append(val_losses[1])
+            self.of_det_imb.append(val_losses[2])
+            self.of_det_gnd.append(val_losses[3])
+            self.of_det_obj.append(val_losses[4])
+            self.of_det_bld.append(val_losses[5])
+            self.of_det_veg.append(val_losses[6])
+            self.of_det_sky.append(val_losses[7])
 
         else:
+            imr_avg = sum(self.of_det_imr)/float(window_size)
+            img_avg = sum(self.of_det_img)/float(window_size)
+            imb_avg = sum(self.of_det_imb)/float(window_size)
             gnd_avg = sum(self.of_det_gnd)/float(window_size)
             obj_avg = sum(self.of_det_obj)/float(window_size)
             bld_avg = sum(self.of_det_bld)/float(window_size)
             veg_avg = sum(self.of_det_veg)/float(window_size)
             sky_avg = sum(self.of_det_sky)/float(window_size)
 
-            threshold = 1.5
 
-            if val_losses[0] > threshold*gnd_avg:
+            threshold = 1.2
+
+            if imr_avg > threshold*self.imr_avg_min:
+                self.imr_dw = True
+            else:
+                if imr_avg < self.imr_avg_min:
+                    self.imr_avg_min = imr_avg
+
+            if img_avg > threshold*self.img_avg_min:
+                self.img_dw = True
+            else:
+                if img_avg < self.img_avg_min:
+                    self.img_avg_min = img_avg
+
+            if imb_avg > threshold*self.imb_avg_min:
+                self.imb_dw = True
+            else:
+                if imb_avg < self.imb_avg_min:
+                    self.imb_avg_min = imb_avg
+
+            if gnd_avg > threshold*self.gnd_avg_min:
                 self.gnd_dw = True
+            else:
+                if gnd_avg < self.gnd_avg_min:
+                    self.gnd_avg_min = gnd_avg
 
-            if val_losses[1] > threshold*obj_avg:
+            if obj_avg > threshold*self.obj_avg_min:
                 self.obj_dw = True
+            else:
+                if obj_avg < self.obj_avg_min:
+                    self.obj_avg_min = obj_avg
 
-            if val_losses[2] > threshold*bld_avg:
+            if bld_avg > threshold*self.bld_avg_min:
                 self.bld_dw = True
+            else:
+                if bld_avg < self.bld_avg_min:
+                    self.bld_avg_min = bld_avg
 
-            if val_losses[3] > threshold*veg_avg:
+            if veg_avg > threshold*self.veg_avg_min:
                 self.veg_dw = True
+            else:
+                if veg_avg < self.veg_avg_min:
+                    self.veg_avg_min = veg_avg
 
-            if val_losses[4] > threshold*sky_avg:
+            if sky_avg > threshold*self.sky_avg_min:
                 self.sky_dw = True
+            else:
+                if sky_avg < self.sky_avg_min:
+                    self.sky_avg_min = sky_avg
 
+            self.of_det_imr.popleft()
+            self.of_det_img.popleft()
+            self.of_det_imb.popleft()
             self.of_det_gnd.popleft()
             self.of_det_obj.popleft()
             self.of_det_bld.popleft()
             self.of_det_veg.popleft()
             self.of_det_sky.popleft()
 
-            self.of_det_gnd.append(val_losses[0])
-            self.of_det_obj.append(val_losses[1])
-            self.of_det_bld.append(val_losses[2])
-            self.of_det_veg.append(val_losses[3])
-            self.of_det_sky.append(val_losses[4])
+            self.of_det_imr.append(val_losses[0])
+            self.of_det_img.append(val_losses[1])
+            self.of_det_imb.append(val_losses[2])
+            self.of_det_gnd.append(val_losses[3])
+            self.of_det_obj.append(val_losses[4])
+            self.of_det_bld.append(val_losses[5])
+            self.of_det_veg.append(val_losses[6])
+            self.of_det_sky.append(val_losses[7])
 
     def cost_definition(self,output,label_series):
 
@@ -548,10 +608,14 @@ class RecurrentMAE:
         self.c_w4 = tf.placeholder('float')
         self.c_w5 = tf.placeholder('float')
 
+        self.c_r = tf.placeholder('float')
+        self.c_g = tf.placeholder('float')
+        self.c_b = tf.placeholder('float')
 
-        cost = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
-               tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
-               tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+
+        cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+               self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+               self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
                10*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
@@ -564,11 +628,11 @@ class RecurrentMAE:
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) + \
-               self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-               self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-               self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-               self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-               self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
+               tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.00005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -619,11 +683,15 @@ class RecurrentMAE:
 
         cost, loss = self.cost_definition(output,label_series)
 
+        c_wr = 1.0
+        c_wg = 1.0
+        c_wb = 1.0
         c_w1 = 1.0
         c_w2 = 1.0
         c_w3 = 1.0
         c_w4 = 1.0
         c_w5 = 1.0
+
 
         # get rnn variables
         self.rnn_variables_H = [v for v in tf.global_variables() if v.name.startswith('RNN/H')]
@@ -977,7 +1045,10 @@ class RecurrentMAE:
                                  self.c_w2:c_w2,
                                  self.c_w3:c_w3,
                                  self.c_w4:c_w4,
-                                 self.c_w5:c_w5}
+                                 self.c_w5:c_w5,
+                                 self.c_r:c_wr,
+                                 self.c_g:c_wg,
+                                 self.c_b:c_wb}
 
                     feed_dict.update(cost_dict)
 
@@ -1136,10 +1207,18 @@ class RecurrentMAE:
 
                 # test for overfitting
                 if epoch >= 30:
-                    g,o,b,v,s = sess.run([gnd_loss.value(),obj_loss.value(),bld_loss.value(),veg_loss.value(),sky_loss.value()])
-                    val_losses = [g,o,b,v,s]
-                    self.overfitting_detection(val_losses,epoch)
+                    imr,img,imb,g,o,b,v,s = sess.run([imr_loss.value(),img_loss.value(),imb_loss.value(),
+                                                      gnd_loss.value(),obj_loss.value(),bld_loss.value(),
+                                                      veg_loss.value(),sky_loss.value()])
+                    val_losses = [imr,img,imb,g,o,b,v,s]
+                    self.overfitting_detection(val_losses)
 
+                    if self.imr_dw:
+                        c_wr = 0.1
+                    if self.img_dw:
+                        c_wg = 0.1
+                    if self.imb_dw:
+                        c_wb = 0.1
                     if self.gnd_dw:
                         c_w1 = 0.1
                     if self.obj_dw:
@@ -1150,8 +1229,6 @@ class RecurrentMAE:
                         c_w4 = 0.1
                     if self.obj_dw:
                         c_w5 = 0.1
-
-
 
                 print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
                 print('RMSE Error over Validation Set:', sess.run(rms.value()))
@@ -1184,7 +1261,6 @@ class RecurrentMAE:
                         no_update_count += 1
                         if no_update_count == 40:
                             break
-
 
     def evaluate(self,data_test,run=False):
 
