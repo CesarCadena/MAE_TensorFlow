@@ -463,7 +463,8 @@ class MAE:
                                                'sem_dc_layer_bias':tf.get_variable('sem_dc_layer_bias'),
                                                'full_dc_layer_weights':tf.get_variable('full_dc_layer_weights'),
                                                'full_dc_layer_bias':tf.get_variable('full_dc_layer_bias')})
-            saver = tf.train.Saver()
+
+        saver = tf.train.Saver()
 
 
 
