@@ -15,6 +15,8 @@ import basic_routines as BR
 from input_distortion import input_distortion
 from models import RNN_MAE, full_MAE
 
+from build_test_sequences import build_test_sequences,distort_test_sequences
+
 from visualization import display_sequence_mirroring
 
 
@@ -457,8 +459,6 @@ class RecurrentMAE:
             veg_series = []
             sky_series = []
 
-            print(len(i))
-
             for j in range(len(i)):
 
                 imr_series.append(i[j]['xcr']/255.)
@@ -616,8 +616,8 @@ class RecurrentMAE:
         cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
-               10*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
+               100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+               tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
                self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
@@ -1298,7 +1298,7 @@ class RecurrentMAE:
             error_rms = 0
             error_rel = 0
 
-            in_state = 0.0000001*np.ones((1,self.state_size))
+            in_state =  np.zeros((1,self.state_size))
 
             for i in range(0,n_evaluations):
 
@@ -1311,7 +1311,6 @@ class RecurrentMAE:
                 bld_label = self.bld_test[i]
                 veg_label = self.veg_test[i]
                 sky_label = self.sky_test[i]
-
 
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
@@ -1354,6 +1353,96 @@ class RecurrentMAE:
 
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (REL):', error_rel/n_evaluations)
+
+    def evaluate_sequence(self,sequence,n_rnn_steps=None,option=None,frequency=None,run=None):
+
+        if run == None:
+            raise ValueError('no run ID given')
+
+        if n_rnn_steps == None:
+            raise ValueError('no number of rnn steps given')
+
+        if option == None:
+            raise ValueError('no distortion option given')
+
+        if frequency == None:
+            raise ValueError('no distortion frequency given')
+
+        n_sets = len(sequence[0])
+
+        label_data = sequence
+        input_data = distort_test_sequences(sequence,n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
+
+        # network call
+        input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+        output = self.network(input)
+
+        # preparation of load model
+        load_weights = tf.train.Saver()
+
+        dir = 'models/rnn/' + run
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/fullmodel_rnn.ckpt') # runs from 06112017 it ist fullmodel_rnn
+
+            error_rms = []
+            error_rel = []
+
+            in_state =  np.zeros((1,self.state_size))
+
+            for i in range(0,n_sets):
+
+                depth_label = label_data[3][i]
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(input_data[0][i]),
+                                                                                                    copy(input_data[1][i]),
+                                                                                                    copy(input_data[2][i]),
+                                                                                                    copy(input_data[3][i]),
+                                                                                                    copy(input_data[5][i]),
+                                                                                                    copy(input_data[6][i]),
+                                                                                                    copy(input_data[7][i]),
+                                                                                                    copy(input_data[8][i]),
+                                                                                                    copy(input_data[9][i]),
+                                                                                                    resolution=(18,60),
+                                                                                                    rnn=True,
+                                                                                                    singleframe=True)
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in,
+                             self.init_states:in_state}
+
+                pred = sess.run(output,feed_dict=feed_dict)
+                depth_pred = pred[3]
+
+
+                inv_depth_pred = np.asarray(depth_pred)
+                inv_depth_label = np.asarray(depth_label[-1])
+
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
+
+                error_rms.append(eval.rms_error(est,gt))
+                error_rel.append(eval.relative_error(est,gt))
+
+            return error_rms,error_rel
+
+
+
+
+
+
+
+
 
 
 
