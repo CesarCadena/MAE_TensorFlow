@@ -338,6 +338,8 @@ class MAE:
         validations = np.arange(0, len(self.imr_val))
         set_val = np.random.choice(validations,len(self.imr_val),replace=False)
 
+        val_loss_min = np.infty
+
 
         print('[TRAINING]: load pretrained models')
         if load == 'pretrained':
@@ -678,10 +680,12 @@ class MAE:
                 print('Epoch Time [seconds]:', delta.seconds)
                 print('-----------------------------------------------------------------')
 
+                if epoch%5 == 0:
+                    v = sess.run(val_loss.value())
+                    if v < val_loss_min:
+                        val_loss_min = v
+                        saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
 
-            if self.saving == True:
-                saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
-                print('SAVED MODEL')
 
     def validate_model(self,n_validations,run,loadmodel=True):
 
