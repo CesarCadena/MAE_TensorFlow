@@ -1056,7 +1056,7 @@ class RecurrentMAE:
                     if epoch < 20:
                         _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 20 and epoch < 100:
+                    if epoch >= 20 and epoch < 40:
                         _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
@@ -1243,20 +1243,26 @@ class RecurrentMAE:
 
                 if epoch%5 == 0 and epoch > 40:
 
-                    if error_rms < rmse_min and error_rel < rel_min:
+                    if error_rms < rmse_min:
 
                         no_update_count = 0
-
                         rmse_min = error_rms
-                        rel_min = error_rel
-
-                        self.specifications['number of epochs'] = epoch
                         self.specifications['Validation RMSE'] = error_rms
+
+                        saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
+                        saver.save(sess,'models/rnn/previous/model.ckpt')
+                        json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
+
+                    elif error_rel < rel_min:
+
+                        no_update_count = 0
+                        self.specifications['number of epochs'] = epoch
                         self.specifications['Validation Rel Error'] = error_rel
 
                         saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
                         saver.save(sess,'models/rnn/previous/model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
+
                     else:
                         no_update_count += 1
                         if no_update_count == 40:
