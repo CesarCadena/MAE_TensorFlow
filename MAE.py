@@ -19,12 +19,22 @@ from models import full_MAE
 
 class MAE:
 
-    def __init__(self,resolution=(18,60)):
+    def __init__(self,n_epochs=None,learning_rate=None,mirroring=False,resolution=(18,60)):
+
+        if n_epochs == None:
+            raise ValueError('no number of epochs passed')
+        self.hm_epochs = n_epochs
+
+        if learning_rate == None:
+            raise ValueError('no learning rate passed')
+        self.learning_rate = learning_rate
+
+        self.mirroring = mirroring
 
         self.height = resolution[0]
         self.width = resolution[1]
-
         self.size_input = self.height*self.width
+
         self.size_coding = 1024
 
         # options
@@ -106,27 +116,27 @@ class MAE:
 
         for i in data_train:
             for j in i:
-                self.imr_train.append(j['xcrLeft']/255.)
-                self.img_train.append(j['xcgLeft']/255.)
-                self.imb_train.append(j['xcbLeft']/255.)
-                self.depth_train.append(j['xidLeft'])
-                self.depth_mask_train.append(j['xmaskLeft'])
-                self.gnd_train.append((j['semLeft']==1).astype(int))
-                self.obj_train.append((j['semLeft']==2).astype(int))
-                self.bld_train.append((j['semLeft']==3).astype(int))
-                self.veg_train.append((j['semLeft']==4).astype(int))
-                self.sky_train.append((j['semLeft']==5).astype(int))
+                self.imr_train.append(j['xcr1']/255.)
+                self.img_train.append(j['xcg1']/255.)
+                self.imb_train.append(j['xcb1']/255.)
+                self.depth_train.append(j['xid1'])
+                self.depth_mask_train.append(j['xmask1'])
+                self.gnd_train.append((j['sem1']==1).astype(int))
+                self.obj_train.append((j['sem1']==2).astype(int))
+                self.bld_train.append((j['sem1']==3).astype(int))
+                self.veg_train.append((j['sem1']==4).astype(int))
+                self.sky_train.append((j['sem1']==5).astype(int))
 
-                self.imr_train.append(j['xcrRight']/255.)
-                self.img_train.append(j['xcgRight']/255.)
-                self.imb_train.append(j['xcbRight']/255.)
-                self.depth_train.append(j['xidRight'])
-                self.depth_mask_train.append(j['xmaskRight'])
-                self.gnd_train.append((j['semRight']==1).astype(int))
-                self.obj_train.append((j['semRight']==2).astype(int))
-                self.bld_train.append((j['semRight']==3).astype(int))
-                self.veg_train.append((j['semRight']==4).astype(int))
-                self.sky_train.append((j['semRight']==5).astype(int))
+                self.imr_train.append(j['xcr2']/255.)
+                self.img_train.append(j['xcg2']/255.)
+                self.imb_train.append(j['xcb2']/255.)
+                self.depth_train.append(j['xid2'])
+                self.depth_mask_train.append(j['xmask2'])
+                self.gnd_train.append((j['sem2']==1).astype(int))
+                self.obj_train.append((j['sem2']==2).astype(int))
+                self.bld_train.append((j['sem2']==3).astype(int))
+                self.veg_train.append((j['sem2']==4).astype(int))
+                self.sky_train.append((j['sem2']==5).astype(int))
 
         # randomly shuffle input frames
         rand_indices = np.arange(len(self.imr_train)).astype(int)
@@ -160,27 +170,27 @@ class MAE:
 
         for i in data_val:
             for j in i:
-                self.imr_val.append(j['xcrLeft']/255.)
-                self.img_val.append(j['xcgLeft']/255.)
-                self.imb_val.append(j['xcbLeft']/255.)
-                self.depth_val.append(j['xidLeft'])
-                self.depth_mask_val.append(j['xmaskLeft'])
-                self.gnd_val.append((j['semLeft']==1).astype(int))
-                self.obj_val.append((j['semLeft']==2).astype(int))
-                self.bld_val.append((j['semLeft']==3).astype(int))
-                self.veg_val.append((j['semLeft']==4).astype(int))
-                self.sky_val.append((j['semLeft']==5).astype(int))
+                self.imr_val.append(j['xcr1']/255.)
+                self.img_val.append(j['xcg1']/255.)
+                self.imb_val.append(j['xcb1']/255.)
+                self.depth_val.append(j['xid1'])
+                self.depth_mask_val.append(j['xmask1'])
+                self.gnd_val.append((j['sem1']==1).astype(int))
+                self.obj_val.append((j['sem1']==2).astype(int))
+                self.bld_val.append((j['sem1']==3).astype(int))
+                self.veg_val.append((j['sem1']==4).astype(int))
+                self.sky_val.append((j['sem1']==5).astype(int))
 
-                self.imr_val.append(j['xcrRight']/255.)
-                self.img_val.append(j['xcgRight']/255.)
-                self.imb_val.append(j['xcbRight']/255.)
-                self.depth_val.append(j['xidRight'])
-                self.depth_mask_val.append(j['xmaskRight'])
-                self.gnd_val.append((j['semRight']==1).astype(int))
-                self.obj_val.append((j['semRight']==2).astype(int))
-                self.bld_val.append((j['semRight']==3).astype(int))
-                self.veg_val.append((j['semRight']==4).astype(int))
-                self.sky_val.append((j['semRight']==5).astype(int))
+                self.imr_val.append(j['xcr2']/255.)
+                self.img_val.append(j['xcg2']/255.)
+                self.imb_val.append(j['xcb2']/255.)
+                self.depth_val.append(j['xid2'])
+                self.depth_mask_val.append(j['xmask2'])
+                self.gnd_val.append((j['sem2']==1).astype(int))
+                self.obj_val.append((j['sem2']==2).astype(int))
+                self.bld_val.append((j['sem2']==3).astype(int))
+                self.veg_val.append((j['sem2']==4).astype(int))
+                self.sky_val.append((j['sem2']==5).astype(int))
 
     def prepare_test_data(self,data_test):
 
@@ -231,270 +241,15 @@ class MAE:
             self.veg_test.append((j['sem']==4).astype(int))
             self.sky_test.append((j['sem']==5).astype(int))
 
-    def neural_model(self,imr,img,imb,depth,gnd,obj,bld,veg,sky,mode='training'):
+    def network(self,input):
 
-        '''
-        :param imr: red channel of rgb image
-        :param img: green channel of rgb image
-        :param imb: blue channel of rgb image
-        :param depth: inv depth values for image (loss is only computed at accepted points)
-        :param gnd: binary image for class ground in image semantics
-        :param obj: binary image for class object in image semantics
-        :param bld: binary image for class building in image semantics
-        :param veg: binary image for class vegetation in image semantics
-        :param sky: binary image for class sky in image semantics
-        :return: reconstructed images for all input modalities
-        '''
+        output = full_MAE(input[0],input[1],input[2],
+                          input[3],input[4],input[5],
+                          input[6],input[7],input[8])
 
-        # list to store all layers of the MAE neural network
-        self.layers = []
+        return output
 
-        # split input vector into all different modalities
-        #imr,img,imb,depth,gnd,obj,bld,veg,sky = tf.split(x,9,axis=1)
-
-        # semantics weights
-        self.gnd_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='gnd_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='gnd_ec_layer_bias')}
-        self.layers.append(self.gnd_ec_layer)
-
-        self.obj_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='obj_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='obj_ec_layer_bias')}
-        self.layers.append(self.obj_ec_layer)
-
-        self.bld_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='bld_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='bld_ec_layer_bias')}
-        self.layers.append(self.bld_ec_layer)
-
-        self.veg_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='veg_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='veg_ec_layer_bias')}
-        self.layers.append(self.veg_ec_layer)
-
-        self.sky_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='sky_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='sky_ec_layer_bias')}
-        self.layers.append(self.sky_ec_layer)
-
-
-        # semantics neurons (relu activation)
-        self.gnd_encoding = tf.add(tf.matmul(gnd,self.gnd_ec_layer['weights']),
-                                   self.gnd_ec_layer['bias'])
-        self.gnd_encoding = tf.nn.relu(self.gnd_encoding)
-
-        self.obj_encoding = tf.add(tf.matmul(obj,self.obj_ec_layer['weights']),
-                                   self.obj_ec_layer['bias'])
-        self.obj_encoding = tf.nn.relu(self.obj_encoding)
-
-        self.bld_encoding = tf.add(tf.matmul(bld,self.bld_ec_layer['weights']),
-                                   self.bld_ec_layer['bias'])
-        self.bld_encoding = tf.nn.relu(self.bld_encoding)
-
-        self.veg_encoding = tf.add(tf.matmul(veg,self.veg_ec_layer['weights']),
-                                   self.veg_ec_layer['bias'])
-        self.veg_encoding = tf.nn.relu(self.veg_encoding)
-
-        self.sky_encoding = tf.add(tf.matmul(sky,self.sky_ec_layer['weights']),
-                                   self.sky_ec_layer['bias'])
-        self.sky_encoding = tf.nn.relu(self.sky_encoding)
-
-        # semantics concatenate
-        self.sem_concat = tf.concat([self.gnd_encoding,
-                                     self.obj_encoding,
-                                     self.bld_encoding,
-                                     self.veg_encoding,
-                                     self.sky_encoding],
-                                    axis=1)
-
-        # semantics encoding
-        self.sem_ec_layer = {'weights':tf.Variable(tf.random_normal([5 * self.size_coding, self.size_coding], stddev=0.01), name='sem_ec_layer_weights'),
-                             'bias' : tf.Variable(tf.zeros([self.size_coding]),name='sem_ec_layer_bias')}
-        self.layers.append(self.sem_ec_layer)
-
-        # semantics neuron (relu activation)
-        self.sem_encoding = tf.add(tf.matmul(self.sem_concat, self.sem_ec_layer['weights']),
-                                   self.sem_ec_layer['bias'])
-        self.sem_encoding = tf.nn.relu(self.sem_encoding)
-
-
-        # depth and rgb encoding weights
-        self.red_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='red_ec_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_coding]),name='red_ec_layer_bias')}
-        self.layers.append(self.red_ec_layer)
-
-        self.green_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='green_ec_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_coding]),name='green_ec_layer_bias')}
-        self.layers.append(self.green_ec_layer)
-
-        self.blue_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='blue_ec_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([self.size_coding]),name='blue_ec_layer_bias')}
-        self.layers.append(self.blue_ec_layer)
-
-        self.depth_ec_layer = {'weights':tf.Variable(tf.random_normal([self.size_input,self.size_coding],stddev=0.01),name='depth_ec_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_coding]),name='depth_ec_layer_bias')}
-        self.layers.append(self.depth_ec_layer)
-
-        # depth and rgb neurons (relu activation)
-        self.red_encoding = tf.add(tf.matmul(imr,self.red_ec_layer['weights']),
-                                   self.red_ec_layer['bias'])
-        self.red_encoding = tf.nn.relu(self.red_encoding)
-
-        self.green_encoding = tf.add(tf.matmul(img,self.green_ec_layer['weights']),
-                                     self.green_ec_layer['bias'])
-        self.green_encoding = tf.nn.relu(self.green_encoding)
-
-        self.blue_encoding = tf.add(tf.matmul(imb,self.blue_ec_layer['weights']),
-                                    self.blue_ec_layer['bias'])
-        self.blue_encoding = tf.nn.relu(self.blue_encoding)
-
-        self.depth_encoding = tf.add(tf.matmul(depth,self.depth_ec_layer['weights']),
-                                     self.depth_ec_layer['bias'])
-
-        # full concatenation
-
-        self.full_concat = tf.concat([self.depth_encoding,self.red_encoding,self.green_encoding,self.blue_encoding,self.sem_encoding],
-                                     axis=1)
-
-        # full encoding
-
-        self.full_ec_layer = {'weights':tf.Variable(tf.random_normal([5*self.size_coding,self.size_coding],stddev=0.01),name='full_ec_layer_weights'),
-                              'bias' : tf.Variable(tf.zeros([self.size_coding]),name='full_ec_layer_bias')}
-        self.layers.append(self.full_ec_layer)
-
-        # full encoding neurons
-
-        self.full_encoding = tf.add(tf.matmul(self.full_concat,self.full_ec_layer['weights']),
-                                    self.full_ec_layer['bias'])
-        self.full_encoding = tf.nn.relu(self.full_encoding)
-
-        # full decoding
-
-        self.full_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,5*self.size_coding],stddev=0.01),name='full_dc_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='full_dc_layer_bias')}
-        self.layers.append(self.full_dc_layer)
-
-        # full decoding neurons
-
-        self.full_decoding = tf.add(tf.matmul(self.full_encoding,self.full_dc_layer['weights']),
-                                    self.full_dc_layer['bias'])
-        self.full_decoding = tf.nn.relu(self.full_decoding)
-
-        # slicing full decoding
-
-        self.depth_full_dc,self.red_full_dc,self.green_full_dc,self.blue_full_dc,self.sem_full_dc = tf.split(self.full_decoding,5,1)
-
-
-        # decoding layers depth and rgb
-
-        self.red_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='red_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='red_dc_layer_bias')}
-        self.layers.append(self.red_dc_layer)
-
-        self.green_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='green_dc_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_input]),name='green_dc_layer_bias')}
-        self.layers.append(self.green_dc_layer)
-
-        self.blue_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='blue_dc_layer_weights'),
-                              'bias':tf.Variable(tf.zeros([self.size_input]),name='blue_dc_layer_bias')}
-        self.layers.append(self.blue_dc_layer)
-
-        self.depth_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='depth_dc_layer_weights'),
-                               'bias':tf.Variable(tf.zeros([self.size_input]),name='depth_dc_layer_bias')}
-        self.layers.append(self.depth_dc_layer)
-
-        # decoding neurons
-
-        self.red_output = tf.add(tf.matmul(self.red_full_dc,self.red_dc_layer['weights']),
-                                   self.red_dc_layer['bias'])
-        self.red_output = tf.sigmoid(self.red_output)
-
-        self.green_output = tf.add(tf.matmul(self.green_full_dc, self.green_dc_layer['weights']),
-                                   self.green_dc_layer['bias'])
-        self.green_output = tf.sigmoid(self.green_output)
-
-        self.blue_output = tf.add(tf.matmul(self.blue_full_dc, self.blue_dc_layer['weights']),
-                                  self.blue_dc_layer['bias'])
-        self.blue_output = tf.sigmoid(self.blue_output)
-
-        self.depth_output = tf.add(tf.matmul(self.depth_full_dc, self.depth_dc_layer['weights']),
-                                   self.depth_dc_layer['bias'])
-        self.depth_output = tf.nn.relu(self.depth_output)
-
-
-        # decoding layer full semantics
-
-        self.sem_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding, 5 * self.size_coding], stddev=0.01), name='sem_dc_layer_weights'),
-                                  'bias':tf.Variable(tf.zeros([5*self.size_coding]),name='sem_dc_layer_bias')}
-        self.layers.append(self.sem_dc_layer)
-
-        # decoding neurons full semantics
-
-        self.full_sem = tf.add(tf.matmul(self.sem_full_dc, self.sem_dc_layer['weights']),
-                               self.sem_dc_layer['bias'])
-        self.full_sem = tf.nn.relu(self.full_sem)
-
-        # splitting full semantics
-
-        self.gnd_dc, self.obj_dc, self.bld_dc, self.veg_dc, self.sky_dc = tf.split(self.full_sem,5,axis=1)
-
-        # decoding layers semantics
-
-        self.gnd_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='gnd_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='gnd_dc_layer_bias')}
-        self.layers.append(self.gnd_dc_layer)
-
-        self.obj_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='obj_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='obj_dc_layer_bias')}
-        self.layers.append(self.obj_dc_layer)
-
-        self.bld_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='bld_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='bld_dc_layer_bias')}
-        self.layers.append(self.bld_dc_layer)
-
-        self.veg_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='veg_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='veg_dc_layer_bias')}
-        self.layers.append(self.veg_dc_layer)
-
-        self.sky_dc_layer = {'weights':tf.Variable(tf.random_normal([self.size_coding,self.size_input],stddev=0.01),name='sky_dc_layer_weights'),
-                             'bias':tf.Variable(tf.zeros([self.size_input]),name='sky_dc_layer_bias')}
-        self.layers.append(self.sky_dc_layer)
-
-
-        # decoding neurons semantics
-
-        self.gnd_output = tf.add(tf.matmul(self.gnd_dc,self.gnd_dc_layer['weights']),
-                                 self.gnd_dc_layer['bias'])
-        self.gnd_output = tf.sigmoid(self.gnd_output)
-
-        self.obj_output = tf.add(tf.matmul(self.obj_dc,self.obj_dc_layer['weights']),
-                                 self.obj_dc_layer['bias'])
-        self.obj_output = tf.sigmoid(self.obj_output)
-
-        self.bld_output = tf.add(tf.matmul(self.bld_dc,self.bld_dc_layer['weights']),
-                                 self.bld_dc_layer['bias'])
-        self.bld_output = tf.sigmoid(self.bld_output)
-
-        self.veg_output = tf.add(tf.matmul(self.veg_dc,self.veg_dc_layer['weights']),
-                                 self.veg_dc_layer['bias'])
-        self.veg_output = tf.sigmoid(self.veg_output)
-
-        self.sky_output = tf.add(tf.matmul(self.sky_dc,self.sky_dc_layer['weights']),
-                                 self.sky_dc_layer['bias'])
-        self.sky_output = tf.sigmoid(self.sky_output)
-
-
-        return [self.red_output,self.green_output,self.blue_output,self.depth_output,self.gnd_output,self.obj_output,self.bld_output,self.veg_output,self.sky_output]
-
-    def collect_variables(self):
-
-        for variable in tf.global_variables():
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES,variable)
-
-        '''
-        for i in self.layers:
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['weights'])
-            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, i['bias'])
-            
-        '''
-
-    def train_model(self,data_train,data_validate,load='none',run = ''):
+    def train_model(self,data_train,data_validate,load='none',run=''):
 
 
         print('[TRAINING]: prepare data')
@@ -506,43 +261,18 @@ class MAE:
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
 
-        self.learning_rate = 1e-6
-        self.hm_epochs = 600
         self.hm_epoch_init = 20
 
         # validation options
 
         print('[TRAINING]: define model')
+        input = [self.imr_input,self.img_input,self.imb_input,
+                 self.depth_input,self.gnd_input,self.obj_input,
+                 self.bld_input,self.veg_input,self.sky_input]
 
-        '''
-        prediction = self.neural_model(self.imr_input,
-                                       self.img_input,
-                                       self.imb_input,
-                                       self.depth_input,
-                                       self.gnd_input,
-                                       self.obj_input,
-                                       self.bld_input,
-                                       self.veg_input,
-                                       self.sky_input,
-                                       mode='training')
-                                       
-                                       
-        '''
+        prediction = self.network(input)
 
-        prediction = full_MAE(self.imr_input,
-                              self.img_input,
-                              self.imb_input,
-                              self.depth_input,
-                              self.gnd_input,
-                              self.obj_input,
-                              self.bld_input,
-                              self.veg_input,
-                              self.sky_input)
-
-
-        self.collect_variables()
-
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
@@ -554,7 +284,7 @@ class MAE:
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label) + \
-                      reg_term
+                      10*reg_term
 
 
         # depth mask for loss computation
@@ -807,29 +537,31 @@ class MAE:
                                                                                                         resolution=(18,60))
 
                     # horizontal mirroring
-                    ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
+                    if self.mirroring:
 
-                    imr_in = horizontal_mirroring(imr_in,ind_rand_who)
-                    imr_batch = horizontal_mirroring(imr_batch,ind_rand_who)
-                    img_in = horizontal_mirroring(img_in,ind_rand_who)
-                    img_batch = horizontal_mirroring(img_batch,ind_rand_who)
-                    imb_in = horizontal_mirroring(imb_in,ind_rand_who)
-                    imb_batch = horizontal_mirroring(imb_batch,ind_rand_who)
+                        ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)
 
-                    depth_in = horizontal_mirroring(depth_in,ind_rand_who)
-                    depth_batch = horizontal_mirroring(depth_batch,ind_rand_who)
-                    depth_mask_batch = horizontal_mirroring(depth_mask_batch,ind_rand_who)
+                        imr_in = horizontal_mirroring(imr_in,ind_rand_who)
+                        imr_batch = horizontal_mirroring(imr_batch,ind_rand_who)
+                        img_in = horizontal_mirroring(img_in,ind_rand_who)
+                        img_batch = horizontal_mirroring(img_batch,ind_rand_who)
+                        imb_in = horizontal_mirroring(imb_in,ind_rand_who)
+                        imb_batch = horizontal_mirroring(imb_batch,ind_rand_who)
 
-                    gnd_in = horizontal_mirroring(gnd_in,ind_rand_who)
-                    gnd_batch = horizontal_mirroring(gnd_batch,ind_rand_who)
-                    obj_in = horizontal_mirroring(obj_in,ind_rand_who)
-                    obj_batch = horizontal_mirroring(obj_batch,ind_rand_who)
-                    bld_in = horizontal_mirroring(bld_in,ind_rand_who)
-                    bld_batch = horizontal_mirroring(bld_batch,ind_rand_who)
-                    veg_in = horizontal_mirroring(veg_in,ind_rand_who)
-                    veg_batch = horizontal_mirroring(veg_batch,ind_rand_who)
-                    sky_in = horizontal_mirroring(sky_in,ind_rand_who)
-                    sky_batch = horizontal_mirroring(sky_batch,ind_rand_who)
+                        depth_in = horizontal_mirroring(depth_in,ind_rand_who)
+                        depth_batch = horizontal_mirroring(depth_batch,ind_rand_who)
+                        depth_mask_batch = horizontal_mirroring(depth_mask_batch,ind_rand_who)
+
+                        gnd_in = horizontal_mirroring(gnd_in,ind_rand_who)
+                        gnd_batch = horizontal_mirroring(gnd_batch,ind_rand_who)
+                        obj_in = horizontal_mirroring(obj_in,ind_rand_who)
+                        obj_batch = horizontal_mirroring(obj_batch,ind_rand_who)
+                        bld_in = horizontal_mirroring(bld_in,ind_rand_who)
+                        bld_batch = horizontal_mirroring(bld_batch,ind_rand_who)
+                        veg_in = horizontal_mirroring(veg_in,ind_rand_who)
+                        veg_batch = horizontal_mirroring(veg_batch,ind_rand_who)
+                        sky_in = horizontal_mirroring(sky_in,ind_rand_who)
+                        sky_batch = horizontal_mirroring(sky_batch,ind_rand_who)
 
                     # zeroing depth inputs
                     ind_rand_who = np.random.choice(ind_batch,int(self.batch_size/2),replace=False)

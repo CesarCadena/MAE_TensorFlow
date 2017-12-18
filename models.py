@@ -200,7 +200,6 @@ class Basic_RNN:
         
         return tf.nn.relu(output)
 
-
 class LSTM_RNN:
 
     def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None):
