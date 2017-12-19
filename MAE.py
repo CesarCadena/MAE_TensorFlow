@@ -338,6 +338,7 @@ class MAE:
         set_val = np.random.choice(validations,len(self.imr_val),replace=False)
 
         val_loss_min = np.infty
+        save_count = 0
 
 
         print('[TRAINING]: load pretrained models')
@@ -685,6 +686,14 @@ class MAE:
                     if v < val_loss_min:
                         val_loss_min = v
                         saver.save(sess,self.model_dir+'/fullmodel.ckpt')
+                        save_count = 0
+                    else:
+                        save_count += 1
+                        if save_count > 2:
+                            self.learning_rate *= 1e-1
+
+                        if save_count > 10:
+                            break
 
     def validate_model(self,n_validations,run,loadmodel=True):
 
