@@ -5,15 +5,17 @@
 import tensorflow as tf
 import numpy as np
 import os
-import evaluation_functions as Eval
+import evaluation_functions as eval
 import basic_routines as BR
 
 from visualization import display_frame,plot_training_loss
 from input_distortion import input_distortion
 from basic_routines import horizontal_mirroring, zeroing_channel
 from datetime import datetime
-from copy import copy
+from copy import copy, deepcopy
 from models import full_MAE
+
+from build_test_sequences import distort_test_sequences
 
 
 
@@ -90,9 +92,6 @@ class MAE:
 
         os.mkdir(self.model_dir)
         os.mkdir(self.logs_dir)
-
-        tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
-        tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
 
         self.FLAGS = tf.app.flags.FLAGS
 
@@ -284,22 +283,22 @@ class MAE:
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label) + \
-                      10*reg_term
+                      50*reg_term
 
 
         # depth mask for loss computation
-        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 100*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
-                      tf.nn.l2_loss(prediction[1]-self.img_label) + \
-                      tf.nn.l2_loss(prediction[2]-self.imb_label) + \
-                      tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
-                      tf.nn.l2_loss(prediction[5]-self.obj_label) + \
-                      tf.nn.l2_loss(prediction[6]-self.bld_label) + \
-                      tf.nn.l2_loss(prediction[7]-self.veg_label) + \
-                      tf.nn.l2_loss(prediction[8]-self.sky_label)
+               tf.nn.l2_loss(prediction[1]-self.img_label) + \
+               tf.nn.l2_loss(prediction[2]-self.imb_label) + \
+               tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
+               tf.nn.l2_loss(prediction[5]-self.obj_label) + \
+               tf.nn.l2_loss(prediction[6]-self.bld_label) + \
+               tf.nn.l2_loss(prediction[7]-self.veg_label) + \
+               tf.nn.l2_loss(prediction[8]-self.sky_label)
 
-        loss = loss + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        loss = loss + 100*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
@@ -476,7 +475,7 @@ class MAE:
 
             print('[TRAINING]: start session - done')
 
-            train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
+            train_writer1 = tf.summary.FileWriter(self.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
             print('[TRAINING]: restore variables')
@@ -685,8 +684,7 @@ class MAE:
                     v = sess.run(val_loss.value())
                     if v < val_loss_min:
                         val_loss_min = v
-                        saver.save(sess,self.FLAGS.model_dir+'/fullmodel.ckpt')
-
+                        saver.save(sess,self.model_dir+'/fullmodel.ckpt')
 
     def validate_model(self,n_validations,run,loadmodel=True):
 
@@ -831,8 +829,8 @@ class MAE:
             gt = BR.invert_depth(all_inv_depth_label)
             est = BR.invert_depth(all_inv_depth_pred)
 
-            error_rms = Eval.rms_error(est,gt)
-            error_rel = Eval.relative_error(est,gt)
+            error_rms = eval.rms_error(est,gt)
+            error_rel = eval.relative_error(est,gt)
 
 
             print('Error (RMS):', error_rms)
@@ -923,10 +921,10 @@ class MAE:
             depth_gt = BR.invert_depth(all_inv_depth_label)
             depth_est = BR.invert_depth(all_inv_depth_pred)
 
-            error_rms = Eval.rms_error(depth_est,depth_gt)
-            error_rel = Eval.relative_error(depth_est,depth_gt)
+            error_rms = eval.rms_error(depth_est,depth_gt)
+            error_rel = eval.relative_error(depth_est,depth_gt)
 
-            iu_semantics, inter, union = Eval.inter_union(all_sem_pred,all_sem_label)
+            iu_semantics, inter, union = eval.inter_union(all_sem_pred,all_sem_label)
 
             print('Error (RMS):', error_rms)
             print('Error (Relative Error):', error_rel)
@@ -993,6 +991,92 @@ class MAE:
             
             return np.asarray(pred)
             '''
+
+    def evaluate_sequence(self,sequence,option=None,n_rnn_steps=None,frequency=None,run=None):
+
+        if run == None:
+            raise ValueError('no run ID given')
+
+        if option == None:
+            raise ValueError('no distortion option given')
+
+        if frequency == None:
+            raise ValueError('no distortion frequency given')
+
+        if n_rnn_steps == None:
+            raise ValueError('no number of rnn steps given')
+
+
+        n_steps = len(sequence[0])
+
+        label_data = sequence
+        input_data = distort_test_sequences(deepcopy(label_data),n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
+
+        input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+        output = self.network(input)
+
+        # preparation of load model
+        load_weights = tf.train.Saver()
+
+        dir = 'models/full/' + run
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/fullmodel.ckpt') # runs from 06112017 it ist fullmodel_rnn
+
+            error_rms = []
+            error_rel = []
+
+            for i in range(0,n_steps):
+
+                depth_label = label_data[3][i]
+                depth_label = depth_label[-1]
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(input_data[0][i][-1]),
+                                                                                                    copy(input_data[1][i][-1]),
+                                                                                                    copy(input_data[2][i][-1]),
+                                                                                                    copy(input_data[3][i][-1]),
+                                                                                                    copy(input_data[4][i][-1]),
+                                                                                                    copy(input_data[5][i][-1]),
+                                                                                                    copy(input_data[6][i][-1]),
+                                                                                                    copy(input_data[7][i][-1]),
+                                                                                                    copy(input_data[8][i][-1]),
+                                                                                                    resolution=(18,60),
+                                                                                                    rnn=False,
+                                                                                                    singleframe=True)
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in}
+
+                pred = sess.run(output,feed_dict=feed_dict)
+                depth_pred = pred[3]
+
+
+
+                inv_depth_pred = np.asarray(copy(depth_pred))
+                inv_depth_label = np.asarray(copy(depth_label))
+
+
+
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
+
+                error_rms.append(eval.rms_error(est,gt))
+                error_rel.append(eval.relative_error(est,gt))
+
+        sess.close()
+        tf.reset_default_graph()
+
+        return error_rms,error_rel
 
 # running model
 
