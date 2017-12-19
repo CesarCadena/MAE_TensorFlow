@@ -298,7 +298,7 @@ class MAE:
                tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                tf.nn.l2_loss(prediction[8]-self.sky_label)
 
-        loss = loss + 100*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        loss = loss + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
         epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
         val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
