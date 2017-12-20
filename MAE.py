@@ -737,9 +737,10 @@ class MAE:
                     veg_label = self.veg_val[i]
                     sky_label = self.sky_val[i]
 
+                    print(red_label.shape)
+
                     norm += np.count_nonzero(depth_mask)
 
-                    time_b = datetime.now()
 
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
@@ -754,9 +755,8 @@ class MAE:
                                                                                                         resolution=(18,60),
                                                                                                         singleframe=True)
 
-                    time_a = datetime.now()
 
-                    print('Input Distortion:', time_a - time_b)
+
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
@@ -767,27 +767,19 @@ class MAE:
                                  self.bld_input:bld_in,
                                  self.veg_input:veg_in,
                                  self.sky_input:sky_in,
-                                 self.depth_mask:[depth_mask],
-                                 self.imr_label:[red_label],
-                                 self.img_label:[green_label],
-                                 self.imb_label:[blue_label],
-                                 self.depth_label:[depth_label],
-                                 self.gnd_label:[gnd_label],
-                                 self.obj_label:[obj_label],
-                                 self.bld_label:[bld_label],
-                                 self.veg_label:[veg_label],
-                                 self.sky_label:[sky_label],
+                                 self.depth_mask:depth_mask,
+                                 self.imr_label:red_label,
+                                 self.img_label:green_label,
+                                 self.imb_label:blue_label,
+                                 self.depth_label:depth_label,
+                                 self.gnd_label:gnd_label,
+                                 self.obj_label:obj_label,
+                                 self.bld_label:bld_label,
+                                 self.veg_label:veg_label,
+                                 self.sky_label:sky_label,
                                  normalization:norm}
 
-
-                    time_b = datetime.now()
-
                     imr_pred = sess.run([prediction],feed_dict=feed_dict)
-
-                    time_a = datetime.now()
-
-                    print('Network Session:', time_a - time_b)
-
 
 
                     '''
