@@ -314,7 +314,9 @@ class MAE:
         sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Full_Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation_Loss_Full_Model',val_loss)
 
-
+        global_step = tf.Variable(0,trainable=False)
+        base_rate = self.learning_rate
+        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,100000, 0.96, staircase=True)
 
         var_list = []
 
@@ -327,10 +329,10 @@ class MAE:
             var_list.append(tf.get_variable('full_dc_layer_bias'))
 
         with tf.name_scope('Optimizer'):
-            optimizer0 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-            optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=var_list)
-            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
-            optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost)
+            optimizer0 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
+            optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=var_list,global_step=global_step)
+            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
+            optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
 
         ind_batch = np.arange(0,self.batch_size)
 
