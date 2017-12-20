@@ -2,7 +2,7 @@
 # code developed by Silvan Weder
 from collections import deque
 from datetime import datetime
-from copy import copy
+from copy import copy, deepcopy
 
 import tensorflow as tf
 import numpy as np
@@ -16,9 +16,6 @@ from input_distortion import input_distortion
 from models import RNN_MAE, full_MAE
 
 from build_test_sequences import build_test_sequences,distort_test_sequences
-
-from visualization import display_sequence_mirroring
-
 
 
 # deleted blue_dc_layer_bias from loader (wrong name in full model)
@@ -129,11 +126,6 @@ class RecurrentMAE:
 
         os.mkdir(self.model_dir)
         os.mkdir(self.logs_dir)
-
-        tf.app.flags.DEFINE_string('logs_dir',self.logs_dir,'where to store the logs')
-        tf.app.flags.DEFINE_string('model_dir',self.model_dir,'where to store the trained model')
-
-        self.FLAGS = tf.app.flags.FLAGS
 
         self.specifications = {'mode': self.rnn_option,
                                 'number of rnn steps': self.n_rnn_steps,
@@ -847,7 +839,7 @@ class RecurrentMAE:
 
             self.flag_is_running = True
 
-            train_writer1 = tf.summary.FileWriter(self.FLAGS.logs_dir,sess.graph)
+            train_writer1 = tf.summary.FileWriter(self.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
             if self.load_previous == False:
@@ -1249,7 +1241,7 @@ class RecurrentMAE:
                         rmse_min = error_rms
                         self.specifications['Validation RMSE'] = error_rms
 
-                        saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
+                        saver.save(sess,self.model_dir+'/rnn_model.ckpt')
                         saver.save(sess,'models/rnn/previous/model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
@@ -1259,7 +1251,7 @@ class RecurrentMAE:
                         self.specifications['number of epochs'] = epoch
                         self.specifications['Validation Rel Error'] = error_rel
 
-                        saver.save(sess,self.FLAGS.model_dir+'/rnn_model.ckpt')
+                        saver.save(sess,self.model_dir+'/rnn_model.ckpt')
                         saver.save(sess,'models/rnn/previous/model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
@@ -1359,8 +1351,7 @@ class RecurrentMAE:
         if run == None:
             raise ValueError('no run ID given')
 
-        if n_rnn_steps == None:
-            raise ValueError('no number of rnn steps given')
+
 
         if option == None:
             raise ValueError('no distortion option given')
@@ -1369,10 +1360,9 @@ class RecurrentMAE:
             raise ValueError('no distortion frequency given')
 
         n_sets = len(sequence[0])
-        print(n_sets)
 
         label_data = sequence
-        input_data = distort_test_sequences(sequence,n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
+        input_data = distort_test_sequences(deepcopy(label_data),n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
 
         # network call
         input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
@@ -1397,6 +1387,7 @@ class RecurrentMAE:
             for i in range(0,n_sets):
 
                 depth_label = label_data[3][i]
+                depth_label = depth_label[-1]
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(input_data[0][i]),
                                                                                                     copy(input_data[1][i]),
@@ -1426,8 +1417,11 @@ class RecurrentMAE:
                 depth_pred = pred[3]
 
 
-                inv_depth_pred = np.asarray(depth_pred)
-                inv_depth_label = np.asarray(depth_label[-1])
+
+                inv_depth_pred = np.asarray(copy(depth_pred))
+                inv_depth_label = np.asarray(copy(depth_label))
+
+
 
                 gt = BR.invert_depth(inv_depth_label)
                 est = BR.invert_depth(inv_depth_pred)
@@ -1435,7 +1429,7 @@ class RecurrentMAE:
                 error_rms.append(eval.rms_error(est,gt))
                 error_rel.append(eval.relative_error(est,gt))
 
-            return error_rms,error_rel
+        return error_rms,error_rel
 
 
 

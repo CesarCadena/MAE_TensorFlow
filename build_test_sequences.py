@@ -52,7 +52,7 @@ def build_test_sequences(data_test, n_rnn_steps=None,resolution = (18,60)):
 
             for step in range(0, n_rnn_steps):
 
-                offset = n_rnn_steps-step
+                offset = n_rnn_steps-(step+1)
                 index = i - offset
 
                 if index < 0:
@@ -71,16 +71,16 @@ def build_test_sequences(data_test, n_rnn_steps=None,resolution = (18,60)):
                     continue
 
                 else:
-                    imr_set.append(sequence[index]['xcr']/255.)
-                    img_set.append(sequence[index]['xcg']/255.)
-                    imb_set.append(sequence[index]['xcb']/255.)
-                    dpt_set.append(sequence[index]['xid'])
-                    dpt_spr_set.append(sequence[index]['xidsparse'])
-                    gnd_set.append((sequence[index]['sem']==1).astype(int))
-                    obj_set.append((sequence[index]['sem']==2).astype(int))
-                    bld_set.append((sequence[index]['sem']==3).astype(int))
-                    veg_set.append((sequence[index]['sem']==4).astype(int))
-                    sky_set.append((sequence[index]['sem']==5).astype(int))
+                    imr_set.append(sequence[index]['xcr1']/255.)
+                    img_set.append(sequence[index]['xcg1']/255.)
+                    imb_set.append(sequence[index]['xcb1']/255.)
+                    dpt_set.append(sequence[index]['xid1'])
+                    dpt_spr_set.append(sequence[index]['xidsparse1'])
+                    gnd_set.append((sequence[index]['sem1']==1).astype(int))
+                    obj_set.append((sequence[index]['sem1']==2).astype(int))
+                    bld_set.append((sequence[index]['sem1']==3).astype(int))
+                    veg_set.append((sequence[index]['sem1']==4).astype(int))
+                    sky_set.append((sequence[index]['sem1']==5).astype(int))
 
             imr_seq.append(copy(imr_set))
             img_seq.append(copy(img_set))
@@ -125,11 +125,11 @@ def distort_test_sequences(test_sequence, n_rnn_steps=None, option=None, frequen
     img = copy(test_sequence[1])
     imb = copy(test_sequence[2])
     dpt = copy(test_sequence[3])
-    gnd = copy(test_sequence[5])
-    obj = copy(test_sequence[6])
-    bld = copy(test_sequence[7])
-    veg = copy(test_sequence[8])
-    sky = copy(test_sequence[9])
+    gnd = copy(test_sequence[4])
+    obj = copy(test_sequence[5])
+    bld = copy(test_sequence[6])
+    veg = copy(test_sequence[7])
+    sky = copy(test_sequence[8])
 
     n_frames = len(imr)
 

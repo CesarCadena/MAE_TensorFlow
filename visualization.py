@@ -308,6 +308,8 @@ def display_sequence_mirroring(imr,imb,img,dpt,gnd,obj,bld,veg,sky,imr_m,imb_m,i
 
 
 
+
+
 #def full_model_visualiuzation(input_frame,output_frame,label_frame,shape,resolution=(18,60)):
 
 
