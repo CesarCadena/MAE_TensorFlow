@@ -726,16 +726,16 @@ class MAE:
 
                 for i in set_val:
 
-                    red_label = self.imr_val[i]
-                    green_label = self.img_val[i]
-                    blue_label = self.imb_val[i]
-                    depth_label = self.depth_val[i]
-                    depth_mask = self.depth_mask_val[i]
-                    gnd_label = self.gnd_val[i]
-                    obj_label = self.obj_val[i]
-                    bld_label = self.bld_val[i]
-                    veg_label = self.veg_val[i]
-                    sky_label = self.sky_val[i]
+                    red_label = np.reshape(self.imr_val[i],(1,self.size_input))
+                    green_label = np.reshape(self.img_val[i],(1,self.size_input))
+                    blue_label = np.reshape(self.imb_val[i],(1,self.size_input))
+                    depth_label = np.reshape(self.depth_val[i],(1,self.size_input))
+                    depth_mask = np.reshape(self.depth_mask_val[i],(1,self.size_input))
+                    gnd_label = np.reshape(self.gnd_val[i],(1,self.size_input))
+                    obj_label = np.reshape(self.obj_val[i],(1,self.size_input))
+                    bld_label = np.reshape(self.bld_val[i],(1,self.size_input))
+                    veg_label = np.reshape(self.veg_val[i],(1,self.size_input))
+                    sky_label = np.reshape(self.sky_val[i],(1,self.size_input))
 
                     print(red_label.shape)
 
