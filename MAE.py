@@ -26,6 +26,8 @@ class MAE:
             raise ValueError('no number of epochs passed')
         self.hm_epochs = n_epochs
 
+        self.n_validations = 100
+
         if learning_rate == None:
             raise ValueError('no learning rate passed')
         self.learning_rate = learning_rate
@@ -191,6 +193,17 @@ class MAE:
                 self.bld_val.append((j['sem2']==3).astype(int))
                 self.veg_val.append((j['sem2']==4).astype(int))
                 self.sky_val.append((j['sem2']==5).astype(int))
+
+        self.imr_val = np.asarray(self.imr_val)
+        self.img_val = np.asarray(self.img_val)
+        self.imb_val = np.asarray(self.imb_val)
+        self.depth_val = np.asarray(self.depth_val)
+        self.depth_mask_val = np.asarray(self.depth_mask_val)
+        self.gnd_val = np.asarray(self.gnd_val)
+        self.obj_val = np.asarray(self.obj_val)
+        self.bld_val = np.asarray(self.bld_val)
+        self.veg_val = np.asarray(self.veg_val)
+        self.sky_val = np.asarray(self.sky_val)
 
     def prepare_test_data(self,data_test):
 
@@ -408,7 +421,8 @@ class MAE:
         validations = np.arange(0, len(self.imr_val))
 
         # validation set
-        set_val = np.random.choice(validations,len(self.imr_val),replace=False)
+        set_val = np.random.choice(validations,self.n_validations,replace=False)
+        set_val = list(set_val)
 
         # minimum validation loss initialization
         val_loss_min = np.infty
@@ -719,45 +733,44 @@ class MAE:
                           imr_loss_reset,img_loss_reset,imb_loss_reset,
                           gnd_loss_reset,obj_loss_reset,bld_loss_reset,veg_loss_reset,sky_loss_reset])
 
-                norm = 8.*1080*set_val.shape[0]
+                norm = 8.*1080*len(set_val)
 
                 error_rms = 0
                 error_rel = 0
 
-                for i in set_val:
+                timea = datetime.now()
 
-                    red_label = np.reshape(self.imr_val[i],(1,self.size_input))
-                    green_label = np.reshape(self.img_val[i],(1,self.size_input))
-                    blue_label = np.reshape(self.imb_val[i],(1,self.size_input))
-                    depth_label = np.reshape(self.depth_val[i],(1,self.size_input))
-                    depth_mask = np.reshape(self.depth_mask_val[i],(1,self.size_input))
-                    gnd_label = np.reshape(self.gnd_val[i],(1,self.size_input))
-                    obj_label = np.reshape(self.obj_val[i],(1,self.size_input))
-                    bld_label = np.reshape(self.bld_val[i],(1,self.size_input))
-                    veg_label = np.reshape(self.veg_val[i],(1,self.size_input))
-                    sky_label = np.reshape(self.sky_val[i],(1,self.size_input))
-
-                    norm += np.count_nonzero(depth_mask)
+                print(len(set_val))
 
 
+                red_label = self.imr_val[set_val]
+                green_label = self.img_val[set_val]
+                blue_label = self.imb_val[set_val]
+                depth_label = self.depth_val[set_val]
+                depth_mask = self.depth_mask_val[set_val]
+                gnd_label = self.gnd_val[set_val]
+                obj_label = self.obj_val[set_val]
+                bld_label = self.bld_val[set_val]
+                veg_label = self.veg_val[set_val]
+                sky_label = self.sky_val[set_val]
 
-                    imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
-                                                                                                        copy(green_label),
-                                                                                                        copy(blue_label),
-                                                                                                        copy(depth_label),
-                                                                                                        copy(gnd_label),
-                                                                                                        copy(obj_label),
-                                                                                                        copy(bld_label),
-                                                                                                        copy(veg_label),
-                                                                                                        copy(sky_label),
-                                                                                                        resolution=(18,60),
-                                                                                                        singleframe=True)
+                norm += np.count_nonzero(depth_mask)
 
 
 
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
+                                                                                                    copy(green_label),
+                                                                                                    copy(blue_label),
+                                                                                                    copy(depth_label),
+                                                                                                    copy(gnd_label),
+                                                                                                    copy(obj_label),
+                                                                                                    copy(bld_label),
+                                                                                                    copy(veg_label),
+                                                                                                    copy(sky_label),
+                                                                                                    resolution=(18,60),
+                                                                                                    singleframe=False)
 
-
-                    feed_dict = {self.imr_input:imr_in,
+                feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
                                  self.imb_input:imb_in,
                                  self.depth_input:depth_in,
@@ -778,30 +791,28 @@ class MAE:
                                  self.sky_label:sky_label,
                                  normalization:norm}
 
-                    imr_pred = sess.run([prediction],feed_dict=feed_dict)
-
-
-                    '''
-
-                    im_pred,c_val,c_imr,c_img,c_imb,c_gnd,c_obj, c_bld, c_veg, c_sky = sess.run([prediction,
-                                                                                                 val_loss_update,
-                                                                                                 imr_loss_update,
-                                                                                                 img_loss_update,
-                                                                                                 imb_loss_update,
-                                                                                                 gnd_loss_update,
-                                                                                                 obj_loss_update,
-                                                                                                 bld_loss_update,
-                                                                                                 veg_loss_update,
-                                                                                                 sky_loss_update],
-                                                                                                 feed_dict=feed_dict)
-
-                    depth_pred = BR.invert_depth(im_pred[3])
-                    depth_gt = BR.invert_depth(depth_label)
+                im_pred,c_val,c_imr,c_img,c_imb,c_gnd,c_obj, c_bld, c_veg, c_sky = sess.run([prediction,
+                                                                                             val_loss_update,
+                                                                                             imr_loss_update,
+                                                                                             img_loss_update,
+                                                                                             imb_loss_update,
+                                                                                             gnd_loss_update,
+                                                                                             obj_loss_update,
+                                                                                             bld_loss_update,
+                                                                                             veg_loss_update,
+                                                                                             sky_loss_update],
+                                                                                             feed_dict=feed_dict)
+                for frame in range(0,self.n_validations):
+                    depth_pred = BR.invert_depth(im_pred[3][frame,:])
+                    depth_gt = BR.invert_depth(depth_label[frame])
 
                     error_rms += eval.rms_error(depth_pred,depth_gt)
                     error_rel += eval.relative_error(depth_pred,depth_gt)
-                    
-                '''
+
+                timeb = datetime.now()
+
+                print(timeb-timea)
+
 
                 error_rms = error_rms/len(set_val)
                 error_rel = error_rel/len(set_val)
