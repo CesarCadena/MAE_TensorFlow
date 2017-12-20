@@ -724,8 +724,6 @@ class MAE:
                 error_rms = 0
                 error_rel = 0
 
-                '''
-
                 for i in set_val:
 
                     red_label = self.imr_val[i]
@@ -740,6 +738,7 @@ class MAE:
                     sky_label = self.sky_val[i]
 
                     norm += np.count_nonzero(depth_mask)
+
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
@@ -773,6 +772,10 @@ class MAE:
                                  self.veg_label:[veg_label],
                                  self.sky_label:[sky_label],
                                  normalization:norm}
+
+                    imr_pred, c_val = sess.run([prediction,val_loss_update],feed_dict=feed_dict)
+
+                    '''
 
                     im_pred,c_val,c_imr,c_img,c_imb,c_gnd,c_obj, c_bld, c_veg, c_sky = sess.run([prediction,
                                                                                                  val_loss_update,
