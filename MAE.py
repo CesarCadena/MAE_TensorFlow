@@ -253,6 +253,7 @@ class MAE:
 
         if self.verbose:
             print('[TRAINING]: prepare data')
+
         # prepare data
         self.prepare_training_data(data_train)
         self.prepare_validation_data(data_validate)
@@ -260,23 +261,26 @@ class MAE:
         # training options
         self.batch_size = 60
         self.n_batches = int(len(self.imr_train)/self.batch_size)
-
         self.hm_epoch_init = 20
 
-        # validation options
-
+        # print test flag
         if self.verbose:
             print('[TRAINING]: define model')
+
+        # define input list
         input = [self.imr_input,self.img_input,self.imb_input,
                  self.depth_input,self.gnd_input,self.obj_input,
                  self.bld_input,self.veg_input,self.sky_input]
 
+        # network call
         prediction = self.network(input)
 
+        # regularizer initialization
         regularizer = tf.contrib.layers.l2_regularizer(scale=0.005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
+        # cost definition (training cost)
         cost = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                       tf.nn.l2_loss(prediction[1]-self.img_label) + \
                       tf.nn.l2_loss(prediction[2]-self.imb_label) + \
@@ -285,12 +289,12 @@ class MAE:
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label) + \
-                      10*reg_term
+                      20*reg_term
 
-
-        # depth mask for loss computation
-        cost = cost + 100*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
-
+        # depth mask for cost computation
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,
+                                                                                              self.depth_label))
+        # loss definition (validation loss)
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                tf.nn.l2_loss(prediction[1]-self.img_label) + \
                tf.nn.l2_loss(prediction[2]-self.imb_label) + \
@@ -300,28 +304,88 @@ class MAE:
                tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                tf.nn.l2_loss(prediction[8]-self.sky_label)
 
+        # depth mask for loss computation
         loss = loss + tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
 
-        epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False)
-        val_loss = tf.Variable(0.0,name='val_loss',trainable=False)
+        # definition of all loss variables
+        epoch_loss = tf.Variable(0.0,name='epoch_loss',trainable=False) # training cost
+        val_loss = tf.Variable(0.0,name='val_loss',trainable=False) # validation loss
+        imr_loss = tf.Variable(0.0,name='imr_val_loss',trainable=False) # validation loss of all separated channels
+        img_loss = tf.Variable(0.0,name='img_val_loss',trainable=False)
+        imb_loss = tf.Variable(0.0,name='imb_val_loss',trainable=False)
+        gnd_loss = tf.Variable(0.0,name='gnd_val_loss',trainable=False)
+        obj_loss = tf.Variable(0.0,name='obj_val_loss',trainable=False)
+        bld_loss = tf.Variable(0.0,name='bld_val_loss',trainable=False)
+        veg_loss = tf.Variable(0.0,name='veg_val_loss',trainable=False)
+        sky_loss = tf.Variable(0.0,name='sky_val_loss',trainable=False)
 
-        epoch_loss_reset = epoch_loss.assign(0)
-        epoch_loss_update = epoch_loss.assign_add(cost)
+        # validation loss of target metric
+        rms = tf.Variable(0.0,name='rms_error',trainable=False)
+        rel = tf.Variable(0.0,name='rel_error',trainable=False)
 
+        # definition of normalization variable for losses
         normalization = tf.placeholder('float')
 
-        loss_val_reset = val_loss.assign(0)
-        loss_val_update = val_loss.assign_add(loss/normalization)
+        # reset nodes for validation losses
+        epoch_loss_reset = epoch_loss.assign(0)
+        val_loss_reset = val_loss.assign(0)
+        imr_loss_reset = imr_loss.assign(0.0)
+        img_loss_reset = img_loss.assign(0.0)
+        imb_loss_reset = imb_loss.assign(0.0)
+        gnd_loss_reset = gnd_loss.assign(0.0)
+        obj_loss_reset = obj_loss.assign(0.0)
+        bld_loss_reset = bld_loss.assign(0.0)
+        veg_loss_reset = veg_loss.assign(0.0)
+        sky_loss_reset = sky_loss.assign(0.0)
 
+        # update nodes for validation losses
+        epoch_loss_update = epoch_loss.assign_add(cost)
+        val_loss_update = val_loss.assign_add(loss/normalization)
+        imr_loss_update = imr_loss.assign_add(tf.nn.l2_loss(self.imr_label-prediction[0])/normalization)
+        img_loss_update = img_loss.assign_add(tf.nn.l2_loss(self.img_label-prediction[1])/normalization)
+        imb_loss_update = imb_loss.assign_add(tf.nn.l2_loss(self.imb_label-prediction[2])/normalization)
+        gnd_loss_update = gnd_loss.assign_add(tf.nn.l2_loss(self.gnd_label-prediction[4])/normalization)
+        obj_loss_update = obj_loss.assign_add(tf.nn.l2_loss(self.obj_label-prediction[5])/normalization)
+        bld_loss_update = bld_loss.assign_add(tf.nn.l2_loss(self.bld_label-prediction[6])/normalization)
+        veg_loss_update = veg_loss.assign_add(tf.nn.l2_loss(self.veg_label-prediction[7])/normalization)
+        sky_loss_update = sky_loss.assign_add(tf.nn.l2_loss(self.sky_label-prediction[8])/normalization)
+
+        # target metric placeholder
+        rms_plh = tf.placeholder('float')
+        rel_plh = tf.placeholder('float')
+
+        # target metric reset
+        rms_reset = rms.assign(0.0)
+        rel_reset = rel.assign(0.0)
+
+        # target metric update
+        rms_update = rms.assign_add(rms_plh)
+        rel_update = rel.assign_add(rel_plh)
+
+        # summary definitions
         sum_epoch_loss = tf.summary.scalar('Epoch_Loss_Full_Model',epoch_loss)
         sum_val_loss = tf.summary.scalar('Validation_Loss_Full_Model',val_loss)
+        summary_imr = tf.summary.scalar('Red Channel Validation Loss', imr_loss)
+        summary_img = tf.summary.scalar('Green Channel Validation Loss', img_loss)
+        summary_imb = tf.summary.scalar('Blue Channel Validation Loss', imb_loss)
+        summary_gnd = tf.summary.scalar('Ground Channel Validation Loss', gnd_loss)
+        summary_obj = tf.summary.scalar('Object Channel Validation Loss', obj_loss)
+        summary_bld = tf.summary.scalar('Building Channel Validation Loss', bld_loss)
+        summary_veg = tf.summary.scalar('Vegetation Channel Validation Loss', veg_loss)
+        summary_sky = tf.summary.scalar('Sky Channel Validation Loss', sky_loss)
+        summary_rms = tf.summary.scalar('RMS Error in Validation', rms)
+        summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
+
+        # learning rate defintion and options
         global_step = tf.Variable(0,trainable=False)
         base_rate = self.learning_rate
         self.learning_rate = tf.train.exponential_decay(base_rate,global_step,100000, 0.96, staircase=True)
 
+        # variable list for training
         var_list = []
 
+        # get graph variables
         with tf.variable_scope("Encoding",reuse=True):
             var_list.append(tf.get_variable('full_ec_layer_weights'))
             var_list.append(tf.get_variable('full_ec_layer_bias'))
@@ -330,22 +394,31 @@ class MAE:
             var_list.append(tf.get_variable('full_dc_layer_weights'))
             var_list.append(tf.get_variable('full_dc_layer_bias'))
 
+        # optimizer definition
         with tf.name_scope('Optimizer'):
             optimizer0 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
             optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,var_list=var_list,global_step=global_step)
             optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
             optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(cost,global_step=global_step)
 
+        # batch indices
         ind_batch = np.arange(0,self.batch_size)
 
+        # validation indices
         validations = np.arange(0, len(self.imr_val))
+
+        # validation set
         set_val = np.random.choice(validations,len(self.imr_val),replace=False)
 
+        # minimum validation loss initialization
         val_loss_min = np.infty
         save_count = 0
 
+        # verbose?
         if self.verbose:
             print('[TRAINING]: load pretrained models')
+
+        # define loaders
         if load == 'pretrained':
 
             with tf.variable_scope("Encoding",reuse=True):
@@ -418,6 +491,7 @@ class MAE:
 
             saver = tf.train.Saver()
 
+        # define loaders
         if load == 'continue':
 
             with tf.variable_scope('Encoding',reuse=True):
@@ -468,25 +542,33 @@ class MAE:
                                                'full_dc_layer_weights':tf.get_variable('full_dc_layer_weights'),
                                                'full_dc_layer_bias':tf.get_variable('full_dc_layer_bias')})
 
+        # saver initialization
         saver = tf.train.Saver()
 
 
         if self.verbose:
             print('[TRAINING]: start session')
 
+        # session configuration
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
+
+        # start session
         with tf.Session(config=config) as sess:
 
             if self.verbose:
                 print('[TRAINING]: start session - done')
 
+            # writer initialization
             train_writer1 = tf.summary.FileWriter(self.logs_dir,sess.graph)
+
+            # initialize all variables
             sess.run(tf.global_variables_initializer())
 
             if self.verbose:
                 print('[TRAINING]: restore variables')
 
+            # load variables
             if load == 'pretrained':
                 folder = 'models/pretraining/pretrained_models/' + run
                 load_imr_ec.restore(sess, folder + 'pretrained_red.ckpt')
@@ -513,10 +595,13 @@ class MAE:
                 load_ec_full.restore(sess, folder + 'fullmodel.ckpt')
                 load_dc_full.restore(sess, folder + 'fullmodel.ckpt')
 
+            # finalize graph
             tf.get_default_graph().finalize()
 
             if self.verbose:
                 print('[TRAINING]: start training epochs')
+
+            # start training epochs
             for epoch in range(0,self.hm_epochs):
 
                 sess.run(epoch_loss_reset)
@@ -628,11 +713,16 @@ class MAE:
                     print('Epoch', epoch, 'completed out of', self.hm_epochs)
                     print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
-                sess.run(loss_val_reset)
+                sess.run([val_loss_reset,rms_reset,rel_reset,
+                          imr_loss_reset,img_loss_reset,imb_loss_reset,
+                          gnd_loss_reset,obj_loss_reset,bld_loss_reset,veg_loss_reset,sky_loss_reset])
+
+                norm = 8.*1080*set_val.shape[0]
+
+                error_rms = 0
+                error_rel = 0
 
                 for i in set_val:
-
-                    norm = 8.*1080*set_val.shape[0]
 
                     red_label = self.imr_val[i]
                     green_label = self.img_val[i]
@@ -680,10 +770,53 @@ class MAE:
                                  self.sky_label:[sky_label],
                                  normalization:norm}
 
-                    im_pred,c_val = sess.run([prediction,loss_val_update],feed_dict=feed_dict)
+                    im_pred,c_val = sess.run([prediction,
+                                              val_loss_update,
+                                              imr_loss_update,
+                                              img_loss_update,
+                                              imb_loss_update,
+                                              gnd_loss_update,
+                                              obj_loss_update,
+                                              bld_loss_update,
+                                              veg_loss_update,
+                                              sky_loss_update],
+                                             feed_dict=feed_dict)
+
+                    depth_pred = BR.invert_depth(im_pred[3])
+                    depth_gt = BR.invert_depth(depth_label)
+
+                    error_rms += eval.rms_error(depth_pred,depth_gt)
+                    error_rel += eval.relative_error(depth_pred,depth_gt)
+
+                error_rms = error_rms/len(set_val)
+                error_rel = error_rel/len(set_val)
+
+                sess.run(rms_update,feed_dict={rms_plh:error_rms})
+                sess.run(rel_update,feed_dict={rel_plh:error_rel})
 
                 sum_val = sess.run(sum_val_loss)
+                sum_rms = sess.run(summary_rms)
+                sum_rel = sess.run(summary_rel)
+                sum_imr = sess.run(summary_imr)
+                sum_img = sess.run(summary_img)
+                sum_imb = sess.run(summary_imb)
+                sum_gnd = sess.run(summary_gnd)
+                sum_obj = sess.run(summary_obj)
+                sum_bld = sess.run(summary_bld)
+                sum_veg = sess.run(summary_veg)
+                sum_sky = sess.run(summary_sky)
+
                 train_writer1.add_summary(sum_val,epoch)
+                train_writer1.add_summary(sum_rms,epoch)
+                train_writer1.add_summary(sum_rel,epoch)
+                train_writer1.add_summary(sum_imr,epoch)
+                train_writer1.add_summary(sum_img,epoch)
+                train_writer1.add_summary(sum_imb,epoch)
+                train_writer1.add_summary(sum_gnd,epoch)
+                train_writer1.add_summary(sum_obj,epoch)
+                train_writer1.add_summary(sum_bld,epoch)
+                train_writer1.add_summary(sum_veg,epoch)
+                train_writer1.add_summary(sum_sky,epoch)
 
                 if self.verbose:
                     print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
