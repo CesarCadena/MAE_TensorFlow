@@ -773,7 +773,7 @@ class MAE:
                                  self.sky_label:[sky_label],
                                  normalization:norm}
 
-                    imr_pred, c_val = sess.run([prediction,val_loss_update],feed_dict=feed_dict)
+                    imr_pred = sess.run([prediction],feed_dict=feed_dict)
 
                     '''
 
