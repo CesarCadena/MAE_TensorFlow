@@ -770,17 +770,17 @@ class MAE:
                                  self.sky_label:[sky_label],
                                  normalization:norm}
 
-                    im_pred,c_val = sess.run([prediction,
-                                              val_loss_update,
-                                              imr_loss_update,
-                                              img_loss_update,
-                                              imb_loss_update,
-                                              gnd_loss_update,
-                                              obj_loss_update,
-                                              bld_loss_update,
-                                              veg_loss_update,
-                                              sky_loss_update],
-                                             feed_dict=feed_dict)
+                    im_pred,c_val,c_imr,c_img,c_imb,c_gnd,c_obj, c_bld, c_veg, c_sky = sess.run([prediction,
+                                                                                                 val_loss_update,
+                                                                                                 imr_loss_update,
+                                                                                                 img_loss_update,
+                                                                                                 imb_loss_update,
+                                                                                                 gnd_loss_update,
+                                                                                                 obj_loss_update,
+                                                                                                 bld_loss_update,
+                                                                                                 veg_loss_update,
+                                                                                                 sky_loss_update],
+                                                                                                 feed_dict=feed_dict)
 
                     depth_pred = BR.invert_depth(im_pred[3])
                     depth_gt = BR.invert_depth(depth_label)
