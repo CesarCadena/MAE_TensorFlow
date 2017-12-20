@@ -285,7 +285,7 @@ class MAE:
                       tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                       tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                       tf.nn.l2_loss(prediction[8]-self.sky_label) + \
-                      50*reg_term
+                      10*reg_term
 
 
         # depth mask for loss computation
