@@ -726,16 +726,16 @@ class MAE:
 
                 for i in set_val:
 
-                    red_label = np.reshape(self.imr_val[i],(0,self.size_input))
-                    green_label = np.reshape(self.img_val[i],(0,self.size_input))
-                    blue_label = np.reshape(self.imb_val[i],(0,self.size_input))
-                    depth_label = np.reshape(self.depth_val[i],(0,self.size_input))
-                    depth_mask = np.reshape(self.depth_mask_val[i],(0,self.size_input))
-                    gnd_label = np.reshape(self.gnd_val[i],(0,self.size_input))
-                    obj_label = np.reshape(self.obj_val[i],(0,self.size_input))
-                    bld_label = np.reshape(self.bld_val[i],(0,self.size_input))
-                    veg_label = np.reshape(self.veg_val[i],(0,self.size_input))
-                    sky_label = np.reshape(self.sky_val[i],(0,self.size_input))
+                    red_label = np.reshape(self.imr_val[i],(1,self.size_input))
+                    green_label = np.reshape(self.img_val[i],(1,self.size_input))
+                    blue_label = np.reshape(self.imb_val[i],(1,self.size_input))
+                    depth_label = np.reshape(self.depth_val[i],(1,self.size_input))
+                    depth_mask = np.reshape(self.depth_mask_val[i],(1,self.size_input))
+                    gnd_label = np.reshape(self.gnd_val[i],(1,self.size_input))
+                    obj_label = np.reshape(self.obj_val[i],(1,self.size_input))
+                    bld_label = np.reshape(self.bld_val[i],(1,self.size_input))
+                    veg_label = np.reshape(self.veg_val[i],(1,self.size_input))
+                    sky_label = np.reshape(self.sky_val[i],(1,self.size_input))
 
                     norm += np.count_nonzero(depth_mask)
 
