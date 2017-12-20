@@ -713,6 +713,8 @@ class MAE:
                     print('Epoch', epoch, 'completed out of', self.hm_epochs)
                     print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
+
+
                 sess.run([val_loss_reset,rms_reset,rel_reset,
                           imr_loss_reset,img_loss_reset,imb_loss_reset,
                           gnd_loss_reset,obj_loss_reset,bld_loss_reset,veg_loss_reset,sky_loss_reset])
@@ -721,6 +723,8 @@ class MAE:
 
                 error_rms = 0
                 error_rel = 0
+
+                '''
 
                 for i in set_val:
 
@@ -787,6 +791,8 @@ class MAE:
 
                     error_rms += eval.rms_error(depth_pred,depth_gt)
                     error_rel += eval.relative_error(depth_pred,depth_gt)
+                    
+                '''
 
                 error_rms = error_rms/len(set_val)
                 error_rel = error_rel/len(set_val)
