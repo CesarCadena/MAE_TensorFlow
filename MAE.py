@@ -738,6 +738,15 @@ class MAE:
                     sky_label = np.reshape(self.sky_val[i],(1,self.size_input))
 
                     print(red_label.shape)
+                    print(green_label.shape)
+                    print(blue_label.shape)
+                    print(depth_label.shape)
+                    print(depth_mask.shape)
+                    print(gnd_label.shape)
+                    print(obj_label.shape)
+                    print(bld_label.shape)
+                    print(veg_label.shape)
+                    print(sky_label.shape)
 
                     norm += np.count_nonzero(depth_mask)
 
