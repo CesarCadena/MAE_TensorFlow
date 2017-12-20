@@ -20,7 +20,7 @@ from build_test_sequences import distort_test_sequences
 
 class MAE:
 
-    def __init__(self,n_epochs=None,learning_rate=None,mirroring=False,resolution=(18,60)):
+    def __init__(self,n_epochs=None,learning_rate=None,mirroring=False,resolution=(18,60),verbose=False):
 
         if n_epochs == None:
             raise ValueError('no number of epochs passed')
@@ -29,6 +29,8 @@ class MAE:
         if learning_rate == None:
             raise ValueError('no learning rate passed')
         self.learning_rate = learning_rate
+
+        self.verbose = verbose
 
         self.mirroring = mirroring
 
@@ -249,8 +251,8 @@ class MAE:
 
     def train_model(self,data_train,data_validate,load='none',run=''):
 
-
-        print('[TRAINING]: prepare data')
+        if self.verbose:
+            print('[TRAINING]: prepare data')
         # prepare data
         self.prepare_training_data(data_train)
         self.prepare_validation_data(data_validate)
@@ -263,7 +265,8 @@ class MAE:
 
         # validation options
 
-        print('[TRAINING]: define model')
+        if self.verbose:
+            print('[TRAINING]: define model')
         input = [self.imr_input,self.img_input,self.imb_input,
                  self.depth_input,self.gnd_input,self.obj_input,
                  self.bld_input,self.veg_input,self.sky_input]
@@ -341,8 +344,8 @@ class MAE:
         val_loss_min = np.infty
         save_count = 0
 
-
-        print('[TRAINING]: load pretrained models')
+        if self.verbose:
+            print('[TRAINING]: load pretrained models')
         if load == 'pretrained':
 
             with tf.variable_scope("Encoding",reuse=True):
@@ -468,19 +471,22 @@ class MAE:
         saver = tf.train.Saver()
 
 
-
-        print('[TRAINING]: start session')
+        if self.verbose:
+            print('[TRAINING]: start session')
 
         config = tf.ConfigProto(log_device_placement=False)
         config.gpu_options.per_process_gpu_memory_fraction = 0.5
         with tf.Session(config=config) as sess:
 
-            print('[TRAINING]: start session - done')
+            if self.verbose:
+                print('[TRAINING]: start session - done')
 
             train_writer1 = tf.summary.FileWriter(self.logs_dir,sess.graph)
             sess.run(tf.global_variables_initializer())
 
-            print('[TRAINING]: restore variables')
+            if self.verbose:
+                print('[TRAINING]: restore variables')
+
             if load == 'pretrained':
                 folder = 'models/pretraining/pretrained_models/' + run
                 load_imr_ec.restore(sess, folder + 'pretrained_red.ckpt')
@@ -509,7 +515,8 @@ class MAE:
 
             tf.get_default_graph().finalize()
 
-            print('[TRAINING]: start training epochs')
+            if self.verbose:
+                print('[TRAINING]: start training epochs')
             for epoch in range(0,self.hm_epochs):
 
                 sess.run(epoch_loss_reset)
@@ -616,9 +623,10 @@ class MAE:
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
 
-                print('----------------------------------------------------------------')
-                print('Epoch', epoch, 'completed out of', self.hm_epochs)
-                print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
+                if self.verbose:
+                    print('----------------------------------------------------------------')
+                    print('Epoch', epoch, 'completed out of', self.hm_epochs)
+                    print('Training Loss (per epoch): ', sess.run(epoch_loss.value()))
 
                 sess.run(loss_val_reset)
 
@@ -676,11 +684,13 @@ class MAE:
 
                 sum_val = sess.run(sum_val_loss)
                 train_writer1.add_summary(sum_val,epoch)
-                print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
-                time2 = datetime.now()
-                delta = time2-time1
-                print('Epoch Time [seconds]:', delta.seconds)
-                print('-----------------------------------------------------------------')
+
+                if self.verbose:
+                    print('Validation Loss (per pixel): ', sess.run(val_loss.value()))
+                    time2 = datetime.now()
+                    delta = time2-time1
+                    print('Epoch Time [seconds]:', delta.seconds)
+                    print('-----------------------------------------------------------------')
 
                 if epoch%5 == 0:
                     v = sess.run(val_loss.value())
