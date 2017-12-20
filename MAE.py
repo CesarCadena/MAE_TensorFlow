@@ -738,10 +738,6 @@ class MAE:
                 error_rms = 0
                 error_rel = 0
 
-                timea = datetime.now()
-
-                print(len(set_val))
-
 
                 red_label = self.imr_val[set_val]
                 green_label = self.img_val[set_val]
@@ -810,8 +806,6 @@ class MAE:
                     error_rel += eval.relative_error(depth_pred,depth_gt)
 
                 timeb = datetime.now()
-
-                print(timeb-timea)
 
 
                 error_rms = error_rms/len(set_val)
