@@ -739,6 +739,8 @@ class MAE:
 
                     norm += np.count_nonzero(depth_mask)
 
+                    time_b = datetime.now()
+
 
                     imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(red_label),
                                                                                                         copy(green_label),
@@ -751,6 +753,10 @@ class MAE:
                                                                                                         copy(sky_label),
                                                                                                         resolution=(18,60),
                                                                                                         singleframe=True)
+
+                    time_a = datetime.now()
+
+                    print('Input Distortion:', time_a - time_b)
 
                     feed_dict = {self.imr_input:imr_in,
                                  self.img_input:img_in,
@@ -773,7 +779,16 @@ class MAE:
                                  self.sky_label:[sky_label],
                                  normalization:norm}
 
+
+                    time_b = datetime.now()
+
                     imr_pred = sess.run([prediction],feed_dict=feed_dict)
+
+                    time_a = datetime.now()
+
+                    print('Network Session:', time_a - time_b)
+
+
 
                     '''
 
