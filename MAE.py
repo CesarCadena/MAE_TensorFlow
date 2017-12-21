@@ -302,7 +302,7 @@ class MAE:
                0.1*tf.nn.l2_loss(prediction[6]-self.bld_label) + \
                0.1*tf.nn.l2_loss(prediction[7]-self.veg_label) + \
                0.1*tf.nn.l2_loss(prediction[8]-self.sky_label) + \
-               40*reg_term
+               50*reg_term
 
         # depth mask for cost computation
         cost = cost + 1000*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
