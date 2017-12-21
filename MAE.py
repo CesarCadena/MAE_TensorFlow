@@ -305,7 +305,7 @@ class MAE:
                40*reg_term
 
         # depth mask for cost computation
-        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 1000*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
         # loss definition (validation loss)
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                tf.nn.l2_loss(prediction[1]-self.img_label) + \
@@ -922,15 +922,10 @@ class MAE:
 
         self.prepare_test_data(data_test)
 
-        predictions = self.neural_model(self.imr_input,
-                                        self.img_input,
-                                        self.imb_input,
-                                        self.depth_input,
-                                        self.gnd_input,
-                                        self.obj_input,
-                                        self.bld_input,
-                                        self.veg_input,
-                                        self.sky_input)
+        input = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                 self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+
+        predictions = self.network(input)
 
         load_weights = tf.train.Saver()
 
@@ -967,17 +962,17 @@ class MAE:
 
                 # taking only rgb as input
                 depth_in = [[0]*self.size_input]
-                #gnd_in = [[0]*self.size_input]
-                #obj_in = [[0]*self.size_input]
-                #bld_in = [[0]*self.size_input]
-                #veg_in = [[0]*self.size_input]
-                #sky_in = [[0]*self.size_input]
+                gnd_in = [[0]*self.size_input]
+                obj_in = [[0]*self.size_input]
+                bld_in = [[0]*self.size_input]
+                veg_in = [[0]*self.size_input]
+                sky_in = [[0]*self.size_input]
 
-                gnd_in = [gnd_label]
-                obj_in = [obj_label]
-                bld_in = [bld_label]
-                veg_in = [veg_label]
-                sky_in = [sky_label]
+                #gnd_in = [gnd_label]
+                #obj_in = [obj_label]
+                #bld_in = [bld_label]
+                #veg_in = [veg_label]
+                #sky_in = [sky_label]
 
 
 
