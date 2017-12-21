@@ -305,7 +305,7 @@ class MAE:
                40*reg_term
 
         # depth mask for cost computation
-        cost = cost + 40*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
         # loss definition (validation loss)
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                tf.nn.l2_loss(prediction[1]-self.img_label) + \
