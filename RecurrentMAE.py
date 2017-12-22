@@ -1146,7 +1146,7 @@ class RecurrentMAE:
 
                     feed_dict.update(cost_dict)
 
-                    time_b = datetime.now()
+
 
                     im_pred,c_val,l_imr,l_img,l_imb,l_gnd,l_obj,l_bld,l_veg,l_sky = sess.run([output,
                                                                                               loss_val_update,
@@ -1159,10 +1159,6 @@ class RecurrentMAE:
                                                                                               veg_loss_update,
                                                                                               sky_loss_update],
                                                                                              feed_dict=feed_dict)
-
-                    time_a = datetime.now()
-
-                    print('Network Session:', time_a-time_b)
 
                     depth_pred = BR.invert_depth(im_pred[3])
                     depth_gt = BR.invert_depth(depth_label[-1])
