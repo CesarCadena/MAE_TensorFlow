@@ -122,7 +122,7 @@ class RecurrentMAE:
         self.project_dir = './'
         self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
         self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
-        self.load_dir = self.project_dir + self.folder_model + 'full/FullMAE/'
+        self.load_dir = self.project_dir + self.folder_model + 'full/FullMAE1/'
 
         os.mkdir(self.model_dir)
         os.mkdir(self.logs_dir)
@@ -1081,13 +1081,8 @@ class RecurrentMAE:
 
                 norm = 8*1080*set_val.shape[0]
 
-
-
-
                 error_rms = 0
                 error_rel = 0
-
-
 
                 for i in set_val:
 
@@ -1117,6 +1112,8 @@ class RecurrentMAE:
                                                                                                         resolution=(18,60),
                                                                                                         rnn=True,
                                                                                                         singleframe=True)
+
+
 
 
                     feed_dict = {self.imr_input:imr_in,
@@ -1149,6 +1146,8 @@ class RecurrentMAE:
 
                     feed_dict.update(cost_dict)
 
+                    time_b = datetime.now()
+
                     im_pred,c_val,l_imr,l_img,l_imb,l_gnd,l_obj,l_bld,l_veg,l_sky = sess.run([output,
                                                                                               loss_val_update,
                                                                                               imr_loss_update,
@@ -1158,7 +1157,12 @@ class RecurrentMAE:
                                                                                               obj_loss_update,
                                                                                               bld_loss_update,
                                                                                               veg_loss_update,
-                                                                                              sky_loss_update],feed_dict=feed_dict)
+                                                                                              sky_loss_update],
+                                                                                             feed_dict=feed_dict)
+
+                    time_a = datetime.now()
+
+                    print('Network Session:', time_a-time_b)
 
                     depth_pred = BR.invert_depth(im_pred[3])
                     depth_gt = BR.invert_depth(depth_label[-1])
