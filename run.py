@@ -17,11 +17,11 @@ data_test = load_frames_data(test_frames)
 
 print('initialize model')
 # Define Full Model
-mae = MAE(n_epochs=120,learning_rate=1e-5,mirroring=True,verbose=True)
-#rnn_mae = RecurrentMAE(n_epochs=1000,rnn_option='basic',n_rnn_steps=5,mirroring=False,learning_rate=1e-08)
+#mae = MAE(n_epochs=120,learning_rate=1e-5,mirroring=True,verbose=True)
+rnn_mae = RecurrentMAE(n_epochs=1000,rnn_option='basic',n_rnn_steps=5,mirroring=False,learning_rate=1e-06)
 # Train MultiModal AutoEncoder
 print('start training')
-mae.train_model(data_train,data_val,load='pretrained')
+rnn_mae.train_model(data_train,data_val)
 del data_train, data_val
 
 
