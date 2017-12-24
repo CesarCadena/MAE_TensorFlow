@@ -110,7 +110,7 @@ class Decoding:
 
 class Basic_RNN:
 
-    def __init__(self,state_size=None, coding_size=None, n_rnn_steps=None,scope=None):
+    def __init__(self,state_size=None, coding_size=None, n_rnn_steps=None,scope=None, option='nonshared'):
 
         # check if all parameters are well defined
         if state_size == None:
@@ -129,6 +129,8 @@ class Basic_RNN:
             raise ValueError('no scope name passed')
         self.scope = scope
 
+        self.option = option
+
         # container for recurrent weights
         self.H = []
         self.W = []
@@ -139,29 +141,56 @@ class Basic_RNN:
         self.initializer_H = 10e-5*tf.diag(tf.ones([state_size]))
         self.initializer_V = tf.concat([tf.diag(tf.ones([self.coding_size])),tf.zeros([self.state_size-self.coding_size,self.coding_size])],axis=0)
 
+
+
         # definition of rnn variables
         with tf.variable_scope(scope) as rnn:
 
-            for step in range(0,self.n_rnn_steps-1):
+            if self.option == 'nonshared':
 
-                self.H.append(tf.get_variable(name='H_'+str(step),
-                                              dtype=tf.float32,
-                                              initializer=self.initializer_H,
-                                              collections=[tf.GraphKeys.GLOBAL_VARIABLES,
-                                                           tf.GraphKeys.REGULARIZATION_LOSSES]))
+                for step in range(0,self.n_rnn_steps-1):
 
-                self.W.append(tf.get_variable(name='W'+str(step),
+                    self.H.append(tf.get_variable(name='H_'+str(step),
+                                                  dtype=tf.float32,
+                                                  initializer=self.initializer_H,
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
+
+                    self.W.append(tf.get_variable(name='W'+str(step),
+                                                  dtype=tf.float32,
+                                                  initializer=self.initializer_W,
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
+
+                    self.B.append(tf.get_variable(name='B'+str(step),
+                                                  shape=[state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.zeros_initializer(),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
+
+            if self.option == 'shared':
+
+                self.H.append(tf.get_variable(name='H',
+                                                  dtype=tf.float32,
+                                                  initializer=self.initializer_H,
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
+
+                self.W.append(tf.get_variable(name='W',
                                               dtype=tf.float32,
                                               initializer=self.initializer_W,
                                               collections=[tf.GraphKeys.GLOBAL_VARIABLES,
                                                            tf.GraphKeys.REGULARIZATION_LOSSES]))
 
-                self.B.append(tf.get_variable(name='B'+str(step),
+                self.B.append(tf.get_variable(name='B',
                                               shape=[state_size],
                                               dtype=tf.float32,
                                               initializer=tf.zeros_initializer(),
                                               collections=[tf.GraphKeys.GLOBAL_VARIABLES,
                                                            tf.GraphKeys.REGULARIZATION_LOSSES]))
+
+
 
 
             self.W_t = tf.get_variable(name='W_t',
@@ -193,7 +222,10 @@ class Basic_RNN:
 
         # running recurrent layer
         for i in range(0,self.n_rnn_steps-1):
-            state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[i])),self.B[i]),self.H[i])
+            if self.option == 'nonshared':
+                state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[i])),self.B[i]),self.H[i])
+            if self.option == 'shared':
+                state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[0])),self.B[0]),self.H[0])
             state = tf.nn.relu(state)
 
         output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.W_t),state),self.B_t),self.V_t)
@@ -563,8 +595,7 @@ def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
     output = [imr_hat,img_hat,imb_hat,dpt_hat,gnd_hat,obj_hat,bld_hat,veg_hat,sky_hat]
     return output
 
-
-def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None,option=None):
+def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None,option=None,sharing='nonshared'):
 
     if n_rnn_steps == None:
         raise ValueError('no number of rnn steps passed')
@@ -589,7 +620,7 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
     SHD_EC = Encoding(activation='relu',shape_input=5*1024,shape_coding=1024,name='full')
 
     if option == 'basic':
-        RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
+        RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN',option=sharing)
     if option == 'lstm':
         RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN')
     if option == 'gated':
