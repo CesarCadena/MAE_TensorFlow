@@ -123,16 +123,21 @@ class RecurrentMAE:
         self.project_dir = './'
         self.model_dir = self.project_dir + self.folder_model + self.mode + self.run
         self.logs_dir = self.project_dir + self.folder_logs + self.mode + self.run
-        self.load_dir = self.project_dir + self.folder_model + 'full/FullMAE1/'
+
+        if load_previous == False:
+            self.load_dir = self.project_dir + self.folder_model + 'full/FullMAE1/'
+        if load_previous == True:
+            self.load_dir = self.project_dir + self.folder_model + self.mode + 'previous/'
 
         os.mkdir(self.model_dir)
         os.mkdir(self.logs_dir)
 
         self.specifications = {'mode': self.rnn_option,
-                                'number of rnn steps': self.n_rnn_steps,
-                                'mirroring': str(self.mirroring),
-                                'learning rate': self.learning_rate,
-                                'number of epochs': self.hm_epochs}
+                               'number of rnn steps': self.n_rnn_steps,
+                               'mirroring': str(self.mirroring),
+                               'learning rate': self.learning_rate,
+                               'number of epochs': self.hm_epochs,
+                               'sharing':self.sharing}
 
         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
@@ -1253,7 +1258,7 @@ class RecurrentMAE:
                         self.specifications['Validation Rel Error'] = error_rel
 
                         saver.save(sess,self.model_dir+'/rnn_model.ckpt')
-                        saver.save(sess,'models/rnn/previous/model.ckpt')
+                        saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
                     else:
@@ -1351,8 +1356,6 @@ class RecurrentMAE:
 
         if run == None:
             raise ValueError('no run ID given')
-
-
 
         if option == None:
             raise ValueError('no distortion option given')
