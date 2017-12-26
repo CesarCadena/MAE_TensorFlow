@@ -1269,6 +1269,9 @@ class RecurrentMAE:
                             tf.reset_default_graph()
                             break
 
+            saver.save(sess,self.model_dir+'/rnn_model.ckpt')
+            saver.save(sess,'models/rnn/previous/model.ckpt')
+
         sess.close()
         tf.reset_default_graph()
 
