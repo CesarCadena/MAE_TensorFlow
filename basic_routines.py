@@ -1,5 +1,5 @@
 import numpy as np
-from copy import copy
+from copy import copy, deepcopy
 
 
 
@@ -36,7 +36,7 @@ def horizontal_mirroring(x,ind_who,resolution = (18,60),option=None):
         indmirror = indmirror.T
         indmirror = np.reshape(indmirror,(h*w))
 
-        x1 = copy(x)
+        x1 = deepcopy(x)
         x = np.array(x)
         for i in ind_who:
             x1[i]=x[i][indmirror]
@@ -56,7 +56,7 @@ def horizontal_mirroring(x,ind_who,resolution = (18,60),option=None):
         indmirror = indmirror.T
         indmirror = np.reshape(indmirror,(h*w))
 
-        x1 = copy(x)
+        x1 = deepcopy(x)
         x = np.array(x)
         for i in ind_who:
             for rnn_step in range(0,n_steps):
