@@ -1264,7 +1264,13 @@ class RecurrentMAE:
                     else:
                         no_update_count += 1
                         if no_update_count == 40:
+
+                            sess.close()
+                            tf.reset_default_graph()
                             break
+
+        sess.close()
+        tf.reset_default_graph()
 
     def evaluate(self,data_test,run=False):
 
