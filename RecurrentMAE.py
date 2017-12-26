@@ -1001,7 +1001,7 @@ class RecurrentMAE:
                         imb_batch_label = BR.horizontal_mirroring(deepcopy(imb_batch_label),ind_rand_who,option='RNN')
 
                         depth_in = BR.horizontal_mirroring(deepcopy(depth_in),ind_rand_who,option='RNN')
-                        depth_batch_label = BR.horizontal_mirroring(deepycopy(depth_batch_label),ind_rand_who,option='RNN')
+                        depth_batch_label = BR.horizontal_mirroring(deepcopy(depth_batch_label),ind_rand_who,option='RNN')
                         depth_mask_batch = BR.horizontal_mirroring(deepcopy(depth_mask_batch),ind_rand_who,option='RNN')
 
                         gnd_in = BR.horizontal_mirroring(deepcopy(gnd_in),ind_rand_who,option='RNN')
