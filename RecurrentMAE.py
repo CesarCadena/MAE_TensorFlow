@@ -782,7 +782,7 @@ class RecurrentMAE:
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
 
-        if self.load_previous == True:
+        if self.load_previous == False:
 
             with tf.variable_scope('Encoding',reuse=True):
 
