@@ -17,11 +17,15 @@ rnn_mae.train_model(data_train,data_val)
 
 del rnn_mae
 
+print('first model done')
+
 rnn_mae = RecurrentMAE(n_epochs=1,rnn_option='basic',n_rnn_steps=7,mirroring=False,learning_rate=1e-06,
                        load_previous=True)
 rnn_mae.train_model(data_train,data_val)
 
 del rnn_mae
+
+print('second model done')
 
 rnn_mae = RecurrentMAE(n_epochs=1,rnn_option='basic',n_rnn_steps=10,mirroring=False,learning_rate=1e-06,
                        load_previous=True)
