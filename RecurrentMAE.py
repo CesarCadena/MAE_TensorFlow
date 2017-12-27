@@ -1248,7 +1248,7 @@ class RecurrentMAE:
                         self.specifications['Validation RMSE'] = error_rms
 
                         saver.save(sess,self.model_dir+'/rnn_model.ckpt')
-                        saver.save(sess,'models/rnn/previous/model.ckpt')
+                        saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
                     elif error_rel < rel_min:
@@ -1270,7 +1270,7 @@ class RecurrentMAE:
                             break
 
             saver.save(sess,self.model_dir+'/rnn_model.ckpt')
-            saver.save(sess,'models/rnn/previous/model.ckpt')
+            saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
 
         sess.close()
         tf.reset_default_graph()
