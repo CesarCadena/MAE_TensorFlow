@@ -950,7 +950,7 @@ class RecurrentMAE:
             for epoch in range(0,self.hm_epochs):
 
                 if epoch%15==0:
-                    self.learning_rate *= 0.1
+                    self.learning_rate = 0.1*self.learning_rate
 
 
 
