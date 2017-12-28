@@ -756,7 +756,7 @@ class RecurrentMAE:
         summary_veg = tf.summary.scalar('Vegetation Channel Validation Loss', veg_loss)
         summary_sky = tf.summary.scalar('Sky Channel Validation Loss', sky_loss)
 
-        summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
+
 
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
@@ -779,6 +779,11 @@ class RecurrentMAE:
         summary_rel = tf.summary.scalar('Relative Error in Validation', rel)
 
         self.training_cost = cost
+
+        lr = tf.Variable(self.learning_rate)
+        lr_update = tf.scalar_mul(0.1,lr)
+
+        summary_lr = tf.summary.scalar('Learning Rate',lr)
 
         optimizer1 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables)
         optimizer2 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
@@ -951,13 +956,10 @@ class RecurrentMAE:
 
                 if epoch%15==0:
                     self.learning_rate = 0.1*self.learning_rate
-
-
-
+                    sess.run(lr_update)
 
                 sum_lr = sess.run(summary_lr)
                 train_writer1.add_summary(sum_lr,epoch)
-
 
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
