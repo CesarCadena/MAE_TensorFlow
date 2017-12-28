@@ -943,6 +943,10 @@ class RecurrentMAE:
 
 
             for epoch in range(0,self.hm_epochs):
+
+                if epoch == 20:
+                    self.learning_rate = 1e-09
+
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
