@@ -954,8 +954,9 @@ class RecurrentMAE:
 
             for epoch in range(0,self.hm_epochs):
 
-                if epoch%15==0:
+                if epoch%25==0:
                     self.learning_rate = 0.1*self.learning_rate
+                    print(self.learning_rate)
                     sess.run(lr_update)
 
                 sum_lr = sess.run(summary_lr)
