@@ -169,6 +169,9 @@ class RecurrentMAE:
         # rnn initial states
         self.init_states = tf.placeholder('float',[None,self.state_size])
 
+        # learning rate placeholder
+        self.lr = tf.placeholder('float')
+
     def augment_data(self,imr,img,imb,depth,gnd,obj,bld,veg,sky):
 
         imr_aug = []
@@ -753,6 +756,8 @@ class RecurrentMAE:
         summary_veg = tf.summary.scalar('Vegetation Channel Validation Loss', veg_loss)
         summary_sky = tf.summary.scalar('Sky Channel Validation Loss', sky_loss)
 
+        summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
+
         epoch_loss_reset = epoch_loss.assign(0)
         epoch_loss_update = epoch_loss.assign_add(cost)
 
@@ -775,9 +780,9 @@ class RecurrentMAE:
 
         self.training_cost = cost
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -947,6 +952,10 @@ class RecurrentMAE:
                 if epoch == 20:
                     self.learning_rate = 1e-09
 
+                sum_lr = sess.run(summary_lr)
+                train_writer1.add_summary(sum_lr,epoch)
+
+
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
@@ -1051,19 +1060,20 @@ class RecurrentMAE:
                                  self.c_w5:c_w5,
                                  self.c_r:c_wr,
                                  self.c_g:c_wg,
-                                 self.c_b:c_wb}
+                                 self.c_b:c_wb,
+                                 self.lr:self.learning_rate}
 
                     feed_dict.update(cost_dict)
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 20:
-                        _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l, lr  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 20 and epoch < 40:
-                        _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l, lr = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
-                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l, lr = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
