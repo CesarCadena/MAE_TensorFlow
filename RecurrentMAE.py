@@ -949,8 +949,11 @@ class RecurrentMAE:
 
             for epoch in range(0,self.hm_epochs):
 
-                if epoch == 20:
-                    self.learning_rate = 1e-09
+                if epoch%15==0:
+                    self.learning_rate *= 0.1
+
+
+
 
                 sum_lr = sess.run(summary_lr)
                 train_writer1.add_summary(sum_lr,epoch)
