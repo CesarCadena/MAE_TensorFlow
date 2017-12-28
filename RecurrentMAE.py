@@ -1067,13 +1067,13 @@ class RecurrentMAE:
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 20:
-                        _ , c, l, lr  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 20 and epoch < 40:
-                        _ , c, l, lr = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
-                        _ , c, l, lr = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
