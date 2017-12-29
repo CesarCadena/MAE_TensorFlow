@@ -803,7 +803,7 @@ class RecurrentMAE:
                                               'green_ec_layer_bias':tf.get_variable('green_ec_layer_bias'),
                                               'blue_ec_layer_weights':tf.get_variable('blue_ec_layer_weights'),
                                               'blue_ec_layer_bias':tf.get_variable('blue_ec_layer_bias'),
-                                              '/depth_ec_layer_weights':tf.get_variable('depth_ec_layer_weights'),
+                                              'depth_ec_layer_weights':tf.get_variable('depth_ec_layer_weights'),
                                               'depth_ec_layer_bias':tf.get_variable('depth_ec_layer_bias'),
                                               'gnd_ec_layer_weights':tf.get_variable('gnd_ec_layer_weights'),
                                               'gnd_ec_layer_bias':tf.get_variable('gnd_ec_layer_bias'),
