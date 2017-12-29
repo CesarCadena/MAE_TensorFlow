@@ -24,7 +24,8 @@ rnn_mae = RecurrentMAE(n_epochs=2000,
                        mirroring=True,
                        learning_rate=1e-3,
                        sharing='nonshared',
-                       load_previous=False)
+                       load_previous=False,
+                       model='old')
 
 # Train MultiModal AutoEncoder
 print('start training')
