@@ -860,8 +860,8 @@ class RecurrentMAE:
             sess.run(tf.global_variables_initializer())
 
             if self.load_previous == False:
-                load_ec_MAE.restore(sess,'models/full/FullMAE1/fullmodel.ckpt')
-                load_dc_MAE.restore(sess,'models/full/FullMAE1/fullmodel.ckpt')
+                load_ec_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
+                load_dc_MAE.restore(sess,'models/full/FullMAE/fullmodel.ckpt')
 
             if self.load_previous == True:
                 load_ec_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
