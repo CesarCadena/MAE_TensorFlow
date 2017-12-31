@@ -1470,7 +1470,7 @@ class RecurrentMAE:
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,dir+'/fullmodel_rnn.ckpt') # runs from 06112017 it ist fullmodel_rnn
+            load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
 
             error_rms = []
             error_rel = []
@@ -1523,32 +1523,5 @@ class RecurrentMAE:
                 error_rel.append(eval.relative_error(est,gt))
 
         return error_rms,error_rel
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
