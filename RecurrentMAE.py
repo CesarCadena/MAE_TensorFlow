@@ -794,7 +794,8 @@ class RecurrentMAE:
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
 
-        if self.model == 'old':
+        if self.model == 'old' and self.load_previous == False:
+
             with tf.variable_scope('Encoding',reuse=True):
 
                 load_ec_MAE = tf.train.Saver({'red_ec_layer_weights':tf.get_variable('red_ec_layer_weights'),
