@@ -41,7 +41,7 @@ class RecurrentMAE:
         self.size_input = self.height*self.width
         self.size_coding = 1024
 
-        self.n_training_validations = 50
+        self.n_training_validations = 200
 
         # noise values for the different modalities (min 0, max 1)
         self.imr_noise = 0.1
