@@ -15,6 +15,9 @@ for semantic channels ,use log likelihood loss
 2.run MAE_pretraining_sem_shared.py  
 3.run fullMAE.py  
 
+# visulize  
+https://github.com/yiliu1/Convolutional-Auto-Encoder/blob/master/VAE.ipynb
+
 
 
 
