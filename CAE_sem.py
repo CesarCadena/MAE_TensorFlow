@@ -62,8 +62,8 @@ def input_hidden_sem(x):
             b_conv1= bias_variable(name='bias',shape=[64])
             layer_conv1=tf.nn.relu(conv2d(x,w_conv1)+b_conv1)
 
-        with tf.name_scope("conv_layer1_pooling"):
-            pooling_layer1=tf.nn.max_pool(layer_conv1,ksize=[1,2,2,1],
+    with tf.name_scope("conv_layer1_pooling"):
+        pooling_layer1=tf.nn.max_pool(layer_conv1,ksize=[1,2,2,1],
                                        strides=[1,2,2,1],padding='SAME')
 
     with tf.name_scope("sem_flat"):
@@ -142,4 +142,3 @@ with tf.Session(config=config) as sess:
             _,l=sess.run([train_step,loss],feed_dict={x:data[batch_indices],keep_prob:0.5})
         saver.save(sess,sem_path+'/sem.ckpt')
         print('ipoch:',ipoch ,'loss:',l)
-        

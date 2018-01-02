@@ -173,13 +173,17 @@ optimizer=tf.train.AdamOptimizer(learning_rate).minimize(loss)
 init=tf.global_variables_initializer()
 
 train_size=data_depth.shape[0]
-train_indices=range(train_size)             
+train_indices=range(train_size)   
 
+CNN_path="../CNN_full"
+if not os.path.isdir(CNN_path):
+    os.mkdir(CNN_path)          
+saver=tf.train.Saver()
 
 # training process
 with tf.Session() as sess:
     sess.run(init)
-    for ipochs in range(1):
+    for ipochs in range(30):
         perm_indices=np.random.permutation(train_indices)
         for step in range(int(train_size/batch_size)):
             offset=(step*batch_size)%(train_size-batch_size)
@@ -194,4 +198,5 @@ with tf.Session() as sess:
                                                     })        
             print("ipoch: {} ".format(ipochs) ,
                   "step: {}...".format(step),
-                  "Training loss: {:.4f}".format(l))  
+                  "Training loss: {:.4f}".format(l)) 
+        saver.save(sess,CNN_path+'/cnn.ckpt') 
