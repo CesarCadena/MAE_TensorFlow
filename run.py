@@ -21,7 +21,7 @@ print('initialize model')
 rnn_mae = RecurrentMAE(n_epochs=200,
                        rnn_option='lstm',
                        n_rnn_steps=5,
-                       mirroring=False,
+                       mirroring=True,
                        learning_rate=1e-5,
                        sharing='shared',
                        load_previous=False,
