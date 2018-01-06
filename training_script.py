@@ -12,7 +12,7 @@ data_val = load_set_data(val_seq)
 
 # basic rnn mae
 rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='lstm',
+                       rnn_option='gated',
                        n_rnn_steps=5,
                        mirroring=False,
                        learning_rate=1e-4,
@@ -25,7 +25,7 @@ del rnn_mae
 
 
 rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='lstm',
+                       rnn_option='gated',
                        n_rnn_steps=7,
                        mirroring=False,
                        learning_rate=1e-4,
@@ -37,7 +37,7 @@ rnn_mae.train_model(data_train,data_val)
 del rnn_mae
 
 rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='lstm',
+                       rnn_option='gated',
                        n_rnn_steps=10,
                        mirroring=False,
                        learning_rate=1e-4,
@@ -49,7 +49,7 @@ rnn_mae.train_model(data_train,data_val)
 del rnn_mae
 
 rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='lstm',
+                       rnn_option='gated',
                        n_rnn_steps=12,
                        mirroring=False,
                        learning_rate=1e-4,
@@ -61,7 +61,7 @@ rnn_mae.train_model(data_train,data_val)
 del rnn_mae
 
 rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='lstm',
+                       rnn_option='gated',
                        n_rnn_steps=15,
                        mirroring=False,
                        learning_rate=1e-4,
