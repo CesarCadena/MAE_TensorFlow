@@ -11,11 +11,11 @@ data_val = load_set_data(val_seq)
 
 
 # basic rnn mae
-rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='basic',
+rnn_mae = RecurrentMAE(n_epochs=300,
+                       rnn_option='lstm',
                        n_rnn_steps=5,
                        mirroring=False,
-                       learning_rate=1e-4,
+                       learning_rate=1e-5,
                        sharing='shared',
                        load_previous=False,
                        model='old')
@@ -24,11 +24,11 @@ rnn_mae.train_model(data_train,data_val)
 del rnn_mae
 
 
-rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='basic',
+rnn_mae = RecurrentMAE(n_epochs=300,
+                       rnn_option='lstm',
                        n_rnn_steps=7,
                        mirroring=False,
-                       learning_rate=1e-4,
+                       learning_rate=1e-5,
                        sharing='shared',
                        load_previous=True,
                        model='old')
@@ -36,11 +36,11 @@ rnn_mae.train_model(data_train,data_val)
 
 del rnn_mae
 
-rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='basic',
+rnn_mae = RecurrentMAE(n_epochs=300,
+                       rnn_option='lstm',
                        n_rnn_steps=10,
                        mirroring=False,
-                       learning_rate=1e-4,
+                       learning_rate=1e-5,
                        sharing='shared',
                        load_previous=True,
                        model='old')
@@ -48,11 +48,11 @@ rnn_mae.train_model(data_train,data_val)
 
 del rnn_mae
 
-rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='basic',
+rnn_mae = RecurrentMAE(n_epochs=300,
+                       rnn_option='lstm',
                        n_rnn_steps=12,
                        mirroring=False,
-                       learning_rate=1e-4,
+                       learning_rate=1e-5,
                        sharing='shared',
                        load_previous=True,
                        model='old')
@@ -60,11 +60,11 @@ rnn_mae.train_model(data_train,data_val)
 
 del rnn_mae
 
-rnn_mae = RecurrentMAE(n_epochs=200,
-                       rnn_option='basic',
+rnn_mae = RecurrentMAE(n_epochs=300,
+                       rnn_option='lstm',
                        n_rnn_steps=15,
                        mirroring=False,
-                       learning_rate=1e-4,
+                       learning_rate=1e-5,
                        sharing='shared',
                        load_previous=True,
                        model='old')
