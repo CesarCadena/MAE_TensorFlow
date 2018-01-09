@@ -899,6 +899,7 @@ class RecurrentMAE:
 
 
         saver = tf.train.Saver()
+        load_weights = tf.train.Saver()
 
         rmse_min = np.infty
         rel_min = np.infty
@@ -924,8 +925,11 @@ class RecurrentMAE:
 
 
             if self.load_previous == True:
-                load_ec_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
-                load_dc_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+                if self.sharing == False:
+                    load_ec_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+                    load_dc_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+                if self.sharing == True:
+                    load_weights.restore(sess,'models/rnn/previous/rnn_model.ckpt')
 
             tf.get_default_graph().finalize()
 
@@ -1458,6 +1462,8 @@ class RecurrentMAE:
         label_data = sequence
         input_data = distort_test_sequences(deepcopy(label_data),n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
 
+        print(len(input_data[0]))
+
         # network call
         input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
                   self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
@@ -1481,7 +1487,7 @@ class RecurrentMAE:
             for i in range(0,n_sets):
 
                 depth_label = label_data[3][i]
-                depth_label = depth_label[-1]
+                depth_label = depth_label[n_rnn_steps-1]
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(input_data[0][i]),
                                                                                                     copy(input_data[1][i]),
@@ -1495,6 +1501,8 @@ class RecurrentMAE:
                                                                                                     resolution=(18,60),
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
+
+
 
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
@@ -1522,6 +1530,10 @@ class RecurrentMAE:
 
                 error_rms.append(eval.rms_error(est,gt))
                 error_rel.append(eval.relative_error(est,gt))
+
+
+        sess.close()
+        tf.reset_default_graph()
 
         return error_rms,error_rel
 
