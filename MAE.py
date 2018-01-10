@@ -297,15 +297,15 @@ class MAE:
         cost = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                tf.nn.l2_loss(prediction[1]-self.img_label) + \
                tf.nn.l2_loss(prediction[2]-self.imb_label) + \
-               0.1*tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
-               0.1*tf.nn.l2_loss(prediction[5]-self.obj_label) + \
-               0.1*tf.nn.l2_loss(prediction[6]-self.bld_label) + \
-               0.1*tf.nn.l2_loss(prediction[7]-self.veg_label) + \
-               0.1*tf.nn.l2_loss(prediction[8]-self.sky_label) + \
+               tf.nn.l2_loss(prediction[4]-self.gnd_label) + \
+               tf.nn.l2_loss(prediction[5]-self.obj_label) + \
+               tf.nn.l2_loss(prediction[6]-self.bld_label) + \
+               tf.nn.l2_loss(prediction[7]-self.veg_label) + \
+               tf.nn.l2_loss(prediction[8]-self.sky_label) + \
                50*reg_term
 
         # depth mask for cost computation
-        cost = cost + 1000*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
+        cost = cost + 10*tf.nn.l2_loss(tf.multiply(self.depth_mask,prediction[3])-tf.multiply(self.depth_mask,self.depth_label))
         # loss definition (validation loss)
         loss = tf.nn.l2_loss(prediction[0]-self.imr_label) + \
                tf.nn.l2_loss(prediction[1]-self.img_label) + \
@@ -392,7 +392,7 @@ class MAE:
         # learning rate defintion and options
         global_step = tf.Variable(0,trainable=False)
         base_rate = self.learning_rate
-        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,100000, 0.96, staircase=True)
+        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True)
 
         # variable list for training
         var_list = []
@@ -1199,7 +1199,7 @@ class MAE:
             for i in range(0,n_steps):
 
                 depth_label = label_data[3][i]
-                depth_label = depth_label[-1]
+                depth_label = depth_label[n_rnn_steps-1]
 
                 imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(input_data[0][i][-1]),
                                                                                                     copy(input_data[1][i][-1]),
