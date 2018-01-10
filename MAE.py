@@ -573,7 +573,8 @@ class MAE:
         # learning rate defintion and options
         global_step = tf.Variable(0,trainable=False)
         base_rate = self.learning_rate
-        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True)
+        #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True)
+        self.learning_rate = tf.train.piecewise_constant(global_step,[100*self.n_batches],[base_rate,0.1*base_rate])
 
         # variable list for training
         var_list = []
@@ -1040,7 +1041,7 @@ class MAE:
                             #self.learning_rate *= 1e-1
                             pass
 
-                        if save_count > 10:
+                        if save_count > 1000:
                             break
 
     def validate_model(self,n_validations,run,loadmodel=True):
