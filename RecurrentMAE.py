@@ -925,11 +925,9 @@ class RecurrentMAE:
 
 
             if self.load_previous == True:
-                if self.sharing == False:
-                    load_ec_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
-                    load_dc_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
-                if self.sharing == True:
-                    load_weights.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+                load_ec_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+                load_dc_MAE.restore(sess,'models/rnn/previous/rnn_model.ckpt')
+
 
             tf.get_default_graph().finalize()
 
@@ -1462,8 +1460,6 @@ class RecurrentMAE:
         label_data = sequence
         input_data = distort_test_sequences(deepcopy(label_data),n_rnn_steps=n_rnn_steps,option=option,frequency=frequency)
 
-        print(len(input_data[0]))
-
         # network call
         input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
                   self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
@@ -1518,12 +1514,8 @@ class RecurrentMAE:
                 pred = sess.run(output,feed_dict=feed_dict)
                 depth_pred = pred[3]
 
-
-
                 inv_depth_pred = np.asarray(copy(depth_pred))
                 inv_depth_label = np.asarray(copy(depth_label))
-
-
 
                 gt = BR.invert_depth(inv_depth_label)
                 est = BR.invert_depth(inv_depth_pred)
