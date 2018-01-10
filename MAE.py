@@ -801,14 +801,10 @@ class MAE:
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
-                i = 0
 
                 print('N Batches:',self.n_batches)
 
                 for _ in range(self.n_batches):
-
-                    i += 1
-                    print(i)
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
                     img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size]
@@ -1041,7 +1037,8 @@ class MAE:
                     else:
                         save_count += 1
                         if save_count > 2:
-                            self.learning_rate *= 1e-1
+                            #self.learning_rate *= 1e-1
+                            pass
 
                         if save_count > 10:
                             break
