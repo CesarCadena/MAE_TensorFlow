@@ -12,9 +12,190 @@ from input_distortion import input_distortion
 from basic_routines import horizontal_mirroring, zeroing_channel
 from datetime import datetime
 from copy import copy, deepcopy
-from models import full_MAE
+
 
 from build_test_sequences import distort_test_sequences
+
+
+class Encoding:
+
+    def __init__(self,activation=None,shape_input=None,shape_coding=None,name=None):
+
+        if name == None:
+            raise ValueError('no name passed')
+
+        if shape_input == None:
+            raise ValueError('no input shape passed')
+
+        if shape_coding == None:
+            raise ValueError('no coding shape passed')
+
+        if activation == None:
+            raise ValueError('no activation passed')
+
+        self.activation = activation
+
+        # random initializer definition
+        initializer = tf.random_normal([shape_input,shape_coding],stddev=0.01)
+
+        # variable definition
+        with tf.variable_scope("Encoding"):
+
+            self.weight = tf.get_variable(name=name+'_ec_layer_weights',
+                                          dtype=tf.float32,
+                                          initializer=initializer,
+                                          collections=[tf.GraphKeys.REGULARIZATION_LOSSES,
+                                                       tf.GraphKeys.GLOBAL_VARIABLES])
+
+            self.bias = tf.get_variable(name=name+'_ec_layer_bias',
+                                        shape=[shape_coding],
+                                        dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(),
+                                        collections=[tf.GraphKeys.REGULARIZATION_LOSSES,
+                                                     tf.GraphKeys.GLOBAL_VARIABLES])
+
+    def run(self,x):
+
+        # network definition
+        z = tf.add(tf.matmul(x,self.weight),self.bias)
+
+        # apply nonlinearity
+        if self.activation == 'relu':
+            output = tf.nn.relu(z)
+        if self.activation == 'sigmoid':
+            output = tf.nn.sigmoid(z)
+        if self.activation == 'tanh':
+            output = tf.nn.tanh(z)
+
+        # return encoding
+        return output
+
+class Decoding:
+
+    def __init__(self,activation=None,shape_coding=None,shape_decoding=None,name=None):
+
+        if name == None:
+            raise ValueError('no name passed')
+
+        if shape_decoding == None:
+            raise ValueError('no decoding shape passed')
+
+        if shape_coding == None:
+            raise ValueError('no coding shape passed')
+
+        if activation == None:
+            raise ValueError('no activation passed')
+
+        self.activation = activation
+
+        # random initializer definition
+        initializer = tf.random_normal([shape_coding,shape_decoding],stddev=0.01)
+
+        # variable definition
+        with tf.variable_scope("Decoding"):
+
+            self.weight = tf.get_variable(name=name+'_dc_layer_weights',
+                                          dtype=tf.float32,
+                                          initializer=initializer,
+                                          collections=[tf.GraphKeys.REGULARIZATION_LOSSES,
+                                                       tf.GraphKeys.GLOBAL_VARIABLES])
+
+            self.bias = tf.get_variable(name=name+'_dc_layer_bias',
+                                        shape=[shape_decoding],
+                                        dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(),
+                                        collections=[tf.GraphKeys.REGULARIZATION_LOSSES,
+                                                     tf.GraphKeys.GLOBAL_VARIABLES])
+
+    def run(self,x):
+
+        # network definition
+        z = tf.add(tf.matmul(x,self.weight),self.bias)
+
+        # apply nonlinearity
+        if self.activation == 'relu':
+            output = tf.nn.relu(z)
+        if self.activation == 'sigmoid':
+            output = tf.nn.sigmoid(z)
+        if self.activation == 'tanh':
+            output = tf.nn.tanh(z)
+
+        # return encoding
+        return output
+
+
+def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
+
+    # initialize model
+    IMR_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='red')
+    IMG_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='green')
+    IMB_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='blue')
+    DPT_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='depth')
+    GND_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='gnd')
+    OBJ_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='obj')
+    BLD_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='bld')
+    VEG_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='veg')
+    SKY_EC = Encoding(activation='relu',shape_input=1080,shape_coding=1024,name='sky')
+
+    SEM_EC = Encoding(activation='relu',shape_input=5*1024,shape_coding=1024,name='sem')
+
+    SHD_EC = Encoding(activation='relu',shape_input=5*1024,shape_coding=1024,name='full')
+    SHD_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=5*1024,name='full')
+
+    SEM_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=5*1024,name='sem')
+
+    IMR_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='red')
+    IMG_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='green')
+    IMB_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='blue')
+    DPT_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=1080,name='depth')
+    GND_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='gnd')
+    OBJ_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='obj')
+    BLD_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='bld')
+    VEG_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='veg')
+    SKY_DC = Decoding(activation='sigmoid',shape_coding=1024,shape_decoding=1080,name='sky')
+
+
+    # run model
+
+    imr_ec = IMR_EC.run(imr)
+    img_ec = IMG_EC.run(img)
+    imb_ec = IMB_EC.run(imb)
+    dpt_ec = DPT_EC.run(dpt)
+    gnd_ec = GND_EC.run(gnd)
+    obj_ec = OBJ_EC.run(obj)
+    bld_ec = BLD_EC.run(bld)
+    veg_ec = VEG_EC.run(veg)
+    sky_ec = SKY_EC.run(sky)
+
+    sem = tf.concat([gnd_ec,obj_ec,bld_ec,veg_ec,sky_ec],axis=1)
+    sem = SEM_EC.run(sem)
+
+    shd = tf.concat([dpt_ec,imr_ec,img_ec,imb_ec,sem],axis=1)
+
+    shd_ec = SHD_EC.run(shd)
+    shd_dc = SHD_DC.run(shd_ec)
+
+    dpt_dc,imr_dc,img_dc,imb_dc,sem_dc = tf.split(shd_dc,num_or_size_splits=5,axis=1)
+
+    sem_dc = SEM_DC.run(sem_dc)
+
+    gnd_dc,obj_dc,bld_dc,veg_dc,sky_dc = tf.split(sem_dc,num_or_size_splits=5,axis=1)
+
+    # decode all modalities
+
+    imr_hat = IMR_DC.run(imr_dc)
+    img_hat = IMG_DC.run(img_dc)
+    imb_hat = IMB_DC.run(imb_dc)
+    dpt_hat = DPT_DC.run(dpt_dc)
+    gnd_hat = GND_DC.run(gnd_dc)
+    obj_hat = OBJ_DC.run(obj_dc)
+    bld_hat = BLD_DC.run(bld_dc)
+    veg_hat = VEG_DC.run(veg_dc)
+    sky_hat = SKY_DC.run(sky_dc)
+
+    # generate output list
+    output = [imr_hat,img_hat,imb_hat,dpt_hat,gnd_hat,obj_hat,bld_hat,veg_hat,sky_hat]
+    return output
 
 
 
@@ -26,7 +207,7 @@ class MAE:
             raise ValueError('no number of epochs passed')
         self.hm_epochs = n_epochs
 
-        self.n_validations = 100
+        self.n_validations = 50
 
         if learning_rate == None:
             raise ValueError('no learning rate passed')
@@ -620,7 +801,14 @@ class MAE:
                 sess.run(epoch_loss_reset)
                 time1 = datetime.now()
 
+                i = 0
+
+                print('N Batches:',self.n_batches)
+
                 for _ in range(self.n_batches):
+
+                    i += 1
+                    print(i)
 
                     imr_batch = self.imr_train[_*self.batch_size:(_+1)*self.batch_size]
                     img_batch = self.img_train[_*self.batch_size:(_+1)*self.batch_size]
