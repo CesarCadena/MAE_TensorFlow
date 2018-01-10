@@ -19,7 +19,7 @@ print('initialize model')
 # Define Full Model
 
 mae = MAE(n_epochs=150,
-          learning_rate=1e-2,
+          learning_rate=1e-5,
           mirroring=False,
           verbose=True)
 
