@@ -19,26 +19,26 @@ print('initialize model')
 # Define Full Model
 
 mae = MAE(n_epochs=150,
-          learning_rate=1e-3,
+          learning_rate=1e-2,
           mirroring=False,
           verbose=True)
 
 '''
 rnn_mae = RecurrentMAE(n_epochs=400,
-                       rnn_option='basic',
+                       rnn_option='lstm',
                        n_rnn_steps=5,
                        mirroring=False,
-                       learning_rate=1e-5,
-                       sharing='shared',
+                       learning_rate=1e-2,
+                       sharing='nonshared',
                        load_previous=False,
                        model='new')
-                       
 '''
+
 
 
 # Train MultiModal AutoEncoder
 print('start training')
-mae.train_model(data_train,data_val)
+rnn_mae.train_model(data_train,data_val)
 #rnn_mae.train_model(data_train,data_val)
 #del data_train, data_val
 
