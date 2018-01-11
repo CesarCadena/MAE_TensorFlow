@@ -24,11 +24,10 @@ def invert_depth(inv_depth,option='gt'):
             if inv_depth[i] > 1/80.:
                 depth[i] = 1./inv_depth[i]
 
-    if option != 'gt':
+    if option == 'est':
         for i in range(0,inv_depth.shape[0]):
             if inv_depth[i] > 1e-03:
                 depth[i] = 1./inv_depth[i]
-
 
     return depth
 
