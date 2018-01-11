@@ -14,14 +14,22 @@ def create(n, constructor=list):
     for _ in range(n):
         yield constructor()
 
-def invert_depth(inv_depth):
+def invert_depth(inv_depth,option='gt'):
 
     inv_depth = np.reshape(inv_depth,(max(inv_depth.shape),1))
     depth = np.zeros(inv_depth.shape)
 
-    for i in range(0,inv_depth.shape[0]):
-        if inv_depth[i] > 1/80.:
-            depth[i] = 1./inv_depth[i]
+    if option == 'gt':
+        for i in range(0,inv_depth.shape[0]):
+            if inv_depth[i] > 1/80.:
+                depth[i] = 1./inv_depth[i]
+
+    if option != 'gt':
+        for i in range(0,inv_depth.shape[0]):
+            if inv_depth[i] > 1e-03:
+                depth[i] = 1./inv_depth[i]
+
+
     return depth
 
 def horizontal_mirroring(x,ind_who,resolution = (18,60),option=None):

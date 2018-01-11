@@ -1005,7 +1005,7 @@ class RecurrentMAE:
 
                 im_pred,c_val = sess.run([output,loss_val_update],feed_dict=feed_dict)
 
-                depth_pred = BR.invert_depth(im_pred[3])
+                depth_pred = BR.invert_depth(im_pred[3],option='est')
                 depth_gt = BR.invert_depth(depth_label[-1])
 
                 error_rms += eval.rms_error(depth_pred,depth_gt)
@@ -1248,7 +1248,7 @@ class RecurrentMAE:
                                                                                               sky_loss_update],
                                                                                              feed_dict=feed_dict)
 
-                    depth_pred = BR.invert_depth(im_pred[3])
+                    depth_pred = BR.invert_depth(im_pred[3],option='est')
                     depth_gt = BR.invert_depth(depth_label[-1])
 
                     error_rms += eval.rms_error(depth_pred,depth_gt)
