@@ -36,7 +36,7 @@ rnn_mae = RecurrentMAE(n_epochs=400,
 
 # Train MultiModal AutoEncoder
 print('start training')
-mae.train_model(data_train,data_val)
+rnn_mae.train_model(data_train,data_val)
 #rnn_mae.train_model(data_train,data_val)
 #del data_train, data_val
 
