@@ -218,18 +218,26 @@ class Basic_RNN:
             raise ValueError('no state initialization passed')
 
         # initialize state of recurrent network from initializing placeholder
-        state = init_states
+        h_init = init_states
 
-        # running recurrent layer
-        for i in range(0,self.n_rnn_steps-1):
+        def step(i,state,x):
+            xi = tf.gather(x,i)
             if self.option == 'nonshared':
-                state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[i])),self.B[i]),self.H[i])
+                state = tf.matmul(tf.add(tf.add(state,tf.matmul(xi,self.W[i])),self.B[i]),self.H[i])
             if self.option == 'shared':
-                state = tf.matmul(tf.add(tf.add(state,tf.matmul(inputs[i],self.W[0])),self.B[0]),self.H[0])
-            state = tf.nn.relu(state)
+                state = tf.matmul(tf.add(tf.add(state,tf.matmul(xi,self.W[0])),self.B[0]),self.H[0])
 
-        output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.W_t),state),self.B_t),self.V_t)
-        
+            state = tf.nn.relu(state)
+            return i + 1, state, x
+
+
+        _, h_fin, _ = tf.while_loop(lambda i, h, x: tf.less(i, self.n_rnn_steps),# this is called every iteration, if it outputs false, the loop stops
+                                    step,
+                                    [0,h_init,inputs])
+
+        output = tf.matmul(tf.add(tf.add(tf.matmul(inputs[-1],self.W_t),h_fin),self.B_t),self.V_t)
+
+
         return tf.nn.relu(output)
 
 class LSTM_RNN:
@@ -301,13 +309,14 @@ class LSTM_RNN:
                                                 initializer=tf.zeros_initializer()))
 
                 self.U_f.append(tf.get_variable(name='U_f_'+str(step),
+                                                shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=self.initializer_U))
+                                                initializer=tf.random_normal_initializer()))
 
                 self.W_f.append(tf.get_variable(name='W_f_'+str(step),
                                                 shape=[state_size, state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.random_normal_initializer()))
 
 
                 # internal state
@@ -317,13 +326,14 @@ class LSTM_RNN:
                                               initializer=tf.zeros_initializer()))
 
                 self.U.append(tf.get_variable(name='U_'+str(step),
+                                              shape=[coding_size,state_size],
                                               dtype=tf.float32,
-                                              initializer=self.initializer_U))
+                                              initializer=tf.random_normal_initializer()))
 
                 self.W.append(tf.get_variable(name='W_'+str(step),
                                               shape=[state_size, state_size],
                                               dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
+                                              initializer=tf.random_normal_initializer()))
 
                 # external input gate
                 self.b_g.append(tf.get_variable(name='b_g_'+str(step),
@@ -332,13 +342,14 @@ class LSTM_RNN:
                                                 initializer=tf.zeros_initializer()))
 
                 self.U_g.append(tf.get_variable(name='U_g_'+str(step),
+                                                shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=self.initializer_U))
+                                                initializer=tf.random_normal_initializer()))
 
                 self.W_g.append(tf.get_variable(name='W_g_'+str(step),
                                                 shape=[state_size, state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.random_normal_initializer()))
 
                 # output gate
                 self.b_o.append(tf.get_variable(name='b_o_'+str(step),
@@ -347,18 +358,20 @@ class LSTM_RNN:
                                                 initializer=tf.zeros_initializer()))
 
                 self.U_o.append(tf.get_variable(name='U_o_'+str(step),
+                                                shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=self.initializer_U))
+                                                initializer=tf.random_normal_initializer()))
 
                 self.W_o.append(tf.get_variable(name='W_o_'+str(step),
                                                 shape=[state_size, state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.random_normal_initializer()))
 
              # state-to-coding weights
             self.O_w = tf.get_variable(name='O_w',
+                                       shape=[state_size,coding_size],
                                        dtype=tf.float32,
-                                       initializer=self.initializer_O)
+                                       initializer=tf.random_normal_initializer())
 
             self.O_b = tf.get_variable(name='O_b',
                                        shape=[coding_size],
@@ -371,9 +384,27 @@ class LSTM_RNN:
             raise ValueError('no state initialization passed')
 
         # state initialization
-        h_t = init_states
-        s_t = init_states
+        h_init = init_states
+        s_init = init_states
 
+        def step(i,s_t,h_t,x):
+            xi = tf.gather(x,i)
+            f_t = tf.sigmoid(tf.add(tf.add(self.b_f[0],tf.matmul(xi,self.U_f[0])),tf.matmul(h_t,self.W_f[0])))
+            i_t = tf.sigmoid(tf.add(tf.add(self.b_g[0],tf.matmul(xi,self.U_g[0])),tf.matmul(h_t,self.W_g[0])))
+            g_t = tf.tanh(tf.add(tf.add(self.b[0],tf.matmul(xi,self.U[0])),tf.matmul(h_t,self.W[0])))
+            s_t = tf.add(tf.multiply(f_t,s_t),tf.multiply(i_t,g_t))
+            o_t = tf.sigmoid(tf.add(tf.add(self.b_o[0],tf.matmul(xi,self.U_o[0])),tf.matmul(h_t,self.W_o[0])))
+            h_t = tf.multiply(o_t,tf.tanh(s_t))
+
+            return i+1,s_t,h_t,x
+
+        _, h_fin, s_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
+                                           step,
+                                           [0,s_init,h_init,inputs])
+
+
+
+        '''
         # cell definition
         for step in range(0,self.n_rnn_steps):
 
@@ -394,11 +425,12 @@ class LSTM_RNN:
 
             # state update
             h_t = tf.multiply(o_t,tf.tanh(s_t))
+            
+        '''
 
 
         # reconstruct coding
-        output = tf.add(tf.matmul(h_t,self.O_w),self.O_b)
-
+        output = tf.nn.relu(tf.add(tf.matmul(h_fin,self.O_w),self.O_b))
         return output
 
 class Gated_RNN:
