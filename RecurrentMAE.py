@@ -782,14 +782,19 @@ class RecurrentMAE:
 
         self.training_cost = cost
 
-        lr = tf.Variable(self.learning_rate)
-        lr_update = tf.scalar_mul(0.1,lr)
+        global_step = tf.Variable(0,trainable=False)
+        base_rate = self.learning_rate
+        #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True)
+        self.learning_rate = tf.train.piecewise_constant(global_step,
+                                                         [50*self.n_batches,100*self.n_batches,150*self.n_batches,200*self.n_batches],
+                                                         [base_rate,0.1*base_rate,(0.1**2)*base_rate,(0.1**3)*base_rate])
 
-        summary_lr = tf.summary.scalar('Learning Rate',lr)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+        summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
+
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1015,11 +1020,6 @@ class RecurrentMAE:
 
 
             for epoch in range(0,self.hm_epochs):
-
-                if epoch%50==0:
-                    self.learning_rate = 0.1*self.learning_rate
-                    print(self.learning_rate)
-                    sess.run(lr_update)
 
                 sum_lr = sess.run(summary_lr)
                 train_writer1.add_summary(sum_lr,epoch)
