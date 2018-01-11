@@ -20,6 +20,8 @@ def rms_error(xest,xgt):
     T3 = T1+T2
     T = np.where(T3==2)[0]
 
+    print(T)
+
     diff = xest[T] - xgt[T]
     e = np.sqrt(np.sum(np.square(diff))/len(T))
     return e
@@ -40,6 +42,8 @@ def relative_error(xest,xgt):
 
     T3 = T1+T2
     T = np.where(T3==2)[0]
+
+    print(T)
 
     diff = xest[T]-xgt[T]
     s = np.divide(np.abs(diff),xgt[T])
