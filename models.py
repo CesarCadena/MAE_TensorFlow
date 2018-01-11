@@ -398,7 +398,7 @@ class LSTM_RNN:
 
             return i+1,s_t,h_t,x
 
-        _, h_fin, s_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
+        _, s_fin, h_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
                                            step,
                                            [0,s_init,h_init,inputs])
 
