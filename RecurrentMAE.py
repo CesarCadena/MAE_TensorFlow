@@ -1128,8 +1128,7 @@ class RecurrentMAE:
                                  self.c_w5:c_w5,
                                  self.c_r:c_wr,
                                  self.c_g:c_wg,
-                                 self.c_b:c_wb,
-                                 self.lr:self.learning_rate}
+                                 self.c_b:c_wb}
 
                     feed_dict.update(cost_dict)
 
