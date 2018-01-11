@@ -789,6 +789,8 @@ class RecurrentMAE:
                                                          [50*self.n_batches,100*self.n_batches,150*self.n_batches,200*self.n_batches],
                                                          [base_rate,0.1*base_rate,(0.1**2)*base_rate,(0.1**3)*base_rate])
 
+        self.learning_rate = 1e-05
+
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
