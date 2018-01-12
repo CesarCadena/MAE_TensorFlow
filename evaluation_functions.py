@@ -12,7 +12,7 @@ def rms_error(xest,xgt):
     N = len(T[T==True])
 
     diff = xest[T] - xgt[T]
-    e = np.sqrt(np.sum(np.square(diff)))/N
+    e = np.sqrt(np.sum(np.square(diff))/N)
     return e
 
 def relative_error(xest,xgt):
