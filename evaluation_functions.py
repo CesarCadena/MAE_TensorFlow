@@ -9,6 +9,7 @@ def rms_error(xest,xgt):
     xgt = np.reshape(xgt,(max(xgt.shape),1))
 
     T = np.where(xgt < 80)
+    print(T)
 
     print(len(T))
 
