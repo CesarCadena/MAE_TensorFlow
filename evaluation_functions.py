@@ -10,9 +10,6 @@ def rms_error(xest,xgt):
 
     T = (xgt <= 80.) & (xgt > 0.0)
 
-    A = T[T==True]
-    print(len(A))
-
     diff = xest[T] - xgt[T]
     e = np.sqrt(np.sum(np.square(diff))/len(T))
     return e
@@ -23,8 +20,6 @@ def relative_error(xest,xgt):
     xgt = np.reshape(xgt,(max(xgt.shape),1))
 
     T = (xgt <= 80.) & (xgt > 0.0)
-
-    print(len((T==True)))
 
     diff = xest[T]-xgt[T]
     s = np.divide(np.abs(diff),xgt[T])
