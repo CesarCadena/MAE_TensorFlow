@@ -8,7 +8,7 @@ def rms_error(xest,xgt):
     xest = np.reshape(xest,(max(xest.shape),1))
     xgt = np.reshape(xgt,(max(xgt.shape),1))
 
-    T = np.where(xgt < 80)
+    T = np.where(xgt < 80)[0]
     print(T)
 
     print(len(T))
@@ -22,7 +22,7 @@ def relative_error(xest,xgt):
     xest = np.reshape(xest,(max(xest.shape),1))
     xgt = np.reshape(xgt,(max(xgt.shape),1))
 
-    T = np.where(xgt < 80)
+    T = np.where(xgt < 80)[0]
 
     print(len(T))
 
