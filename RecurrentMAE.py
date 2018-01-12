@@ -621,11 +621,11 @@ class RecurrentMAE:
                self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
                10*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
-               self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-               self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-               self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-               self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-               self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
+               0.1*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+               0.1*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+               0.1*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+               0.1*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+               0.1*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
@@ -783,7 +783,7 @@ class RecurrentMAE:
         self.training_cost = cost
 
         global_step = tf.Variable(0,trainable=False)
-        base_rate = 1e-04
+        base_rate = 1e-05
         #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True)
         self.learning_rate = tf.train.piecewise_constant(global_step,
                                                          [50*self.n_batches,100*self.n_batches,150*self.n_batches,200*self.n_batches],
