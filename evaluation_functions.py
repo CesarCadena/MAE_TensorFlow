@@ -11,8 +11,6 @@ def rms_error(xest,xgt):
     T = (xgt <= 80.) & (xgt > 0.0)
     N = len(T[T==True])
 
-    print(N)
-
     diff = xest[T] - xgt[T]
     e = np.sqrt(np.sum(np.square(diff)))/N
     return e
