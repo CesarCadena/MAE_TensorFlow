@@ -620,12 +620,12 @@ class RecurrentMAE:
                self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
-               100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
                0.01*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                0.01*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                0.01*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
                0.01*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
                0.01*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
+        #100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
 
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
