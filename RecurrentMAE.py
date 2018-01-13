@@ -792,9 +792,9 @@ class RecurrentMAE:
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables,global_step=global_step)
+        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables,global_step=global_step)
+        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables,global_step=global_step)
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
