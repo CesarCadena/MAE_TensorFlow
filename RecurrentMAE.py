@@ -637,11 +637,11 @@ class RecurrentMAE:
                tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
                tf.nn.l2_loss(label_series[9][-1]-output[8])
 
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.05)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005)
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
-        cost += 10*reg_term
+        cost += 30*reg_term
 
         return cost, loss
 
@@ -783,7 +783,7 @@ class RecurrentMAE:
         self.training_cost = cost
 
         global_step = tf.Variable(0,trainable=False)
-        base_rate = 1e-04
+        base_rate = 1e-06
         self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.9, staircase=True)
         #self.learning_rate = tf.train.piecewise_constant(global_step,
         #                                                 [30*self.n_batches,60*self.n_batches,120*self.n_batches,200*self.n_batches],
