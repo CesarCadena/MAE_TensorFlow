@@ -31,7 +31,7 @@ rnn_mae = RecurrentMAE(n_epochs=400,
                        n_rnn_steps=5,
                        mirroring=True,
                        learning_rate=1e-3,
-                       sharing='nonshared',
+                       sharing='shared',
                        load_previous=False,
                        model='new')
 
