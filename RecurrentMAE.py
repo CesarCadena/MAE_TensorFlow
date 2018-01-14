@@ -800,7 +800,7 @@ class RecurrentMAE:
 
         capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
         capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
-        capped_gvs3 = [(tf.clip_by_value(grad,2), var) for grad, var in gvs3]
+        capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
 
 
         train_op1 = optimizer.apply_gradients(capped_gvs1,global_step=global_step)
