@@ -792,9 +792,21 @@ class RecurrentMAE:
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
-        optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables,global_step=global_step)
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables,global_step=global_step)
-        optimizer3 = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables,global_step=global_step)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+
+        gvs1 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+        gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+        gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+
+        capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
+        capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
+        capped_gvs3 = [(tf.clip_by_value(grad,2), var) for grad, var in gvs3]
+
+
+        train_op1 = optimizer.apply_gradients(capped_gvs1,global_step=global_step)
+        train_op2 = optimizer.apply_gradients(capped_gvs2,global_step=global_step)
+        train_op3 = optimizer.apply_gradients(capped_gvs3,global_step=global_step)
+
 
         validations = np.arange(0, self.n_training_validations)
         set_val = np.random.choice(validations,self.n_training_validations,replace=False)
@@ -1134,13 +1146,13 @@ class RecurrentMAE:
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 20:
-                        _ , c, l  = sess.run([optimizer1, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 20 and epoch < 40:
-                        _ , c, l = sess.run([optimizer2, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l = sess.run([train_op2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
-                        _ , c, l = sess.run([optimizer3, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l = sess.run([train_op3, cost, epoch_loss_update], feed_dict=feed_dict)
 
                 sum_train = sess.run(sum_epoch_loss)
                 train_writer1.add_summary(sum_train,epoch)
