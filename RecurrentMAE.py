@@ -785,8 +785,8 @@ class RecurrentMAE:
         global_step = tf.Variable(0,trainable=False)
 
         #base_rate = 1e-06 # basic RNN
-        base_rate = 1e-02
-        
+        base_rate = 1e-01
+
         #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.9, staircase=True)
         self.learning_rate = tf.train.piecewise_constant(global_step,
                                                          [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
