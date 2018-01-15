@@ -17,7 +17,7 @@ for semantic channels ,use log likelihood loss
 
 # visualize 
 RGB  :
-https://github.com/yiliu1/Convolutional-Auto-Encoder/blob/master/VAE.ipynb
+https://github.com/yiliu1/Convolutional-Auto-Encoder/blob/master/VAE.ipynb  
 Full VAE,depth:  
 https://github.com/yiliu1/Convolutional-Auto-Encoder/blob/master/VAE_full.ipynb
 
