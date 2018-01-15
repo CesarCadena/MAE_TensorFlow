@@ -27,13 +27,13 @@ mae = MAE(n_epochs=150,
 
 '''
 rnn_mae = RecurrentMAE(n_epochs=400,
-                       rnn_option='basic',
+                       rnn_option='LSTM',
                        n_rnn_steps=5,
                        mirroring=True,
                        learning_rate=1e-3,
                        sharing='shared',
                        load_previous=False,
-                       model='new')
+                       model='old')
 
 # Train MultiModal AutoEncoder
 print('start training')
