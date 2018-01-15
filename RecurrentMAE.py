@@ -798,6 +798,9 @@ class RecurrentMAE:
         gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
         gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
+        print(type(gvs1))
+        print(gvs1)
+
         capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
         capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
         capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
