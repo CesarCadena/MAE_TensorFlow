@@ -303,6 +303,10 @@ class LSTM_RNN:
         # define all variables
         with tf.variable_scope(scope) as lstm:
 
+            self.cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=1024)
+
+            '''
+
             if self.option == 'nonshared':
             # does not work with gradient clipping
                 for step in range(0,self.n_rnn_steps):
@@ -437,6 +441,9 @@ class LSTM_RNN:
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
                                                     initializer=tf.random_normal_initializer()))
+                                                    
+                                                    
+                    '''
 
 
              # state-to-coding weights
@@ -450,6 +457,9 @@ class LSTM_RNN:
                                        dtype=tf.float32,
                                        initializer=tf.zeros_initializer())
 
+
+
+
     def run(self,inputs,init_states=None):
 
         if init_states == None:
@@ -458,6 +468,15 @@ class LSTM_RNN:
         # state initialization
         h_init = init_states
         s_init = init_states
+
+        state = init_states
+
+        output,state = tf.nn.static_rnn(self.cell,inputs,dtype=tf.float32)
+
+
+
+
+        '''
 
         def step(i,s_t,h_t,x):
             xi = tf.gather(x,i)
@@ -473,6 +492,8 @@ class LSTM_RNN:
         _, s_fin, h_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
                                            step,
                                            [0,s_init,h_init,inputs])
+                                           
+                                           '''
 
 
 
@@ -502,7 +523,7 @@ class LSTM_RNN:
 
 
         # reconstruct coding
-        output = tf.nn.relu(tf.add(tf.matmul(h_fin,self.O_w),self.O_b))
+        output = tf.nn.relu(tf.add(tf.matmul(output[-1],self.O_w),self.O_b))
         return output
 
 class Gated_RNN:
