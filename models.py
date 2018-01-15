@@ -242,7 +242,7 @@ class Basic_RNN:
 
 class LSTM_RNN:
 
-    def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None, option=shared):
+    def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None, option='shared'):
 
         # options
         if state_size == None:
