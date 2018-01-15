@@ -289,10 +289,12 @@ with tf.variable_scope("RGB"):
     vae =VariationalAutoencoder(network_architecture, learning_rate=0.001, batch_size=100)
 
 
-train_new_model =True
-if train_new_model:    
-    vae.train(batch_size=100,training_epochs=1)
-    vae.save("models/RGB_1_epochs/model")
-else:
-    vae.load("models/RGB_1_epochs/model")
+    train_new_model =True
+    if train_new_model:    
+       vae.train(batch_size=100,training_epochs=100)
+       vae.save("models/RGB_100_epochs/model")
+    else:
+       vae.load("models/RGB_100_epochs/model")
+
+sess.close()
 
