@@ -27,7 +27,7 @@ mae = MAE(n_epochs=150,
 
 '''
 rnn_mae = RecurrentMAE(n_epochs=400,
-                       rnn_option='lstm',
+                       rnn_option='basic',
                        n_rnn_steps=5,
                        mirroring=True,
                        learning_rate=1e-3,
