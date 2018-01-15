@@ -242,7 +242,7 @@ class Basic_RNN:
 
 class LSTM_RNN:
 
-    def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None):
+    def __init__(self, state_size=None, coding_size=None, n_rnn_steps=None, scope=None, option=shared):
 
         # options
         if state_size == None:
@@ -261,6 +261,8 @@ class LSTM_RNN:
             raise ValueError('no cell scope passed')
         self.scope = scope
 
+        self.option = option
+
         # define initializer for input weights
         if state_size == coding_size:
             self.initializer_U = 0.0001*tf.diag(tf.ones([coding_size]))
@@ -272,6 +274,7 @@ class LSTM_RNN:
             self.initializer_O = tf.diag(tf.ones([coding_size]))
         else:
             self.initializer_O = tf.concat([tf.diag(tf.ones([coding_size])), tf.zeros([state_size - coding_size, coding_size])], axis=0)
+
 
         # forget gate
         # bias, input weights and recurrent weights for forget gate
@@ -300,72 +303,141 @@ class LSTM_RNN:
         # define all variables
         with tf.variable_scope(scope) as lstm:
 
-            for step in range(0,self.n_rnn_steps):
+            if self.option == 'nonshared':
+            # does not work with gradient clipping
+                for step in range(0,self.n_rnn_steps):
 
+                    # forget gate
+                    self.b_f.append(tf.get_variable(name='b_f_'+str(step),
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.U_f.append(tf.get_variable(name='U_f_'+str(step),
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+                    self.W_f.append(tf.get_variable(name='W_f_'+str(step),
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+
+                    # internal state
+                    self.b.append(tf.get_variable(name='b_'+str(step),
+                                                  shape=[state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.zeros_initializer()))
+
+                    self.U.append(tf.get_variable(name='U_'+str(step),
+                                                  shape=[coding_size,state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.random_normal_initializer()))
+
+                    self.W.append(tf.get_variable(name='W_'+str(step),
+                                                  shape=[state_size, state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.random_normal_initializer()))
+
+                    # external input gate
+                    self.b_g.append(tf.get_variable(name='b_g_'+str(step),
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.U_g.append(tf.get_variable(name='U_g_'+str(step),
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+                    self.W_g.append(tf.get_variable(name='W_g_'+str(step),
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+                    # output gate
+                    self.b_o.append(tf.get_variable(name='b_o_'+str(step),
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.U_o.append(tf.get_variable(name='U_o_'+str(step),
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+                    self.W_o.append(tf.get_variable(name='W_o_'+str(step),
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
+            if self.option == 'shared':
                 # forget gate
-                self.b_f.append(tf.get_variable(name='b_f_'+str(step),
-                                                shape=[state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                    self.b_f.append(tf.get_variable(name='b_f',
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
 
-                self.U_f.append(tf.get_variable(name='U_f_'+str(step),
-                                                shape=[coding_size,state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.U_f.append(tf.get_variable(name='U_f',
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
 
-                self.W_f.append(tf.get_variable(name='W_f_'+str(step),
-                                                shape=[state_size, state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.W_f.append(tf.get_variable(name='W_f',
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
 
 
-                # internal state
-                self.b.append(tf.get_variable(name='b_'+str(step),
-                                              shape=[state_size],
-                                              dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
+                    # internal state
+                    self.b.append(tf.get_variable(name='b',
+                                                  shape=[state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.zeros_initializer()))
 
-                self.U.append(tf.get_variable(name='U_'+str(step),
-                                              shape=[coding_size,state_size],
-                                              dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer()))
+                    self.U.append(tf.get_variable(name='U',
+                                                  shape=[coding_size,state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.random_normal_initializer()))
 
-                self.W.append(tf.get_variable(name='W_'+str(step),
-                                              shape=[state_size, state_size],
-                                              dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer()))
+                    self.W.append(tf.get_variable(name='W',
+                                                  shape=[state_size, state_size],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.random_normal_initializer()))
 
-                # external input gate
-                self.b_g.append(tf.get_variable(name='b_g_'+str(step),
-                                                shape=[state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                    # external input gate
+                    self.b_g.append(tf.get_variable(name='b_g',
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
 
-                self.U_g.append(tf.get_variable(name='U_g_'+str(step),
-                                                shape=[coding_size,state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.U_g.append(tf.get_variable(name='U_g',
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
 
-                self.W_g.append(tf.get_variable(name='W_g_'+str(step),
-                                                shape=[state_size, state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.W_g.append(tf.get_variable(name='W_g',
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
 
-                # output gate
-                self.b_o.append(tf.get_variable(name='b_o_'+str(step),
-                                                shape=[state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                    # output gate
+                    self.b_o.append(tf.get_variable(name='b_o',
+                                                    shape=[state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
 
-                self.U_o.append(tf.get_variable(name='U_o_'+str(step),
-                                                shape=[coding_size,state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.U_o.append(tf.get_variable(name='U_o',
+                                                    shape=[coding_size,state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
 
-                self.W_o.append(tf.get_variable(name='W_o_'+str(step),
-                                                shape=[state_size, state_size],
-                                                dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer()))
+                    self.W_o.append(tf.get_variable(name='W_o',
+                                                    shape=[state_size, state_size],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.random_normal_initializer()))
+
 
              # state-to-coding weights
             self.O_w = tf.get_variable(name='O_w',
@@ -654,7 +726,7 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
     if option == 'basic':
         RNN = Basic_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN',option=sharing)
     if option == 'lstm':
-        RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN')
+        RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN',option=sharing)
     if option == 'gated':
         RNN = Gated_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
 
