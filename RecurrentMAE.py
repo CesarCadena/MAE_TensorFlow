@@ -783,7 +783,10 @@ class RecurrentMAE:
         self.training_cost = cost
 
         global_step = tf.Variable(0,trainable=False)
-        base_rate = 1e-06
+
+        #base_rate = 1e-06 # basic RNN
+        base_rate = 1e-02
+        
         #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.9, staircase=True)
         self.learning_rate = tf.train.piecewise_constant(global_step,
                                                          [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
@@ -797,9 +800,6 @@ class RecurrentMAE:
         gvs1 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
         gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
         gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
-
-        print(type(gvs1))
-        print(gvs1)
 
         capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
         capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
