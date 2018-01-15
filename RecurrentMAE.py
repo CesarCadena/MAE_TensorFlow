@@ -638,12 +638,12 @@ class RecurrentMAE:
                tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         #regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.05) #basic rnn
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
         #cost += 30*reg_term #basic rnn
-        cost += reg_term
+        cost += 30*reg_term
 
         return cost, loss
 
