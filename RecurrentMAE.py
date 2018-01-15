@@ -1152,13 +1152,13 @@ class RecurrentMAE:
                     feed_dict.update(cost_dict)
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
-                    if epoch < 20:
+                    if epoch < 10:
                         _ , c, l  = sess.run([train_op0, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 20 and epoch < 40:
+                    if epoch >= 10 and epoch < 20:
                         _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 40 and epoch < 80:
+                    if epoch >= 20 and epoch < 40:
                         _ , c, l = sess.run([train_op2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
