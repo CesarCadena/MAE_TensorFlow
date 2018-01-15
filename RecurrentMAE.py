@@ -799,7 +799,8 @@ class RecurrentMAE:
 
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
 
-        gvs1 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+        gvs0 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+        gvs1 = gvs0
         gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
         gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
@@ -807,7 +808,7 @@ class RecurrentMAE:
         capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
         capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
 
-
+        train_op0 = optimizer.apply_gradients(gvs0,global_step=global_step)
         train_op1 = optimizer.apply_gradients(capped_gvs1,global_step=global_step)
         train_op2 = optimizer.apply_gradients(capped_gvs2,global_step=global_step)
         train_op3 = optimizer.apply_gradients(capped_gvs3,global_step=global_step)
@@ -1151,9 +1152,12 @@ class RecurrentMAE:
 
                     # training operation (first only full encoding is trained, then (after 10 epochs) everything is trained
                     if epoch < 20:
-                        _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
+                        _ , c, l  = sess.run([train_op0, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     if epoch >= 20 and epoch < 40:
+                        _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
+
+                    if epoch >= 40 and epoch < 80:
                         _ , c, l = sess.run([train_op2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
