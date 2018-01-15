@@ -257,12 +257,10 @@ class VariationalAutoencoder(object):
                 cost = self.partial_fit(batch_xs)
             # Compute average loss
                 avg_cost += cost / n_samples * batch_size
-
         # Display logs per epoch step
             if epoch % display_step == 0:
                 print("Epoch:", '%04d' % (epoch+1), 
                       "cost=", "{:.9f}".format(avg_cost))
-
 
 
 # Load depth data 
@@ -288,3 +286,5 @@ if train_new_model:
     vae.save("models/depth_5_epochs/model")
 else:
     vae.load("models/depth_5_epochs/model")
+
+sess.close()

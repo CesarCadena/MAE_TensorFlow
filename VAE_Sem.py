@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-#%matplotlib inline
+
 np.random.seed(0)
 tf.set_random_seed(0)
 config = tf.ConfigProto()
@@ -20,8 +20,7 @@ Sem_input=np.concatenate((Ground_input,Objects_input,
                           Building_input,Vegetation_input,Sky_input),
                           axis=1)
 
-
-
+n_samples=Sem_input.shape[0]
 #Build the model 
 def xavier_init(fan_in, fan_out, constant=1): 
     """ Xavier initialization of network weights"""
@@ -304,4 +303,4 @@ if train_new_model:
 else:
     vae.load("models/sem_1_epochs/model")
 
-
+sess.close()

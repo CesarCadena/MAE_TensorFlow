@@ -7,7 +7,6 @@ import os
 import sys
 tf.reset_default_graph()
 
-
 batch_size=128
 hidden_size=1024
 num_epoch=50

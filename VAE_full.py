@@ -7,6 +7,7 @@ tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 
+
 def xavier_init(fan_in, fan_out, constant=1): 
 	""" Xavier initialization of network weights"""
 	# https://stackoverflow.com/questions/33640581/how-to-do-xavier-initialization-on-tensorflow
@@ -15,22 +16,20 @@ def xavier_init(fan_in, fan_out, constant=1):
 	# return tensors
 	return tf.random_uniform((fan_in, fan_out), #  shape of the weights
 							 minval=low, maxval=high, # here is the range 
-							 dtype=tf.float32) # here is the type 
+							 dtype=tf.float32) # here is the type
+
 
 class VariationalAutoencoder(object):
-	
 	""" Based on See "Auto-Encoding Variational Bayes" by Kingma and Welling
 	"""
 	def __init__(self, network_architecture,
 				 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=100):
-		 
 		self.network_architecture=network_architecture# which is a dictionary 
 		self.transfer_fct=transfer_fct
 		self.learning_rate=learning_rate
 		self.batch_size=batch_size
 		# tf Graph input
 		self.x=tf.placeholder(tf.float32,[None, network_architecture["n_input"]])
-		
 		# Create auotencoder 
 		self.create_network()
 		# define loss function based on variational upper bound 
@@ -38,13 +37,12 @@ class VariationalAutoencoder(object):
 		self.create_loss_optimizer()
 		#self.saver=tf.train.Saver()
 
+
 	def initialize_weights(self, n_hidden_recog_1, n_hidden_recog_2, 
 							n_hidden_gener_1,  n_hidden_gener_2, 
 							n_input, n_z):
-		
 		# create a dictionary of tensor variables 
 		all_weights = dict()
-		
 		# recognition  network
 		all_weights['weights_recog'] = {
 			'h1': tf.Variable(xavier_init(n_input, n_hidden_recog_1)),
@@ -56,7 +54,6 @@ class VariationalAutoencoder(object):
 			'b2': tf.Variable(tf.zeros([n_hidden_recog_2], dtype=tf.float32)),
 			'out_mean': tf.Variable(tf.zeros([n_z], dtype=tf.float32)),
 			'out_log_sigma': tf.Variable(tf.zeros([n_z], dtype=tf.float32))}
-		
 		# generate network 
 		all_weights['weights_gener'] = {
 			'h1': tf.Variable(xavier_init(n_z, n_hidden_gener_1)),
@@ -73,10 +70,10 @@ class VariationalAutoencoder(object):
 	def create_network(self):
 		# create tensor variables for  weights and bias
 		self.network_weights=self.initialize_weights(**self.network_architecture) 
+		# network_weights  is a dictionary 
 		# pass architecture parameters 
 		# network_architecture is a dictionary 
-		
-		
+
 		# recognition network :
 		#input: data x shape [batch_size,n_x]
 		#output : mean of z , log(variance^2) shape [batch_size,n_z]
@@ -134,11 +131,9 @@ class VariationalAutoencoder(object):
 		x_reconstr_mean = \
 		   tf.add(tf.matmul(layer_2, weights['out_mean']), 
 								 biases['out_mean'])
-			
 		#x_reconstr_sigma= \
 		#     tf.add(tf.matmul(layer_2, weights['out_log_sigma']), 
 		#                        biases['out_log_sigma'])
-			
 		return x_reconstr_mean
 	
 	def create_loss_optimizer(self):
@@ -164,7 +159,6 @@ class VariationalAutoencoder(object):
 		# 1) gaussian distribution
 		reconstr_error=self.x-self.x_reconstr_mean
 		reconstr_loss=tf.reduce_sum(tf.square(reconstr_error),axis=1)
-
 		# 2.) The latent loss, which is defined as the Kullback Leibler divergence 
 		##    between the distribution in latent space induced by the encoder on 
 		#     the data and some prior. This acts as a kind of regularizer.
@@ -180,36 +174,35 @@ class VariationalAutoencoder(object):
 		self.optimizer = \
 			tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
 			
+
 	def partial_fit(self, X):
-		"""Train model based on mini-batch of input data.
-		
+		"""
+		Train model based on mini-batch of input data.
 		Return cost of mini-batch.
 		"""
-		opt, cost = sess.run((self.optimizer, self.cost), 
+		opt,cost = sess.run((self.optimizer, self.cost), 
 								  feed_dict={self.x: X})
 		return cost
+
 
 	def train(self, batch_size=100, training_epochs=10, display_step=1):
 		print("training started ...")
 		train_indices=range(n_samples)
-		
 		for epoch in range(training_epochs):
 			avg_cost = 0.
 			total_batch = int(n_samples / batch_size)
 			perm_indices=np.random.permutation(train_indices)
 		# Loop over all batches
 			for i in range(total_batch):
-				
 				offset=(i*batch_size)%(n_samples-batch_size)
 				# mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
 				batch_indices=perm_indices[offset:(offset+batch_size)]
-				
+				# feed the data for full models 
 				batch_xs=z_in[batch_indices]
 			# Fit training using batch data
 				cost = self.partial_fit(batch_xs)
 			# Compute average loss
-				avg_cost += cost / n_samples * batch_size
-
+				avg_cost += cost/n_samples*batch_size
 		# Display logs per epoch step
 			if epoch % display_step == 0:
 				print("Epoch:", '%04d' % (epoch+1), 
@@ -258,7 +251,6 @@ saver_rgb=tf.train.Saver(var_rgb)
 
 # Build network for semantic channels
 with tf.variable_scope("Sem"):
-
 	network_architecture_Sem = \
 		dict(n_hidden_recog_1=2000, # 1st layer encoder neurons
 		 n_hidden_recog_2=2000, # 2nd layer encoder neurons
@@ -266,7 +258,7 @@ with tf.variable_scope("Sem"):
 		 n_hidden_gener_2=2000, # 2nd layer decoder neurons
 		 n_input=5400, # MNIST data input (img shape: 28*28)
 		 n_z=100)  # dimensionality of latent space
-	vae_Sem= VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4, batch_size=100)
+	vae_Sem=VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4,batch_size=100)
 
 listvar3=vae_Sem.network_weights
 var_Sem=(list(listvar3['weights_recog'].values())
@@ -276,21 +268,20 @@ var_Sem=(list(listvar3['weights_recog'].values())
 saver_Sem=tf.train.Saver(var_Sem)
 
 
+########################    Start build  shared information fusion   #############################
+
 
 
 ########################    Start build  shared information fusion   #############################
-
-########################    Start build  shared information fusion   #############################
-
 ############## Load data ####################
 depth_data=np.load("../depth_data.npy")
-Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)
+Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)# shape [size,1080]
 
 RGB_data=np.load("../rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
 G_data=RGB_data[:,:,:,1].reshape(-1,1080)
 B_data=RGB_data[:,:,:,2].reshape(-1,1080)
-RGB_input=np.concatenate((R_data,G_data,B_data),axis=1)
+RGB_input=np.concatenate((R_data,G_data,B_data),axis=1) #shape[size,3*1080]
 
 Sem_data=np.load("../sem_data.npy")
 Sem_input=np.transpose(Sem_data,(0,2,1,3))
@@ -299,17 +290,16 @@ Objects_input=Sem_input[:,:,:,1].reshape(-1,1080)
 Building_input=Sem_input[:,:,:,2].reshape(-1,1080)
 Vegetation_input=Sem_input[:,:,:,3].reshape(-1,1080)
 Sky_input=Sem_input[:,:,:,4].reshape(-1,1080)
-
 Sem_input=np.concatenate((Ground_input,Objects_input,
 						  Building_input,Vegetation_input,Sky_input),
-						  axis=1)
-n_samples=Sem_input.shape[0]
+						  axis=1)# shape[size,5*1080]
+
+n_samples=Sem_input.shape[0] # size 
 ############## Finish Load data ####################
 
 
 
 with tf.variable_scope("Full"):
-
 	network_architecture_Full = \
 		dict(n_hidden_recog_1=50, # 1st layer encoder neurons
 		 n_hidden_recog_2=50, # 2nd layer encoder neurons
@@ -326,6 +316,7 @@ with tf.variable_scope("Full"):
 init=tf.global_variables_initializer()
 sess=tf.Session(config=config)
 sess.run(init)
+
 ###Load  other models 
 saver_depth.restore(sess,"models/depth_5_epochs/model")
 print("loaded model weights from "+"models/depth_5_epochs/model")
@@ -336,14 +327,16 @@ print("loaded model weights from "+"models/RGB_1_epochs/model")
 saver_Sem.restore(sess,"models/sem_1_epochs/model")
 print("loaded model weights from "+"models/sem_1_epochs/model")
 
-###Build data for latent space 
+
+###Build data for full model 
 z_depth=sess.run(vae_depth.z_mean,feed_dict={vae_depth.x:Depth_input})
 z_rgb=sess.run(vae_rgb.z_mean,feed_dict={vae_rgb.x:RGB_input})
 z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input})
-
+#z_in is the data required 
 z_in=np.concatenate((z_rgb,z_depth,z_sem),axis=1)
 
-###### variables list########
+
+######################## variables list #########################
 listvar4=vae_Full.network_weights
 var_Full=(list(listvar4['weights_recog'].values())
 	+list(listvar4['biases_recog'].values())
@@ -352,13 +345,26 @@ var_Full=(list(listvar4['weights_recog'].values())
 saver_Full=tf.train.Saver(var_Full)
 
 
-train_new_model=True
+train_new_model=False
 if train_new_model:    
 	vae_Full.train(batch_size=100, training_epochs=1)
 	saver_Full.save(sess,"models/full_1_epochs/model")
 	print("saved the vae model weights to "+"models/full_1_epochs/model")
 else:
 	saver_Full.restore(sess,"models/full_1_epochs/model")
-	print("loaded the vae model weights from "+"models/full_1_epochs/model")
+	print("loaded the vae model weights from"+"models/full_1_epochs/model")
 
+	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})
+	z_out_rgb,z_out_depth,z_out_sem=np.split(z_out, [50,100],axis=1)
+	rgb_out=sess.run(vae_rgb.x_reconstr_mean,feed_dict={vae_rgb.z:z_out_rgb})# shape [size,3240]
+	depth_image=sess.run(vae_depth.x_reconstr_mean,feed_dict={vae_depth.z:z_out_depth})# shape [size,1080]
+	sem_out=sess.run(vae_Sem.x_reconstr_mean,feed_dict={vae_Sem.z:z_out_sem})# shape[size,5400]
 
+	red_out,green_out,blue_out=np.split(rgb_out,3,axis=1)
+	RGB_image=np.dstack((red_out,green_out,blue_out))
+
+	G_out,O_out,V_out,B_out,S_out=np.split(sem_out,5,axis=1)
+	Sem_image=np.dstack((G_out,O_out,V_out,B_out,S_out))
+	plt.imshow(np.reshape(depth_image[0],(18,60)))
+
+sess.close()
