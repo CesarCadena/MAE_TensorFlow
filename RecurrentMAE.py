@@ -638,7 +638,7 @@ class RecurrentMAE:
                tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         #regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #lstm rnn
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
@@ -788,11 +788,16 @@ class RecurrentMAE:
 
         #base_rate = 1e-06 # basic RNN
         base_rate = 1e-05
+        lr1 = 0.1*base_rate
+        lr2 = 0.1*lr1
+        lr3 = 0.1*lr2
+        lr4 = 0.1*lr3
 
-        #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.9, staircase=True)
-        self.learning_rate = tf.train.piecewise_constant(global_step,
-                                                         [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
-                                                         [base_rate,0.1*base_rate,0.1*0.1*base_rate,0.1*0.1*0.1*base_rate,0.1*0.1*0.1*0.1*base_rate])
+
+        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.8, staircase=True)
+        #self.learning_rate = tf.train.piecewise_constant(global_step,
+        #                                                 [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
+        #                                                 [base_rate,lr1,lr2,lr3,lr4])
 
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
@@ -800,7 +805,6 @@ class RecurrentMAE:
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
 
         gvs0 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
-
         gvs1 = gvs0
         gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
         gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
@@ -1489,7 +1493,7 @@ class RecurrentMAE:
         # preparation of load model
         load_weights = tf.train.Saver()
 
-        dir = 'models/rnn/' + run
+        dir = 'models/rnn/trained-models/' + run
 
         with tf.Session() as sess:
 
