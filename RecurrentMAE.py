@@ -787,7 +787,7 @@ class RecurrentMAE:
         global_step = tf.Variable(0,trainable=False)
 
         #base_rate = 1e-06 # basic RNN
-        base_rate = 1e-07
+        base_rate = 1e-04
         lr1 = 0.1*base_rate
         lr2 = 0.1*lr1
         lr3 = 0.1*lr2
