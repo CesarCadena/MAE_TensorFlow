@@ -794,7 +794,7 @@ class RecurrentMAE:
         lr4 = 0.1*lr3
 
 
-        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.8, staircase=True)
+        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True)
         #self.learning_rate = tf.train.piecewise_constant(global_step,
         #                                                 [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
         #                                                 [base_rate,lr1,lr2,lr3,lr4])
