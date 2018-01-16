@@ -1384,7 +1384,10 @@ class RecurrentMAE:
         sess.close()
         tf.reset_default_graph()
 
-    def evaluate(self,data_test,run=False):
+    def evaluate(self,data_test,model_dir,option=None):
+
+        if option == None:
+            raise ValueError('no evaluation option given')
 
         print('start evaluation')
 
@@ -1398,15 +1401,12 @@ class RecurrentMAE:
 
         load_weights = tf.train.Saver()
 
-        if run==False:
-            raise ValueError
-
-        dir = 'models/rnn/' + run
+        dir = 'models/' + model_dir
 
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,dir+'/fullmodel_rnn.ckpt') # runs from 06112017 it ist fullmodel_rnn
+            load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
 
             n_evaluations = 697
             print('Size of Test Set:',n_evaluations)
@@ -1415,6 +1415,8 @@ class RecurrentMAE:
             error_rel = 0
 
             in_state =  np.zeros((1,self.state_size))
+
+            zeroing = np.zeros((1,self.n_rnn_steps,self.size_input))
 
             for i in range(0,n_evaluations):
 
@@ -1441,6 +1443,29 @@ class RecurrentMAE:
                                                                                                     resolution=(18,60),
                                                                                                     rnn=True,
                                                                                                     singleframe=True)
+
+                if option == 'rgb':
+                    # taking only rgb as input
+                    depth_in = zeroing
+                    gnd_in = zeroing
+                    obj_in = zeroing
+                    bld_in = zeroing
+                    veg_in = zeroing
+                    sky_in = zeroing
+
+                if option == 'rgbs':
+                    depth_in = zeroing
+
+                if option == 'rgbd':
+                    gnd_in = zeroing
+                    obj_in = zeroing
+                    bld_in = zeroing
+                    veg_in = zeroing
+                    sky_in = zeroing
+
+                if option == 'rgbsd':
+                    pass
+
 
                 feed_dict = {self.imr_input:imr_in,
                              self.img_input:img_in,
@@ -1469,6 +1494,9 @@ class RecurrentMAE:
 
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (REL):', error_rel/n_evaluations)
+
+        sess.close()
+        tf.reset_default_graph()
 
     def evaluate_sequence(self,sequence,n_rnn_steps=None,option=None,frequency=None,run=None):
 
