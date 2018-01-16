@@ -303,9 +303,8 @@ class LSTM_RNN:
         # define all variables
         with tf.variable_scope(scope) as lstm:
 
-            self.cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=1024)
 
-            '''
+
 
             if self.option == 'nonshared':
             # does not work with gradient clipping
@@ -320,12 +319,12 @@ class LSTM_RNN:
                     self.U_f.append(tf.get_variable(name='U_f_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_f.append(tf.get_variable(name='W_f_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
 
                     # internal state
@@ -337,12 +336,12 @@ class LSTM_RNN:
                     self.U.append(tf.get_variable(name='U_'+str(step),
                                                   shape=[coding_size,state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer()))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W.append(tf.get_variable(name='W_'+str(step),
                                                   shape=[state_size, state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer()))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     # external input gate
                     self.b_g.append(tf.get_variable(name='b_g_'+str(step),
@@ -353,12 +352,12 @@ class LSTM_RNN:
                     self.U_g.append(tf.get_variable(name='U_g_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_g.append(tf.get_variable(name='W_g_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     # output gate
                     self.b_o.append(tf.get_variable(name='b_o_'+str(step),
@@ -369,12 +368,12 @@ class LSTM_RNN:
                     self.U_o.append(tf.get_variable(name='U_o_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_o.append(tf.get_variable(name='W_o_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
             if self.option == 'shared':
                 # forget gate
@@ -386,12 +385,12 @@ class LSTM_RNN:
                     self.U_f.append(tf.get_variable(name='U_f',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_f.append(tf.get_variable(name='W_f',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
 
                     # internal state
@@ -403,12 +402,12 @@ class LSTM_RNN:
                     self.U.append(tf.get_variable(name='U',
                                                   shape=[coding_size,state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer()))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W.append(tf.get_variable(name='W',
                                                   shape=[state_size, state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer()))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     # external input gate
                     self.b_g.append(tf.get_variable(name='b_g',
@@ -419,12 +418,12 @@ class LSTM_RNN:
                     self.U_g.append(tf.get_variable(name='U_g',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_g.append(tf.get_variable(name='W_g',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     # output gate
                     self.b_o.append(tf.get_variable(name='b_o',
@@ -435,22 +434,20 @@ class LSTM_RNN:
                     self.U_o.append(tf.get_variable(name='U_o',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                     self.W_o.append(tf.get_variable(name='W_o',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer()))
-                                                    
-                                                    
-                    '''
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+
 
 
              # state-to-coding weights
             self.O_w = tf.get_variable(name='O_w',
                                        shape=[state_size,coding_size],
                                        dtype=tf.float32,
-                                       initializer=tf.random_normal_initializer())
+                                       initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001))
 
             self.O_b = tf.get_variable(name='O_b',
                                        shape=[coding_size],
@@ -469,15 +466,6 @@ class LSTM_RNN:
         h_init = init_states
         s_init = init_states
 
-        state = init_states
-
-        output,state = tf.nn.static_rnn(self.cell,inputs,dtype=tf.float32)
-
-
-
-
-        '''
-
         def step(i,s_t,h_t,x):
             xi = tf.gather(x,i)
             f_t = tf.sigmoid(tf.add(tf.add(self.b_f[0],tf.matmul(xi,self.U_f[0])),tf.matmul(h_t,self.W_f[0])))
@@ -493,11 +481,8 @@ class LSTM_RNN:
                                            step,
                                            [0,s_init,h_init,inputs])
                                            
-                                           '''
-
-
-
         '''
+
         # cell definition
         for step in range(0,self.n_rnn_steps):
 
@@ -521,9 +506,8 @@ class LSTM_RNN:
             
         '''
 
-
         # reconstruct coding
-        output = tf.nn.relu(tf.add(tf.matmul(output[-1],self.O_w),self.O_b))
+        output = tf.nn.relu(tf.add(tf.matmul(h_fin,self.O_w),self.O_b))
         return output
 
 class Gated_RNN:
