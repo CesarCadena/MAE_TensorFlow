@@ -617,13 +617,13 @@ class RecurrentMAE:
             cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                    self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                    self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-                   50*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+                   100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
                    self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                    self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                    self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
                    self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
                    self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8]) + \
-                   50*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3]))
+                   1*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3]))
 
         else:
             cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
@@ -652,7 +652,7 @@ class RecurrentMAE:
         if self.rnn_option == 'lstm':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #lstm rnn
         if self.rnn_option == 'gated':
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #lstm rnn
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.005) #lstm rnn
 
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
@@ -818,15 +818,8 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-03
-            lr1 = 0.1*base_rate
-            lr2 = 0.1*lr1
-            lr3 = 0.1*lr2
-            lr4 = 0.1*lr3
-            #self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.96, staircase=True) # GRU configuration
-            self.learning_rate = tf.train.piecewise_constant(global_step,
-                                                             [0,50*self.batch_size,100*self.batch_size,150*self.batch_size],
-                                                             [base_rate,lr1,lr2,lr3])
+            base_rate = 1e-03 # lstm RNN
+            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
 
 
