@@ -7,6 +7,7 @@ np.random.seed(0)
 tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
+tf.reset_default_graph()
 
 
 # Initialization Function
@@ -19,8 +20,6 @@ def xavier_init(fan_in, fan_out, constant=1):
     return tf.random_uniform((fan_in, fan_out), #  shape of the weights
                              minval=low, maxval=high, # here is the range 
                              dtype=tf.float32) # here is the type 
-
-
 
 # Variational Auto Encoder 
 class VariationalAutoencoder(object):
@@ -37,14 +36,11 @@ class VariationalAutoencoder(object):
         self.batch_size=batch_size
         # tf Graph input
         self.x=tf.placeholder(tf.float32,[None, network_architecture["n_input"]])
-        
-        
         # Create auotencoder 
         self.create_network()
         # define loss function based on variational upper bound 
         # and corresponding optimizer 
         self.create_loss_optimizer()
-
         # initial the tensorflow variables 
         init=tf.global_variables_initializer()
         self.saver_d=tf.train.Saver()
@@ -59,7 +55,6 @@ class VariationalAutoencoder(object):
         
         # create a dictionary of tensor variables 
         all_weights = dict()
-        
         # recognition  network
         all_weights['weights_recog'] = {
             'h1': tf.Variable(xavier_init(n_input, n_hidden_recog_1)),
@@ -106,7 +101,6 @@ class VariationalAutoencoder(object):
         eps = tf.random_normal((self.batch_size, n_z), 0, 1, dtype=tf.float32) 
         # standard Normal
         # z = z_mean + z_sigma*epsilon
-        
         self.z = tf.add(self.z_mean, tf.multiply(tf.sqrt(tf.exp(self.z_log_sigma_sq)), eps))
         #shape [batch_size,n_z]
         
@@ -237,7 +231,7 @@ class VariationalAutoencoder(object):
         self.saver_d.restore(self.sess, check_point_file)
         print("loaded model weights from "+check_point_file)
         
-    def train(self, batch_size=100, training_epochs=10, display_step=1):
+    def train(self, batch_size=100,training_epochs=1,display_step=1):
         print("training started ...")
         train_indices=range(n_samples)
         
@@ -265,7 +259,8 @@ class VariationalAutoencoder(object):
 
 # Load depth data 
 depth_data=np.load("../depth_data.npy")
-Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)
+Depth_input=depth_data[:,:,:,0].reshape(-1,1080)
+#Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)
 n_samples=Depth_input.shape[0]
 
 
@@ -280,7 +275,7 @@ with tf.variable_scope("depth"):
     vae = VariationalAutoencoder(network_architecture,learning_rate=1e-3,batch_size=100)
 
 
-train_new_model =True
+train_new_model =False
 if train_new_model:    
     vae.train(batch_size=100,training_epochs=1)
     vae.save("models/depth_5_epochs/model")
@@ -288,3 +283,4 @@ else:
     vae.load("models/depth_5_epochs/model")
 
 sess.close()
+
