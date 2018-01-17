@@ -5,16 +5,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
+from depth_error import RMSE,ABSR
 tf.reset_default_graph()
 batch_size=20
 num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
-depth_data=np.load('../Data/depth_data.npy')
-depth_mask=np.load('../Data/depth_mask.npy')
-sem_data=np.load('../Data/sem_data.npy')
-rgb_data=np.load('../Data/rgb_data.npy')
+tf.reset_default_graph()
+depth_data=np.load('../Data_test/depth_data.npy')
+depth_mask=np.load('../Data_test/depthmask_data.npy')
+sem_data=np.load('../Data_test/sem_data.npy')
+rgb_data=np.load('../Data_test/rgb_data.npy')
 print(rgb_data.shape)
 print(sem_data.shape)
 print(depth_data.shape)
@@ -161,60 +163,38 @@ loss=(tf.nn.l2_loss( (depth_out-depth_outputs)*depth_outmask )
 optimizer1=tf.train.AdamOptimizer(learning_rate).minimize(loss,var_list=var_full)
 optimizer2=tf.train.AdamOptimizer(learning_rate=1e-6).minimize(loss)
 
-
-saver_sem=tf.train.Saver(var_sem)
-saver_depth=tf.train.Saver(var_depth)
-saver_rgb=tf.train.Saver(var_rgb)
+#saver_sem=tf.train.Saver(var_sem)
+#saver_depth=tf.train.Saver(var_depth)
+#saver_rgb=tf.train.Saver(var_rgb)
 saver_full=tf.train.Saver()
-
 
 init=tf.global_variables_initializer()
 train_size=rgb_data.shape[0]
 train_indices=range(train_size)
-
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    saver_sem.restore(sess,'./CNN_models/sem_1/sem.ckpt')
-    saver_depth.restore(sess,'./CNN_models/depth_1/depth.ckpt')
-    saver_rgb.restore(sess,'./CNN_models/rgb_1/rgb.ckpt')
-
-
-    for ipochs in range(1):
-        perm_indices=np.random.permutation(train_indices)
-
-        for step in range(int(train_size/batch_size)):
-            offset=(step*batch_size)%(train_size-batch_size)
-            batch_indices=perm_indices[offset:(offset+batch_size)]
-            l,_=sess.run([loss,optimizer1],feed_dict={sem_inputs:sem_data[batch_indices],
-                                                     sem_outputs:sem_data[batch_indices],
-                                                     depth_inputs:depth_data[batch_indices],
-                                                     depth_outputs:depth_data[batch_indices],
-                                                     depth_outmask:depth_mask[batch_indices],
-                                                     rgb_inputs:rgb_data[batch_indices],
-                                                     rgb_outputs:rgb_data[batch_indices]
+    saver_full.restore(sess,'./CNN_models/full_1/full.ckpt')
+    prediction=sess.run(depth_out,feed_dict={sem_inputs:sem_data[0:1000],
+                                        #sem_outputs:sem_data[batch_indices],
+                                        depth_inputs:depth_data[0:1000],
+                                        depth_outputs:depth_data[0:1000],
+                                        depth_outmask:depth_mask[0:1000],
+                                        rgb_inputs:rgb_data[0:1000],
+                                        #rgb_outputs:rgb_data[batch_indices]
                                                      })
-        print("Epoch: {}...".format(ipochs),
-                       "Training loss: {:.4f}".format(l))
+    print(prediction.shape)
+    #print(depth)
+    prediction=prediction*depth_mask[0:1000]
+    truth=depth_data[0:1000]
 
-    for ipochs in range(1):
-        perm_indices=np.random.permutation(train_indices)
+    print(prediction.shape)
+    print(truth.shape)
 
-        for step in range(int(train_size/batch_size)):
-            offset=(step*batch_size)%(train_size-batch_size)
-            batch_indices=perm_indices[offset:(offset+batch_size)]
-            l,_=sess.run([loss,optimizer2],feed_dict={sem_inputs:sem_data[batch_indices],
-                                                     sem_outputs:sem_data[batch_indices],
-                                                     depth_inputs:depth_data[batch_indices],
-                                                     depth_outputs:depth_data[batch_indices],
-                                                     depth_outmask:depth_mask[batch_indices],
-                                                     rgb_inputs:rgb_data[batch_indices],
-                                                     rgb_outputs:rgb_data[batch_indices]
-                                                     })
-        print("Epoch: {}...".format(ipochs),
-                       "Training loss: {:.4f}".format(l))
-
-        saver_full.save(sess,'./CNN_models/full_1/full.ckpt')
+    rmse=RMSE(truth,prediction)
+    absr=ABSR(truth,prediction)
+    print("relative error for depth estimation is :",absr)
+    print("RMSE error for depth estimation is :",rmse)
