@@ -800,7 +800,7 @@ class RecurrentMAE:
                                                              [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
-        if self.rnn_optino == 'gated':
+        if self.rnn_option == 'gated':
             base_rate = 1e-02
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True) # GRU configuration
 
