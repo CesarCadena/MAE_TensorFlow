@@ -26,8 +26,8 @@ mae = MAE(n_epochs=150,
           verbose=True)
 
 '''
-rnn_mae = RecurrentMAE(n_epochs=400,
-                       rnn_option='gated',
+rnn_mae = RecurrentMAE(n_epochs=200,
+                       rnn_option='lstm',
                        n_rnn_steps=5,
                        mirroring=True,
                        learning_rate=1e-3,
