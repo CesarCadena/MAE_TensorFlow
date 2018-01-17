@@ -622,7 +622,8 @@ class RecurrentMAE:
                    0.001*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                    0.001*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
                    0.001*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-                   0.001*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
+                   0.001*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8]) + \
+                   50*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3]))
 
         else:
             cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
@@ -817,7 +818,7 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-03
+            base_rate = 1e-04
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.96, staircase=True) # GRU configuration
 
 
@@ -1524,6 +1525,116 @@ class RecurrentMAE:
         sess.close()
         tf.reset_default_graph()
 
+    def evaluate_per_frame(self,data_test,model_dir,option):
+
+        n_evaluations = len(data_test)
+
+        if option == None:
+            raise ValueError('no evaluation option given')
+
+        print('==================================================')
+        print('Option:', option)
+
+        self.data_test = data_test
+        self.prepare_test_data()
+
+        input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+
+        output = self.network(input)
+
+        load_weights = tf.train.Saver()
+
+        dir = 'models/' + model_dir
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
+
+            in_state =  np.zeros((1,self.state_size))
+
+            zeroing = np.zeros((1,self.n_rnn_steps,self.size_input))
+
+            for i in range(0,n_evaluations):
+
+                imr_label = self.imr_test[i]
+                img_label = self.img_test[i]
+                imb_label = self.imb_test[i]
+                depth_label = self.depth_test[i]
+                gnd_label = self.gnd_test[i]
+                obj_label = self.obj_test[i]
+                bld_label = self.bld_test[i]
+                veg_label = self.veg_test[i]
+                sky_label = self.sky_test[i]
+
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
+                                                                                                    copy(img_label),
+                                                                                                    copy(imb_label),
+                                                                                                    copy(depth_label),
+                                                                                                    copy(gnd_label),
+                                                                                                    copy(obj_label),
+                                                                                                    copy(bld_label),
+                                                                                                    copy(veg_label),
+                                                                                                    copy(sky_label),
+                                                                                                    resolution=(18,60),
+                                                                                                    rnn=True,
+                                                                                                    singleframe=True)
+
+                if option == 'rgb':
+                    # taking only rgb as input
+                    depth_in = zeroing
+                    gnd_in = zeroing
+                    obj_in = zeroing
+                    bld_in = zeroing
+                    veg_in = zeroing
+                    sky_in = zeroing
+
+                if option == 'rgbs':
+                    depth_in = zeroing
+
+                if option == 'rgbd':
+                    gnd_in = zeroing
+                    obj_in = zeroing
+                    bld_in = zeroing
+                    veg_in = zeroing
+                    sky_in = zeroing
+
+                if option == 'rgbsd':
+                    pass
+
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in,
+                             self.init_states:in_state}
+
+                pred = sess.run(output,feed_dict=feed_dict)
+                depth_pred = pred[3]
+
+
+                inv_depth_pred = np.asarray(depth_pred)
+                inv_depth_label = np.asarray(depth_label[-1])
+
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
+
+                error_rms = eval.rms_error(est,gt)
+                error_rel = eval.relative_error(est,gt)
+
+        sess.close()
+        tf.reset_default_graph()
+
+        return error_rms,error_rel
+
+
     def evaluate_sequence(self,sequence,n_rnn_steps=None,option=None,frequency=None,run=None):
 
         if run == None:
@@ -1608,5 +1719,7 @@ class RecurrentMAE:
         tf.reset_default_graph()
 
         return error_rms,error_rel
+
+
 
 
