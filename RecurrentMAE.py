@@ -618,11 +618,11 @@ class RecurrentMAE:
                    self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                    self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
                    50*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
-                   0.001*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-                   0.001*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-                   0.001*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-                   0.001*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-                   0.001*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8]) + \
+                   self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+                   self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+                   self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+                   self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+                   self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8]) + \
                    50*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3]))
 
         else:
@@ -818,8 +818,8 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-04
-            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.96, staircase=True) # GRU configuration
+            base_rate = 1e-03
+            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # GRU configuration
 
 
 
@@ -1532,9 +1532,6 @@ class RecurrentMAE:
         if option == None:
             raise ValueError('no evaluation option given')
 
-        print('==================================================')
-        print('Option:', option)
-
         self.data_test = data_test
         self.prepare_test_data()
 
@@ -1546,6 +1543,9 @@ class RecurrentMAE:
         load_weights = tf.train.Saver()
 
         dir = 'models/' + model_dir
+
+        error_rms = []
+        error_rel = []
 
         with tf.Session() as sess:
 
@@ -1626,8 +1626,8 @@ class RecurrentMAE:
                 gt = BR.invert_depth(inv_depth_label)
                 est = BR.invert_depth(inv_depth_pred)
 
-                error_rms = eval.rms_error(est,gt)
-                error_rel = eval.relative_error(est,gt)
+                error_rms.append(copy(eval.rms_error(est,gt)))
+                error_rel.append(copy(eval.relative_error(est,gt)))
 
         sess.close()
         tf.reset_default_graph()
