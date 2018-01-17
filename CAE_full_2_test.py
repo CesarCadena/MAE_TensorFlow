@@ -8,10 +8,10 @@ from process_data import  process_data
 from depth_error import RMSE,ABSR
 tf.reset_default_graph()
 batch_size=20
-num_epochs=100
-hidden_size=1024
+num_epochs=1
 RESTORE=0
 SEED = None
+filter_size=8
 tf.reset_default_graph()
 depth_data=np.load('../Data_test/depth_data.npy')
 depth_mask=np.load('../Data_test/depthmask_data.npy')
@@ -27,14 +27,14 @@ with tf.variable_scope("Sem"):
     sem_inputs= tf.placeholder(tf.float32, (None, 18,60,5), name="sem_nput")
     sem_outputs=tf.placeholder(tf.float32, (None, 18,60,5), name="sem_ouput")
     ### Encoder use high level module 
-    sem_conv1=tf.layers.conv2d(inputs=sem_inputs,filters=16,kernel_size=(3,3),padding='same',
+    sem_conv1=tf.layers.conv2d(inputs=sem_inputs,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv1')
 #now (batch,18,60,16)
 
     sem_pool1=tf.layers.max_pooling2d(sem_conv1,pool_size=(2,2),strides=(2,2),padding='same')
 #now (batch,9,30,16)
 
-    sem_conv2=tf.layers.conv2d(inputs=sem_pool1,filters=8,kernel_size=(3,3),padding='same',
+    sem_conv2=tf.layers.conv2d(inputs=sem_pool1,filters=filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv2')
 # now (batch,9,30,8)
 
@@ -45,14 +45,14 @@ with tf.variable_scope("RGB"):
     rgb_inputs=tf.placeholder(tf.float32, (None, 18,60,3), name="input")
     rgb_outputs=tf.placeholder(tf.float32, (None, 18,60,3), name="ouput")
     ### Encoder use high level module 
-    rgb_conv1=tf.layers.conv2d(inputs=rgb_inputs,filters=16,kernel_size=(3,3),padding='same',
+    rgb_conv1=tf.layers.conv2d(inputs=rgb_inputs,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv1')
 #now (batch,18,60,16)
 
     rgb_pool1=tf.layers.max_pooling2d(rgb_conv1,pool_size=(2,2),strides=(2,2),padding='same')
 #now (batch,9,30,16)
 
-    rgb_conv2=tf.layers.conv2d(inputs=rgb_pool1,filters=8,kernel_size=(3,3),padding='same',
+    rgb_conv2=tf.layers.conv2d(inputs=rgb_pool1,filters=filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv2')
 # now (batch,9,30,8)
 
@@ -65,14 +65,14 @@ with tf.variable_scope("Depth"):
     depth_outmask=tf.placeholder(tf.float32, (None, 18,60,1), name="mask")
     ### Encoder use high level module 
 
-    depth_conv1=tf.layers.conv2d(inputs=depth_inputs,filters=16,kernel_size=(3,3),padding='same',
+    depth_conv1=tf.layers.conv2d(inputs=depth_inputs,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv1')
 #now (batch,18,60,16)
 
     depth_pool1=tf.layers.max_pooling2d(depth_conv1,pool_size=(2,2),strides=(2,2),padding='same')
 #now (batch,9,30,16)
 
-    depth_conv2=tf.layers.conv2d(inputs=depth_pool1,filters=8,kernel_size=(3,3),padding='same',
+    depth_conv2=tf.layers.conv2d(inputs=depth_pool1,filters=filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv2')
 # now (batch,9,30,8)
 
@@ -84,10 +84,10 @@ with tf.variable_scope("Depth"):
 with tf.variable_scope("full"):
     full_in=tf.concat([rgb_pool2,depth_pool2,sem_pool2],axis=3)
 #now (batch,5,15,24)
-    full_shared=tf.layers.conv2d(inputs=full_in,filters=8,kernel_size=(3,3),padding='same',
+    full_shared=tf.layers.conv2d(inputs=full_in,filters=filter_size,kernel_size=(3,3),padding='same',
                                  activation=tf.nn.relu,name='full_shared')
 #now (batch,5,15,8)
-    full_out=tf.layers.conv2d(inputs=full_shared,filters=24,kernel_size=(3,3),padding='same',
+    full_out=tf.layers.conv2d(inputs=full_shared,filters=3*filter_size,kernel_size=(3,3),padding='same',
                               activation=tf.nn.relu,name='full_out')
 #now (batch,5,15,24)
     rgb_pool2_out,depth_pool2_out,sem_pool2_out=tf.split(full_out,3,axis=3)
@@ -100,7 +100,7 @@ with tf.variable_scope("Sem"):
     sem_upsample1=tf.image.resize_images(sem_pool2_out,size=(9,30),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 # now (batch,9,30,8)
-    sem_conv4=tf.layers.conv2d(inputs=sem_upsample1,filters=16,kernel_size=(3,3),padding='same',
+    sem_conv4=tf.layers.conv2d(inputs=sem_upsample1,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv4')
 #now (batch,9,30,8)
 
@@ -119,7 +119,7 @@ with tf.variable_scope("RGB"):
     rgb_upsample1=tf.image.resize_images(rgb_pool2_out,size=(9,30),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 # now (batch,9,30,8)
-    rgb_conv4=tf.layers.conv2d(inputs=rgb_upsample1,filters=16,kernel_size=(3,3),padding='same',
+    rgb_conv4=tf.layers.conv2d(inputs=rgb_upsample1,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv4')
 #now (batch,9,30,8)
 
@@ -137,7 +137,7 @@ with tf.variable_scope("Depth"):
     depth_upsample1=tf.image.resize_images(depth_pool2_out,size=(9,30),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 # now (batch,9,30,8)
-    depth_conv4=tf.layers.conv2d(inputs=depth_upsample1,filters=16,kernel_size=(3,3),padding='same',
+    depth_conv4=tf.layers.conv2d(inputs=depth_upsample1,filters=2*filter_size,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='conv4')
 #now (batch,9,30,8)
 
@@ -146,7 +146,7 @@ with tf.variable_scope("Depth"):
 #now (batch,18,60,8)
     depth_out=tf.layers.conv2d(inputs=depth_upsample2,filters=1,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='out')
-#now (batch,18,60,3)
+#now (batch,18,60,1)
 
 
 

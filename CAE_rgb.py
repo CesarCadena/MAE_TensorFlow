@@ -10,23 +10,11 @@ num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
-"""
-#print("loading data.....")
-#prepare the  data 
-data=process_data('training')
-Red_data=data['Red']
-Green_data=data['Green']
-Blue_data=data['Blue']
-Red_data=np.reshape(Red_data,[-1,60,18,1])
-Blue_data=np.reshape(Blue_data,[-1,60,18,1])
-Green_data=np.reshape(Green_data,[-1,60,18,1])
-data=np.concatenate([Red_data,Blue_data,Green_data],axis=3)
-print(data.shape)
-#np.save('../rgb(num,60,18,3)',data)
-"""
-data=np.load('../rgb(num,60,18,3).npy')
+
+
+data=np.load('../Data/rgb.npy')# shape is [size,18,60,3]
 print('finish loading data ')
-print(data.shape)
+#print(data.shape)
 # build the model 
 # define functions
 def weight_variable(name,shape):
