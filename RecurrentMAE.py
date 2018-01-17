@@ -613,16 +613,27 @@ class RecurrentMAE:
         self.c_g = tf.placeholder('float')
         self.c_b = tf.placeholder('float')
 
+        if self.rnn_option == 'gated':
+            cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+                   self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+                   self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+                   100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+                   0.001*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+                   0.001*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+                   0.001*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+                   0.001*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+                   0.001*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
 
-        cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
-               self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
-               self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-               100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
-               0.01*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
-               0.01*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
-               0.01*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
-               0.01*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-               0.01*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
+        else:
+            cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
+                   self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
+                   self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
+                   100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+                   0.01*self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
+                   0.01*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
+                   0.01*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
+                   0.01*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
+                   0.01*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
         #100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
 
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
@@ -801,7 +812,7 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-04
+            base_rate = 5*1e-04
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True) # GRU configuration
 
 
