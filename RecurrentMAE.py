@@ -502,8 +502,6 @@ class RecurrentMAE:
         self.veg_test = np.asarray(self.veg_test)[rand_indices]
         self.sky_test = np.asarray(self.sky_test)[rand_indices]
 
-        print(self.imr_test.shape)
-
     def network(self, input):
 
         output = RNN_MAE(input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7],input[8],
@@ -786,18 +784,26 @@ class RecurrentMAE:
 
         global_step = tf.Variable(0,trainable=False)
 
-        #base_rate = 1e-06 # basic RNN
-        base_rate = 1e-03
-        lr1 = 0.1*base_rate
-        lr2 = 0.1*lr1
-        lr3 = 0.1*lr2
-        lr4 = 0.1*lr3
 
 
-        self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True)
-        #self.learning_rate = tf.train.piecewise_constant(global_step,
-        #                                                 [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
-        #                                                 [base_rate,lr1,lr2,lr3,lr4])
+        if self.rnn_option == 'lstm':
+            base_rate = 1e-03 # lstm RNN
+            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True) # lstm configuration
+
+        if self.rnn_option == 'basic':
+            base_rate = 1e-06 # basic RNN
+            lr1 = 0.1*base_rate
+            lr2 = 0.1*lr1
+            lr3 = 0.1*lr2
+            lr4 = 0.1*lr3
+            self.learning_rate = tf.train.piecewise_constant(global_step,
+                                                             [20*self.n_batches,40*self.n_batches,60*self.n_batches,80*self.n_batches,100*self.n_batches],
+                                                             [base_rate,lr1,lr2,lr3,lr4])
+
+        if self.rnn_optino == 'gated':
+            base_rate = 1e-02
+            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,5000, 0.96, staircase=True) # GRU configuration
+
 
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
@@ -1363,6 +1369,7 @@ class RecurrentMAE:
                     elif error_rel < rel_min:
 
                         no_update_count = 0
+                        rel_min = error_rel
                         self.specifications['number of epochs'] = epoch
                         self.specifications['Validation Rel Error'] = error_rel
 
@@ -1386,10 +1393,13 @@ class RecurrentMAE:
 
     def evaluate(self,data_test,model_dir,option=None):
 
+        n_evaluations = len(data_test)
+
         if option == None:
             raise ValueError('no evaluation option given')
 
-        print('start evaluation')
+        print('==================================================')
+        print('Option:', option)
 
         self.data_test = data_test
         self.prepare_test_data()
@@ -1408,7 +1418,6 @@ class RecurrentMAE:
             sess.run(tf.global_variables_initializer())
             load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
 
-            n_evaluations = 697
             print('Size of Test Set:',n_evaluations)
 
             error_rms = 0
@@ -1494,6 +1503,7 @@ class RecurrentMAE:
 
             print('Error (RMS):', error_rms/n_evaluations)
             print('Error (REL):', error_rel/n_evaluations)
+            print('==================================================')
 
         sess.close()
         tf.reset_default_graph()
