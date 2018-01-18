@@ -539,6 +539,7 @@ class Gated_RNN:
                                                 initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                 self.U_z.append(tf.get_variable(name='U_z',
+                                                shape=[coding_size,state_size],
                                                 dtype=tf.float32,
                                                 initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
@@ -553,6 +554,7 @@ class Gated_RNN:
                                                 initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                 self.U_r.append(tf.get_variable(name='U_r',
+                                                shape=[coding_size,state_size],
                                                 dtype=tf.float32,
                                                 initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
@@ -567,6 +569,7 @@ class Gated_RNN:
                                               initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
                 self.U.append(tf.get_variable(name='U',
+                                              shape=[coding_size,state_size],
                                               dtype=tf.float32,
                                               initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
