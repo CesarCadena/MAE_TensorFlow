@@ -659,7 +659,7 @@ class RecurrentMAE:
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
         #cost += 30*reg_term #basic rnn
-        cost += reg_term
+        #cost += reg_term
 
         return cost, loss
 
@@ -805,7 +805,7 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate = 1e-03# lstm RNN
+            base_rate = 1e-04# lstm RNN
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
         if self.rnn_option == 'basic':
