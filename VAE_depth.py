@@ -8,6 +8,10 @@ tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
+batch_size=100
+num_epochs=1
+depthpath="vae_models/depth_"+str(num_epochs)+"_epochs/model"
+
 
 # Initialization Function
 def xavier_init(fan_in, fan_out, constant=1): 
@@ -22,11 +26,10 @@ def xavier_init(fan_in, fan_out, constant=1):
 
 # Variational Auto Encoder 
 class VariationalAutoencoder(object):
-    
     """ Based on See "Auto-Encoding Variational Bayes" by Kingma and Welling
     """
     def __init__(self, network_architecture,
-                 transfer_fct=tf.nn.relu,learning_rate=1e-3,batch_size=100):
+                 transfer_fct=tf.nn.relu,learning_rate=1e-3,batch_size=batch_size):
         
         
         self.network_architecture=network_architecture# which is a dictionary 
@@ -52,7 +55,6 @@ class VariationalAutoencoder(object):
     def initialize_weights(self, n_hidden_recog_1, n_hidden_recog_2, 
                             n_hidden_gener_1,  n_hidden_gener_2, 
                             n_input, n_z):
-        
         # create a dictionary of tensor variables 
         all_weights = dict()
         # recognition  network
@@ -96,14 +98,11 @@ class VariationalAutoencoder(object):
                                      network_weights["biases_recog"])
             
         n_z = self.network_architecture["n_z"]# dimension of z
-        
-        
         eps = tf.random_normal((self.batch_size, n_z), 0, 1, dtype=tf.float32) 
         # standard Normal
         # z = z_mean + z_sigma*epsilon
         self.z = tf.add(self.z_mean, tf.multiply(tf.sqrt(tf.exp(self.z_log_sigma_sq)), eps))
         #shape [batch_size,n_z]
-        
         # Generate network :
         # input z
         # output mean of pixels shape[batch_Size,n_x]
@@ -274,13 +273,13 @@ with tf.variable_scope("depth"):
          n_hidden_gener_2=1000, # 2nd layer decoder neurons
          n_input=1080, # MNIST data input (img shape: 28*28)
          n_z=50)  # dimensionality of latent space
-    vae=VariationalAutoencoder(network_architecture,learning_rate=1e-3,batch_size=100)
+    vae=VariationalAutoencoder(network_architecture,learning_rate=1e-3,batch_size=batch_size)
 
 train_new_model =True
 if train_new_model:    
-    train(vae,batch_size=100,training_epochs=100)
-    vae.save("vae_models/depth_100_epochs/model")
+    train(vae,batch_size=100,training_epochs=num_epochs)
+    vae.save(depthpath)
 else:
-    vae.load("vae_models/depth_100_epochs/model")
+    vae.load(depthpath)
 
 vae.sess.close()

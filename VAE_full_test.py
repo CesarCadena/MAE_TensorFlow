@@ -2,18 +2,18 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from depth_error import RMSE,ABSR
 np.random.seed(0)
 tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
-batch_size=100
+batch_size=1000
 num_epochs=1
 depthpath="vae_models/depth_"+str(num_epochs)+"_epochs/model"
 rgbpath="vae_models/rgb_"+str(num_epochs)+"_epochs/model"
 sempath="vae_models/sem_"+str(num_epochs)+"_epochs/model"
 fullpath="vae_models/full_"+str(num_epochs)+"_epochs/model"
-
 
 
 
@@ -156,7 +156,9 @@ class VariationalAutoencoder(object):
 		#     is given.
 		# Adding 1e-10 to avoid evaluation of log(0.0)
 		# Assuem identity gaussian 
+		
 		# loss from generative data 
+ 
 		# 1) bernouli distribution
 		"""
 		reconstr_loss =-tf.reduce_sum(self.x * tf.log(1e-10 + self.x_reconstr_mean)
@@ -180,6 +182,8 @@ class VariationalAutoencoder(object):
 		# Use ADAM optimizer
 		self.optimizer = \
 			tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
+			
+
 	def partial_fit(self, X):
 		"""
 		Train model based on mini-batch of input data.
@@ -188,31 +192,6 @@ class VariationalAutoencoder(object):
 		opt,cost = sess.run((self.optimizer, self.cost), 
 								  feed_dict={self.x: X})
 		return cost
-
-
-
-def train(vae,batch_size,training_epochs,display_step=1):
-	print("training started ...")
-	train_indices=range(n_samples)
-	for epoch in range(training_epochs):
-		avg_cost = 0.
-		total_batch = int(n_samples / batch_size)
-		perm_indices=np.random.permutation(train_indices)
-		# Loop over all batches
-		for i in range(total_batch):
-			offset=(i*batch_size)%(n_samples-batch_size)
-				# mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
-			batch_indices=perm_indices[offset:(offset+batch_size)]
-				# feed the data for full models 
-			batch_xs=z_in[batch_indices]
-			# Fit training using batch data
-			cost =vae.partial_fit(batch_xs)
-			# Compute average loss
-			avg_cost+=cost/n_samples*batch_size
-		# Display logs per epoch step
-		if epoch % display_step == 0:
-			print("Epoch:", '%04d' % (epoch+1), 
-					"cost=", "{:.9f}".format(avg_cost))
 
 
 #Build  network for depth channel
@@ -224,7 +203,7 @@ with tf.variable_scope("depth"):
 		 n_hidden_gener_2=1000, # 2nd layer decoder neurons
 		 n_input=1080, # MNIST data input (img shape: 28*28)
 		 n_z=50)  # dimensionality of latent space
-	vae_depth=VariationalAutoencoder(network_architecture_depth,learning_rate=0.001,batch_size=100)
+	vae_depth=VariationalAutoencoder(network_architecture_depth,learning_rate=0.001,batch_size=batch_size)
 
 listvar=vae_depth.network_weights
 var_depth=(list(listvar['weights_recog'].values())
@@ -243,7 +222,7 @@ with tf.variable_scope("RGB"):
 			n_hidden_gener_2=1000, # 2nd layer decoder neurons
 			n_input=1080*3, # MNIST data input (img shape: 28*28)
 			n_z=50)  # dimensionality of latent space
-	vae_rgb=VariationalAutoencoder(network_architecture_rgb,learning_rate=0.001,batch_size=100)
+	vae_rgb=VariationalAutoencoder(network_architecture_rgb,learning_rate=0.001,batch_size=batch_size)
   
 listvar2=vae_rgb.network_weights
 var_rgb=(list(listvar2['weights_recog'].values())
@@ -262,7 +241,7 @@ with tf.variable_scope("Sem"):
 		 n_hidden_gener_2=2000, # 2nd layer decoder neurons
 		 n_input=5400, # MNIST data input (img shape: 28*28)
 		 n_z=100)  # dimensionality of latent space
-	vae_Sem=VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4,batch_size=100)
+	vae_Sem=VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4,batch_size=batch_size)
 
 listvar3=vae_Sem.network_weights
 var_Sem=(list(listvar3['weights_recog'].values())
@@ -274,16 +253,16 @@ saver_Sem=tf.train.Saver(var_Sem)
 
 ########################    Start build  shared information fusion   #############################
 with tf.variable_scope("Full"):
-	network_architecture_Full=\
+	network_architecture_Full = \
 		dict(n_hidden_recog_1=50, # 1st layer encoder neurons
 		 n_hidden_recog_2=50, # 2nd layer encoder neurons
 		 n_hidden_gener_1=50, # 1st layer decoder neurons
 		 n_hidden_gener_2=50, # 2nd layer decoder neurons
-		 n_input=200, #MNIST data input (img shape: 28*28)
-		 n_z=2) #dimensionality of latent space
+		 n_input=200, # MNIST data input (img shape: 28*28)
+		 n_z=2)  # dimensionality of latent space
 	#vae_Sem= VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4, batch_size=100)
 	vae_Full=VariationalAutoencoder(network_architecture_Full,learning_rate=1e-4,batch_size=batch_size)
-########################    Finish building  shared information fusion   #############################
+
 listvar4=vae_Full.network_weights
 var_Full=(list(listvar4['weights_recog'].values())
 	+list(listvar4['biases_recog'].values())
@@ -297,30 +276,38 @@ saver_Full=tf.train.Saver(var_Full)
 init=tf.global_variables_initializer()
 sess=tf.Session(config=config)
 sess.run(init)
-
 ###Load  other models 
 saver_depth.restore(sess,depthpath)
-print("loaded model weights from"+depthpath)
+print("loaded model weights from "+depthpath)
 saver_rgb.restore(sess,rgbpath)
-print("loaded model weights from"+rgbpath)
+print("loaded model weights from "+rgbpath)
 saver_Sem.restore(sess,sempath)
-print("loaded model weights from"+sempath)
+print("loaded model weights from "+sempath)
+######################## variables list #########################
 
+train_new_model=False
+if train_new_model:    
+	vae_Full.train(batch_size=100, training_epochs=1)
+	saver_Full.save(sess,fullpath)
+	print("saved the vae model weights to "+fullpath)
+else:
+	saver_Full.restore(sess,fullpath)
+	print("loaded the vae model weights from"+fullpath)
+################################  make predictions  ##########################
 
+############################# Load test data ################################
+depth_data=np.load("../Data_test/depth_data.npy")
+depthmask_data=np.load("../Data_test/depthmask_data.npy")
+Depth_input=depth_data[:,:,:,0].reshape(-1,1080)[0:37000]# shape [size,1080]
+Depthmask_input=depthmask_data[:,:,:,0].reshape(-1,1080)[0:37000]
 
-######################### Loading  data  ###################################
-depth_data=np.load("../Data/depth_data.npy")
-depthmask_data=np.load("../Data/depth_mask.npy")
-Depth_input=depth_data[:,:,:,0].reshape(-1,1080)# shape [size,1080]
-Depthmask_input=depthmask_data[:,:,:,0].reshape(-1,1080)
-
-RGB_data=np.load("../Data/rgb_data.npy")
+RGB_data=np.load("../Data_test/rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
 G_data=RGB_data[:,:,:,1].reshape(-1,1080)
 B_data=RGB_data[:,:,:,2].reshape(-1,1080)
-RGB_input=np.concatenate((R_data,G_data,B_data),axis=1) #shape[size,3*1080]
+RGB_input=np.concatenate((R_data,G_data,B_data),axis=1)[0:37000] #shape[size,3*1080]
 
-Sem_data=np.load("../Data/sem_data.npy")
+Sem_data=np.load("../Data_test/sem_data.npy")
 Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
 Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
 Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
@@ -328,55 +315,40 @@ Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
 Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
 Sem_input=np.concatenate((Ground_input,Objects_input,
 						  Building_input,Vegetation_input,Sky_input),
-						  axis=1)# shape[size,5*1080]
-  
-
-"Data Augumentation"
-"Depth"
-Depth_labels=np.concatenate((Depth_input,Depth_input),axis=0)
-Depth_input=np.concatenate((Depth_input,0*Depth_input),axis=0)
-Depthmask_input=np.concatenate((Depthmask_input,Depthmask_input),axis=0)
-"RGB"
-RGB_input=np.concatenate((RGB_input,RGB_input),axis=0)
-"SEM"
-Sem_labels=np.concatenate((Sem_input,Sem_input),axis=0)
-Sem_input=np.concatenate((Sem_input,0*Sem_input),axis=0)
-print(Depth_input.shape)
-print(Depth_labels.shape)
-print(RGB_input.shape)
+						  axis=1)[0:37000]# shape[size,5*1080]
 print(Sem_input.shape)
-print(Sem_labels.shape)
-n_samples=Sem_input.shape[0]
-print("n_samples is :",n_samples)
-###Build data for full model 
-z_depth=sess.run(vae_depth.z_mean,feed_dict={vae_depth.x:Depth_input})
+print(RGB_input.shape)
+print(Depth_input.shape)
+n_samples=Sem_input.shape[0] 
+############################ Finish Load data ###################################
+z_depth=sess.run(vae_depth.z_mean,feed_dict={vae_depth.x:Depth_input*0})
 z_rgb=sess.run(vae_rgb.z_mean,feed_dict={vae_rgb.x:RGB_input})
-z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input})
+z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input*0})
 z_in=np.concatenate((z_rgb,z_depth,z_sem),axis=1)
-print("shape of full model is :")
-print(z_in.shape)
+print('Z_in shape is ',z_in.shape)
 
-################################### Loading  Data finished ######################
 
-train_new_model=True
-if train_new_model:    
-	train(vae_Full,batch_size=batch_size, training_epochs=num_epochs)
-	saver_Full.save(sess,fullpath)
-	print("saved the vae model weights to "+fullpath)
-else:
-	saver_Full.restore(sess,fullpath)
-	print("loaded the vae model weights from"+fullpath)
+z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:1000,:]})
+z_out_rgb,z_out_depth,z_out_sem=np.split(z_out,[50,100],axis=1)
+#rgb_out=sess.run(vae_rgb.x_reconstr_mean,feed_dict={vae_rgb.z:z_out_rgb})# shape [size,3240]
+#sem_out=sess.run(vae_Sem.x_reconstr_mean,feed_dict={vae_Sem.z:z_out_sem})# shape[size,5400]
+depth_prediction=sess.run(vae_depth.x_reconstr_mean,feed_dict={vae_depth.z:z_out_depth})
+# shape [size,1080]
 
-"""
-	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})
-	z_out_rgb,z_out_depth,z_out_sem=np.split(z_out, [50,100],axis=1)
-	rgb_out=sess.run(vae_rgb.x_reconstr_mean,feed_dict={vae_rgb.z:z_out_rgb})# shape [size,3240]
-	depth_image=sess.run(vae_depth.x_reconstr_mean,feed_dict={vae_depth.z:z_out_depth})# shape [size,1080]
-	sem_out=sess.run(vae_Sem.x_reconstr_mean,feed_dict={vae_Sem.z:z_out_sem})# shape[size,5400]
-	red_out,green_out,blue_out=np.split(rgb_out,3,axis=1)
-	RGB_image=np.dstack((red_out,green_out,blue_out))
-	G_out,O_out,V_out,B_out,S_out=np.split(sem_out,5,axis=1)
-	Sem_image=np.dstack((G_out,O_out,V_out,B_out,S_out))
-	plt.imshow(np.reshape(depth_image[0],(18,60)))
-"""
+
+print(depth_prediction.shape)
+prediction=depth_prediction*Depthmask_input[0:1000]
+truth=Depth_input[0:1000]
+print(prediction.shape)
+print(truth.shape)
+
+rmse=RMSE(truth,prediction)
+absr=ABSR(truth,prediction)
+print("relative error for depth estimation is :",absr)
+print("RMSE error for depth estimation is :",rmse)
+#red_out,green_out,blue_out=np.split(rgb_out,3,axis=1)
+#RGB_image=np.dstack((red_out,green_out,blue_out))
+#G_out,O_out,V_out,B_out,S_out=np.split(sem_out,5,axis=1)
+#Sem_image=np.dstack((G_out,O_out,V_out,B_out,S_out))
+#plt.imshow(np.reshape(depth_image[0],(18,60)))
 sess.close()

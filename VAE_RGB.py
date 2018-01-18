@@ -7,7 +7,9 @@ tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
-
+num_epochs=1
+rgbpath="vae_models/rgb_"+str(num_epochs)+"_epochs/model"
+batch_size=100
 
 # Initialization
 def xavier_init(fan_in, fan_out, constant=1): 
@@ -25,7 +27,7 @@ class VariationalAutoencoder(object):
     """ Based on See "Auto-Encoding Variational Bayes" by Kingma and Welling
     """
     def __init__(self, network_architecture,
-                 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=100):
+                 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=batch_size):
         
         
         self.network_architecture=network_architecture# which is a dictionary 
@@ -269,7 +271,6 @@ def train(vae, batch_size, training_epochs, display_step=1):
             print("Epoch:", '%04d' % (epoch+1), 
                     "cost=", "{:.9f}".format(avg_cost))
 
-
 ##  Load Data 
 RGB_data=np.load("../Data/rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
@@ -279,7 +280,6 @@ RGB_input=np.concatenate((R_data,G_data,B_data),axis=1)
 n_samples=RGB_input.shape[0]
 
 with tf.variable_scope("RGB"):
-
     network_architecture = \
         dict(n_hidden_recog_1=1000, # 1st layer encoder neurons
          n_hidden_recog_2=1000, # 2nd layer encoder neurons
@@ -287,13 +287,12 @@ with tf.variable_scope("RGB"):
          n_hidden_gener_2=1000, # 2nd layer decoder neurons
          n_input=3*1080, # MNIST data input (img shape: 28*28)
          n_z=50)  # dimensionality of latent space
-    vae =VariationalAutoencoder(network_architecture,learning_rate=0.001,batch_size=100)
-
+    vae =VariationalAutoencoder(network_architecture,learning_rate=0.001,batch_size=batch_size)
     train_new_model =True
     if train_new_model:    
-       train(vae,batch_size=100,training_epochs=100)
-       vae.save("vae_models/RGB_100_epochs/model")
+       train(vae,batch_size=100,training_epochs=num_epochs)
+       vae.save(rgbpath)
     else:
-       vae.load("vae_models/RGB_100_epochs/model")
+       vae.load(rgbpath)
 
 vae.sess.close()

@@ -7,6 +7,10 @@ tf.set_random_seed(0)
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
 tf.reset_default_graph()
+num_epochs=1
+sempath="vae_models/sem_"+str(num_epochs)+"_epochs/model"
+batch_size=100
+
 #Build the model 
 def xavier_init(fan_in, fan_out, constant=1): 
     """ Xavier initialization of network weights"""
@@ -24,7 +28,7 @@ class VariationalAutoencoder(object):
     """ Based on See "Auto-Encoding Variational Bayes" by Kingma and Welling
     """
     def __init__(self, network_architecture,
-                 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=100):
+                 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=batch_size):
         
         
         self.network_architecture=network_architecture# which is a dictionary 
@@ -278,28 +282,26 @@ with tf.variable_scope("Sem"):
          n_hidden_gener_2=2000, # 2nd layer decoder neurons
          n_input=5400, # MNIST data input (img shape: 28*28)
          n_z=100)  # dimensionality of latent space
-    vae = VariationalAutoencoder(network_architecture,learning_rate=1e-4, batch_size=100)
+    vae = VariationalAutoencoder(network_architecture,learning_rate=1e-4, batch_size=batch_size)
 
-#Load data 
+
+#Loading  data 
 Sem_data=np.load("../Data/sem_data.npy")
-#Sem_input=np.transpose(Sem_data,(0,2,1,3))
 Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
 Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
 Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
 Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
 Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
-
 Sem_input=np.concatenate((Ground_input,Objects_input,
                           Building_input,Vegetation_input,Sky_input),
                           axis=1)
-
 n_samples=Sem_input.shape[0]
+
 
 train_new_model =True
 if train_new_model:    
-    train(vae,batch_size=100, training_epochs=100)
-    vae.save("vae_models/sem_100_epochs/model")
+    train(vae,batch_size=batch_size, training_epochs=num_epochs)
+    vae.save(sempath)
 else:
-    vae.load("vae_models/sem_100_epochs/model")
-
+    vae.load(sempath)
 vae.sess.close()
