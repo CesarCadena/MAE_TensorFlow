@@ -648,7 +648,7 @@ class RecurrentMAE:
                tf.nn.l2_loss(label_series[9][-1]-output[8])
 
         if self.rnn_option == 'basic':
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.0000005) #basic rnn
         if self.rnn_option == 'lstm':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #lstm rnn
         if self.rnn_option == 'gated':
