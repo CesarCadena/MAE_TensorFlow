@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
 batch_size=20
-num_epochs=1
-filter_size=8
+num_epochs=100
+filter_size=16
 RESTORE=0
 SEED = None
 #%matplotlib inline 
@@ -74,8 +74,7 @@ with tf.Session(config=config) as sess:
             
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/rgb_1/rgb.ckpt')
-            
+        saver.save(sess,'./CNN_models/rgb_100_16/rgb.ckpt')
 #test on reconstruction  
     #reconstruction=sess.run(out,feed_dict={inputs:data[0:1]})
     

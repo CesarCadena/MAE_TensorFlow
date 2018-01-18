@@ -6,11 +6,11 @@ import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
 batch_size=20
-num_epochs=1
+num_epochs=100
 hidden_size=1024
 RESTORE=0
 SEED = None
-filter_size=8
+filter_size=16
 tf.reset_default_graph()
 
 data=np.load('../Data/depth_data.npy')
@@ -78,4 +78,4 @@ with tf.Session(config=config) as sess:
                                                      outmask:mask[batch_indices]})
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/depth_1/depth.ckpt')
+        saver.save(sess,'./CNN_models/depth_100_16/depth.ckpt')

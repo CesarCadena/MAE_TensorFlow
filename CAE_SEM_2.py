@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
 batch_size=20
-num_epochs=1
+num_epochs=100
 RESTORE=0
 SEED = None
-filter_size=8
+filter_size=16
 #%matplotlib inline 
 # display inline
 data=np.load('../Data/sem_data.npy')
@@ -73,5 +73,5 @@ with tf.Session(config=config) as sess:
             
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/sem_1/sem.ckpt')
+        saver.save(sess,'./CNN_models/sem_100_16/sem.ckpt')
         

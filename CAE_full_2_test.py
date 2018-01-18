@@ -8,10 +8,10 @@ from process_data import  process_data
 from depth_error import RMSE,ABSR
 tf.reset_default_graph()
 batch_size=20
-num_epochs=1
+num_epochs=100
 RESTORE=0
 SEED = None
-filter_size=8
+filter_size=16
 tf.reset_default_graph()
 depth_data=np.load('../Data_test/depth_data.npy')
 depth_mask=np.load('../Data_test/depthmask_data.npy')
@@ -177,7 +177,7 @@ config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    saver_full.restore(sess,'./CNN_models/full_1/full.ckpt')
+    saver_full.restore(sess,'./CNN_models/full_100_16/full.ckpt')
     prediction=sess.run(depth_out,feed_dict={sem_inputs:sem_data[0:1000],
                                         #sem_outputs:sem_data[batch_indices],
                                         depth_inputs:depth_data[0:1000],

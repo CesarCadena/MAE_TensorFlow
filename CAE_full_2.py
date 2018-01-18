@@ -7,10 +7,10 @@ import matplotlib.image as mpimg
 from process_data import  process_data
 tf.reset_default_graph()
 batch_size=20
-num_epochs=1
+num_epochs=100
 RESTORE=0
 SEED = None
-filter_size=8
+filter_size=16
 depth_data=np.load('../Data/depth_data.npy')
 depth_mask=np.load('../Data/depth_mask.npy')
 sem_data=np.load('../Data/sem_data.npy')
@@ -217,5 +217,5 @@ with tf.Session(config=config) as sess:
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
 
-        saver_full.save(sess,'./CNN_models/full_1/full.ckpt')
+        saver_full.save(sess,'./CNN_models/full_100_16/full.ckpt')
 
