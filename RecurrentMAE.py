@@ -1183,10 +1183,10 @@ class RecurrentMAE:
                     if epoch < 10:
                         _ , c, l  = sess.run([train_op0, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 10 and epoch < 20:
+                    if epoch >= 10 and epoch < 50:
                         _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 20 and epoch < 40:
+                    if epoch >= 50 and epoch < 100:
                         _ , c, l = sess.run([train_op2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
