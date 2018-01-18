@@ -536,12 +536,12 @@ class Gated_RNN:
                 self.W_z.append(tf.get_variable(name='W_z',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.0001)))
 
                 self.U_z.append(tf.get_variable(name='U_z',
                                                 shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                initializer=tf.random_normal_initializer(mean=0.01,stddev=0.001)))
 
                 self.b_z.append(tf.get_variable(name='b_z',
                                                 shape=[self.size_states],
@@ -551,12 +551,12 @@ class Gated_RNN:
                 self.W_r.append(tf.get_variable(name='W_r',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.0001)))
 
                 self.U_r.append(tf.get_variable(name='U_r',
                                                 shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                initializer=tf.random_normal_initializer(mean=0.01,stddev=0.001)))
 
                 self.b_r.append(tf.get_variable(name='b_r',
                                                 shape=[self.size_states],
@@ -566,12 +566,12 @@ class Gated_RNN:
                 self.W.append(tf.get_variable(name='W',
                                               shape=[self.size_states,self.size_states],
                                               dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                              initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.0001)))
 
                 self.U.append(tf.get_variable(name='U',
                                               shape=[coding_size,state_size],
                                               dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                              initializer=tf.random_normal_initializer(mean=0.01,stddev=0.01)))
 
                 self.b.append(tf.get_variable(name='b',
                                               shape=[self.size_states],
@@ -625,8 +625,9 @@ class Gated_RNN:
                                                   initializer=tf.zeros_initializer()))
 
             self.W_o_t = tf.get_variable(name='W_o_t',
+                                         shape=[state_size,coding_size],
                                          dtype=tf.float32,
-                                         initializer=initializer_O)
+                                         initializer=tf.random_normal_initializer(mean=0.01,stddev=0.01))
 
             self.b_o_t = tf.get_variable(name='W_b_t',
                                          shape=[coding_size],
