@@ -454,9 +454,6 @@ class LSTM_RNN:
                                        dtype=tf.float32,
                                        initializer=tf.zeros_initializer())
 
-
-
-
     def run(self,inputs,init_states=None):
 
         if init_states == None:
@@ -480,31 +477,7 @@ class LSTM_RNN:
         _, s_fin, h_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
                                            step,
                                            [0,s_init,h_init,inputs])
-                                           
-        '''
 
-        # cell definition
-        for step in range(0,self.n_rnn_steps):
-
-            # forget gate
-            f_t = tf.sigmoid(tf.add(tf.add(self.b_f[step],tf.matmul(inputs[step],self.U_f[step])),tf.matmul(h_t,self.W_f[step])))
-
-            # internal states
-            i_t = tf.sigmoid(tf.add(tf.add(self.b_g[step],tf.matmul(inputs[step],self.U_g[step])),tf.matmul(h_t,self.W_g[step])))
-
-            # external intput gate
-            g_t = tf.tanh(tf.add(tf.add(self.b[step],tf.matmul(inputs[step],self.U[step])),tf.matmul(h_t,self.W[step])))
-
-            # memory update
-            s_t = tf.add(tf.multiply(f_t,s_t),tf.multiply(i_t,g_t))
-
-            # output gate
-            o_t = tf.sigmoid(tf.add(tf.add(self.b_o[step],tf.matmul(inputs[step],self.U_o[step])),tf.matmul(h_t,self.W_o[step])))
-
-            # state update
-            h_t = tf.multiply(o_t,tf.tanh(s_t))
-            
-        '''
 
         # reconstruct coding
         output = tf.nn.relu(tf.add(tf.matmul(h_fin,self.O_w),self.O_b))
@@ -512,7 +485,7 @@ class LSTM_RNN:
 
 class Gated_RNN:
 
-    def __init__(self,state_size=None, coding_size=None, n_rnn_steps=None, scope=None):
+    def __init__(self,state_size=None, coding_size=None, n_rnn_steps=None, scope=None, option='shared'):
 
         # options
         if state_size == None:
@@ -530,6 +503,8 @@ class Gated_RNN:
         if scope == None:
             raise ValueError('no cell scope passed')
         self.scope = scope
+
+        self.option = option
 
         # weight containers
 
@@ -557,49 +532,94 @@ class Gated_RNN:
         # define all variables
         with tf.variable_scope(scope) as gated:
 
-            for step in range(0,self.n_rnn_steps):
-
-                self.W_z.append(tf.get_variable(name='W_z_'+str(step),
+            if self.option == 'shared':
+                self.W_z.append(tf.get_variable(name='W_z',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.U_z.append(tf.get_variable(name='U_z_'+str(step),
+                self.U_z.append(tf.get_variable(name='U_z',
                                                 dtype=tf.float32,
-                                                initializer=initializer_U))
+                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.b_z.append(tf.get_variable(name='b_z_'+str(step),
+                self.b_z.append(tf.get_variable(name='b_z',
                                                 shape=[self.size_states],
                                                 dtype=tf.float32,
                                                 initializer=tf.zeros_initializer()))
 
-                self.W_r.append(tf.get_variable(name='W_r_'+str(step),
+                self.W_r.append(tf.get_variable(name='W_r',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.U_r.append(tf.get_variable(name='U_r_'+str(step),
+                self.U_r.append(tf.get_variable(name='U_r',
                                                 dtype=tf.float32,
-                                                initializer=initializer_U))
+                                                initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.b_r.append(tf.get_variable(name='b_r_'+str(step),
+                self.b_r.append(tf.get_variable(name='b_r',
                                                 shape=[self.size_states],
                                                 dtype=tf.float32,
                                                 initializer=tf.zeros_initializer()))
 
-                self.W.append(tf.get_variable(name='W_'+str(step),
+                self.W.append(tf.get_variable(name='W',
                                               shape=[self.size_states,self.size_states],
                                               dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
+                                              initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.U.append(tf.get_variable(name='U_'+str(step),
+                self.U.append(tf.get_variable(name='U',
                                               dtype=tf.float32,
-                                              initializer=initializer_U))
+                                              initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
 
-                self.b.append(tf.get_variable(name='b_'+str(step),
+                self.b.append(tf.get_variable(name='b',
                                               shape=[self.size_states],
                                               dtype=tf.float32,
                                               initializer=tf.zeros_initializer()))
+
+
+            if self.option == 'nonshared':
+                for step in range(0,self.n_rnn_steps):
+
+                    self.W_z.append(tf.get_variable(name='W_z_'+str(step),
+                                                    shape=[self.size_states,self.size_states],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.U_z.append(tf.get_variable(name='U_z_'+str(step),
+                                                    dtype=tf.float32,
+                                                    initializer=initializer_U))
+
+                    self.b_z.append(tf.get_variable(name='b_z_'+str(step),
+                                                    shape=[self.size_states],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.W_r.append(tf.get_variable(name='W_r_'+str(step),
+                                                    shape=[self.size_states,self.size_states],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.U_r.append(tf.get_variable(name='U_r_'+str(step),
+                                                    dtype=tf.float32,
+                                                    initializer=initializer_U))
+
+                    self.b_r.append(tf.get_variable(name='b_r_'+str(step),
+                                                    shape=[self.size_states],
+                                                    dtype=tf.float32,
+                                                    initializer=tf.zeros_initializer()))
+
+                    self.W.append(tf.get_variable(name='W_'+str(step),
+                                                  shape=[self.size_states,self.size_states],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.zeros_initializer()))
+
+                    self.U.append(tf.get_variable(name='U_'+str(step),
+                                                  dtype=tf.float32,
+                                                  initializer=initializer_U))
+
+                    self.b.append(tf.get_variable(name='b_'+str(step),
+                                                  shape=[self.size_states],
+                                                  dtype=tf.float32,
+                                                  initializer=tf.zeros_initializer()))
 
             self.W_o_t = tf.get_variable(name='W_o_t',
                                          dtype=tf.float32,
@@ -615,19 +635,28 @@ class Gated_RNN:
         if init_states == None:
             raise ValueError('no state initialization passed')
 
-        h_t = init_states
+        h_init = init_states
 
-        for step in range(0,self.n_rnn_steps):
+        if self.option == 'shared':
 
-            z_t = tf.sigmoid(self.b_z[step] + tf.matmul(h_t,self.W_z[step]) + tf.matmul(inputs[step],self.U_z[step]))
-            r_t = tf.sigmoid(self.b_r[step] + tf.matmul(h_t,self.W_r[step]) + tf.matmul(inputs[step],self.U_r[step]))
+            def step(i,h_t,x):
+                z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(inputs[0],self.U_z[0]))
+                r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(inputs[0],self.U_r[0]))
+                r_t_tilde = tf.multiply(r_t,h_t)
+                h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(inputs[0],self.U[0]))
 
-            r_t_tilde = tf.multiply(r_t,h_t)
-            h_t_tilde = tf.tanh(self.b[step] + tf.matmul(r_t_tilde,self.W[step]) + tf.matmul(inputs[step],self.U[step]))
+                h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
+                return i+1,h_t,x
 
-            h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
 
-        output = tf.add(tf.matmul(h_t,self.W_o_t),self.b_o_t)
+
+        _, h_fin, _ = tf.while_loop(lambda  i,h,x: tf.less(i,self.n_rnn_steps),
+                                    step,
+                                    [0,h_init,inputs])
+
+
+
+        output = tf.add(tf.matmul(h_fin,self.W_o_t),self.b_o_t)
 
         return output
 
