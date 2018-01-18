@@ -818,7 +818,7 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-04 # lstm RNN
+            base_rate = 1e-02 # lstm RNN
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
 
