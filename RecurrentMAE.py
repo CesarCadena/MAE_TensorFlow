@@ -634,8 +634,9 @@ class RecurrentMAE:
                    0.01*self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                    0.01*self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
                    0.01*self.c_w4*tf.nn.l2_loss(label_series[8][-1]-output[7]) + \
-                   0.01*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8])
-        #100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
+                   0.01*self.c_w5*tf.nn.l2_loss(label_series[9][-1]-output[8]) + \
+                   100*tf.losses.absolute_difference(tf.multiply(label_series[4][-1],label_series[3][-1]),tf.multiply(label_series[4][-1],output[3])) +\
+
 
         loss = tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
@@ -650,9 +651,9 @@ class RecurrentMAE:
         if self.rnn_option == 'basic':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
         if self.rnn_option == 'lstm':
-            regularizer = tf.contrib.layers.l2_regularizer(scale=1.0) #lstm rnn
-        if self.rnn_option == 'gated':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0) #lstm rnn
+        if self.rnn_option == 'gated':
+            regularizer = tf.contrib.layers.l2_regularizer(scale=1.0) #lstm rnn
 
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
