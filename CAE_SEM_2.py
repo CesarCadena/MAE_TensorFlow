@@ -10,6 +10,7 @@ num_epochs=1
 RESTORE=0
 SEED = None
 filter_size=16
+Sempath='./CNN_models/sem_'+str(num_epochs)+'_'+str(filter_size)+'/sem.ckpt'
 #%matplotlib inline 
 # display inline
 data=np.load('../Data/sem_data.npy')
@@ -73,5 +74,5 @@ with tf.Session(config=config) as sess:
             
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/sem_100_16/sem.ckpt')
+        saver.save(sess,Sempath)
         

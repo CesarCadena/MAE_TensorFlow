@@ -10,6 +10,7 @@ num_epochs=1
 filter_size=16
 RESTORE=0
 SEED = None
+rgbpath='./CNN_models/rgb_'+str(num_epochs)+'_'+str(filter_size)+'/rgb.ckpt'
 #%matplotlib inline 
 # display inline
 data=np.load('../Data/rgb_data.npy')
@@ -74,8 +75,7 @@ with tf.Session(config=config) as sess:
             
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/rgb_100_16/rgb.ckpt')
+        saver.save(sess,rgbpath)
 #test on reconstruction  
     #reconstruction=sess.run(out,feed_dict={inputs:data[0:1]})
-    
 #plt.imshow(reconstruction[0])

@@ -11,6 +11,12 @@ num_epochs=1
 RESTORE=0
 SEED = None
 filter_size=16
+rgbpath='./CNN_models/rgb_'+str(num_epochs)+'_'+str(filter_size)+'/rgb.ckpt'
+depthpath='./CNN_models/depth_'+str(num_epochs)+'_'+str(filter_size)+'/depth.ckpt'
+Sempath='./CNN_models/sem_'+str(num_epochs)+'_'+str(filter_size)+'/sem.ckpt'
+fullpath='./CNN_models/full_'+str(num_epochs)+'_'+str(filter_size)+'/full.ckpt'
+
+
 depth_data=np.load('../Data/depth_data.npy')
 depth_mask=np.load('../Data/depth_mask.npy')
 sem_data=np.load('../Data/sem_data.npy')
@@ -20,17 +26,15 @@ print(sem_data.shape)
 print(depth_data.shape)
 print(depth_mask.shape)
 
+
 "data augmentation"
 "depth"
 "input"
-
 depth_labels=np.concatenate((depth_data,depth_data),axis=0)
 depth_data=np.concatenate((depth_data,0*depth_data),axis=0)
 depth_mask=np.concatenate((depth_mask,depth_mask),axis=0)
-
 "RGB"
 rgb_data=np.concatenate((rgb_data,rgb_data),axis=0)
-
 "Sem"
 sem_labels=np.concatenate((sem_data,sem_data),axis=0)
 sem_data=np.concatenate((sem_data,0*sem_data),axis=0)
@@ -42,7 +46,6 @@ print(sem_labels.shape)
 print(depth_data.shape)
 print(depth_labels.shape)
 print(depth_mask.shape)
-
 "finish data augmentation"
 
 
@@ -204,9 +207,9 @@ config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    saver_sem.restore(sess,'./CNN_models/sem_100_16/sem.ckpt')
-    saver_depth.restore(sess,'./CNN_models/depth_100_16/depth.ckpt')
-    saver_rgb.restore(sess,'./CNN_models/rgb_100_16/rgb.ckpt')
+    saver_sem.restore(sess,Sempath)
+    saver_depth.restore(sess,depthpath)
+    saver_rgb.restore(sess,rgbpath)
 
 
     for ipochs in range(int(1+0.6*num_epochs)):
@@ -243,5 +246,5 @@ with tf.Session(config=config) as sess:
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
 
-        saver_full.save(sess,'./CNN_models/full_100_16/full.ckpt')
+        saver_full.save(sess,fullpath)
 

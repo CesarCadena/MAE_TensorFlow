@@ -13,6 +13,10 @@ RESTORE=0
 SEED = None
 filter_size=16
 tf.reset_default_graph()
+fullpath='./CNN_models/full_'+str(num_epochs)+'_'+str(filter_size)+'/full.ckpt'
+
+
+
 depth_data=np.load('../Data_test/depth_data.npy')
 depth_mask=np.load('../Data_test/depthmask_data.npy')
 sem_data=np.load('../Data_test/sem_data.npy')
@@ -158,11 +162,9 @@ loss=(tf.nn.l2_loss( (depth_out-depth_outputs)*depth_outmask )
 optimizer1=tf.train.AdamOptimizer(learning_rate).minimize(loss,var_list=var_full)
 optimizer2=tf.train.AdamOptimizer(learning_rate=1e-6).minimize(loss)
 
-#saver_sem=tf.train.Saver(var_sem)
-#saver_depth=tf.train.Saver(var_depth)
-#saver_rgb=tf.train.Saver(var_rgb)
-saver_full=tf.train.Saver()
 
+
+saver_full=tf.train.Saver()
 init=tf.global_variables_initializer()
 train_size=rgb_data.shape[0]
 train_indices=range(train_size)
@@ -172,24 +174,23 @@ config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    saver_full.restore(sess,'./CNN_models/full_100_16/full.ckpt')
-    prediction=sess.run(depth_out,feed_dict={sem_inputs:sem_data[0:1000],
+    saver_full.restore(sess,fullpath)
+    prediction=sess.run(depth_out,feed_dict={sem_inputs:sem_data[0:1000]*0,
                                         #sem_outputs:sem_data[batch_indices],
-                                        depth_inputs:depth_data[0:1000],
-                                        depth_outputs:depth_data[0:1000],
+                                        depth_inputs:depth_data[0:1000]*0,
+                                        depth_outputs:depth_data[0:1000]*0,
                                         depth_outmask:depth_mask[0:1000],
                                         rgb_inputs:rgb_data[0:1000],
                                         #rgb_outputs:rgb_data[batch_indices]
                                                      })
     print(prediction.shape)
-    #print(depth)
     prediction=prediction*depth_mask[0:1000]
     truth=depth_data[0:1000]
-
     print(prediction.shape)
     print(truth.shape)
-
     rmse=RMSE(truth,prediction)
     absr=ABSR(truth,prediction)
     print("relative error for depth estimation is :",absr)
     print("RMSE error for depth estimation is :",rmse)
+
+

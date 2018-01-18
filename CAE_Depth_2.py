@@ -12,6 +12,7 @@ RESTORE=0
 SEED = None
 filter_size=16
 tf.reset_default_graph()
+depthpath='./CNN_models/depth_'+str(num_epochs)+'_'+str(filter_size)+'/depth.ckpt'
 
 data=np.load('../Data/depth_data.npy')
 mask=np.load('../Data/depth_mask.npy')
@@ -78,4 +79,4 @@ with tf.Session(config=config) as sess:
                                                      outmask:mask[batch_indices]})
         print("Epoch: {}...".format(ipochs),
                        "Training loss: {:.4f}".format(l))
-        saver.save(sess,'./CNN_models/depth_100_16/depth.ckpt')
+        saver.save(sess,depthpath)
