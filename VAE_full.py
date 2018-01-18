@@ -15,8 +15,6 @@ sempath="vae_models/sem_"+str(num_epochs)+"_epochs/model"
 fullpath="vae_models/full_"+str(num_epochs)+"_epochs/model"
 
 
-
-
 def xavier_init(fan_in, fan_out, constant=1): 
 	""" Xavier initialization of network weights"""
 	# https://stackoverflow.com/questions/33640581/how-to-do-xavier-initialization-on-tensorflow
@@ -144,10 +142,8 @@ class VariationalAutoencoder(object):
 		#     tf.add(tf.matmul(layer_2, weights['out_log_sigma']), 
 		#                        biases['out_log_sigma'])
 		return x_reconstr_mean
-	
 	def create_loss_optimizer(self):
 		# The loss is composed of two terms:
-		
 		# 1.) The reconstruction loss (the negative log probability
 		#     of the input under the reconstructed Bernoulli/Gaussian distribution 
 		#     induced by the decoder in the data space).
@@ -204,7 +200,14 @@ def train(vae,batch_size,training_epochs,display_step=1):
 				# mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
 			batch_indices=perm_indices[offset:(offset+batch_size)]
 				# feed the data for full models 
-			batch_xs=z_in[batch_indices]
+
+			z_depth=sess.run(vae_depth.z_mean,feed_dict={vae_depth.x:Depth_input[batch_indices]})
+			z_rgb=sess.run(vae_rgb.z_mean,feed_dict={vae_rgb.x:RGB_input[batch_indices]})
+			z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input[batch_indices]})
+			z_in=np.concatenate((z_rgb,z_depth,z_sem),axis=1)
+			#print("shape of full model is :")
+			#print(z_in.shape)
+			batch_xs=z_in#[batch_indices]
 			# Fit training using batch data
 			cost =vae.partial_fit(batch_xs)
 			# Compute average loss
@@ -297,7 +300,6 @@ saver_Full=tf.train.Saver(var_Full)
 init=tf.global_variables_initializer()
 sess=tf.Session(config=config)
 sess.run(init)
-
 ###Load  other models 
 saver_depth.restore(sess,depthpath)
 print("loaded model weights from"+depthpath)
@@ -306,20 +308,16 @@ print("loaded model weights from"+rgbpath)
 saver_Sem.restore(sess,sempath)
 print("loaded model weights from"+sempath)
 
-
-
 ######################### Loading  data  ###################################
 depth_data=np.load("../Data/depth_data.npy")
 depthmask_data=np.load("../Data/depth_mask.npy")
 Depth_input=depth_data[:,:,:,0].reshape(-1,1080)# shape [size,1080]
 Depthmask_input=depthmask_data[:,:,:,0].reshape(-1,1080)
-
 RGB_data=np.load("../Data/rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
 G_data=RGB_data[:,:,:,1].reshape(-1,1080)
 B_data=RGB_data[:,:,:,2].reshape(-1,1080)
 RGB_input=np.concatenate((R_data,G_data,B_data),axis=1) #shape[size,3*1080]
-
 Sem_data=np.load("../Data/sem_data.npy")
 Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
 Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
@@ -329,8 +327,6 @@ Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
 Sem_input=np.concatenate((Ground_input,Objects_input,
 						  Building_input,Vegetation_input,Sky_input),
 						  axis=1)# shape[size,5*1080]
-  
-
 "Data Augumentation"
 "Depth"
 Depth_labels=np.concatenate((Depth_input,Depth_input),axis=0)
@@ -348,25 +344,16 @@ print(Sem_input.shape)
 print(Sem_labels.shape)
 n_samples=Sem_input.shape[0]
 print("n_samples is :",n_samples)
-###Build data for full model 
-z_depth=sess.run(vae_depth.z_mean,feed_dict={vae_depth.x:Depth_input})
-z_rgb=sess.run(vae_rgb.z_mean,feed_dict={vae_rgb.x:RGB_input})
-z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input})
-z_in=np.concatenate((z_rgb,z_depth,z_sem),axis=1)
-print("shape of full model is :")
-print(z_in.shape)
 
 ################################### Loading  Data finished ######################
-
 train_new_model=True
 if train_new_model:    
-	train(vae_Full,batch_size=batch_size, training_epochs=num_epochs)
+	train(vae_Full,batch_size=batch_size,training_epochs=num_epochs)
 	saver_Full.save(sess,fullpath)
 	print("saved the vae model weights to "+fullpath)
 else:
 	saver_Full.restore(sess,fullpath)
 	print("loaded the vae model weights from"+fullpath)
-
 """
 	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})
 	z_out_rgb,z_out_depth,z_out_sem=np.split(z_out, [50,100],axis=1)
