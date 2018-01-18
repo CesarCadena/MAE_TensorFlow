@@ -806,7 +806,7 @@ class RecurrentMAE:
 
         if self.rnn_option == 'lstm':
             base_rate = 1e-04# lstm RNN
-            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.9, staircase=True) # lstm configuration
+            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
         if self.rnn_option == 'basic':
             base_rate = 1e-06 # basic RNN
@@ -1184,10 +1184,10 @@ class RecurrentMAE:
                     if epoch < 10:
                         _ , c, l  = sess.run([train_op0, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 10 and epoch < 50:
+                    if epoch >= 10 and epoch < 20:
                         _ , c, l  = sess.run([train_op1, cost, epoch_loss_update], feed_dict=feed_dict)
 
-                    if epoch >= 50 and epoch < 100:
+                    if epoch >= 20 and epoch < 80:
                         _ , c, l = sess.run([train_op2, cost, epoch_loss_update], feed_dict=feed_dict)
 
                     else:
