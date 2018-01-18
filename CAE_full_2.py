@@ -7,7 +7,7 @@ import matplotlib.image as mpimg
 from process_data import  process_data
 tf.reset_default_graph()
 batch_size=20
-num_epochs=100
+num_epochs=1
 RESTORE=0
 SEED = None
 filter_size=16
@@ -19,6 +19,32 @@ print(rgb_data.shape)
 print(sem_data.shape)
 print(depth_data.shape)
 print(depth_mask.shape)
+
+"data augmentation"
+"depth"
+"input"
+
+depth_labels=np.concatenate((depth_data,depth_data),axis=0)
+depth_data=np.concatenate((depth_data,0*depth_data),axis=0)
+depth_mask=np.concatenate((depth_mask,depth_mask),axis=0)
+
+"RGB"
+rgb_data=np.concatenate((rgb_data,rgb_data),axis=0)
+
+"Sem"
+sem_labels=np.concatenate((sem_data,sem_data),axis=0)
+sem_data=np.concatenate((sem_data,0*sem_data),axis=0)
+
+
+print(rgb_data.shape)
+print(sem_data.shape)
+print(sem_labels.shape)
+print(depth_data.shape)
+print(depth_labels.shape)
+print(depth_mask.shape)
+
+"finish data augmentation"
+
 
 
 with tf.variable_scope("Sem"):
@@ -178,9 +204,9 @@ config.gpu_options.per_process_gpu_memory_fraction =0.4
 
 with tf.Session(config=config) as sess:
     sess.run(init)
-    saver_sem.restore(sess,'./CNN_models/sem_1/sem.ckpt')
-    saver_depth.restore(sess,'./CNN_models/depth_1/depth.ckpt')
-    saver_rgb.restore(sess,'./CNN_models/rgb_1/rgb.ckpt')
+    saver_sem.restore(sess,'./CNN_models/sem_100_16/sem.ckpt')
+    saver_depth.restore(sess,'./CNN_models/depth_100_16/depth.ckpt')
+    saver_rgb.restore(sess,'./CNN_models/rgb_100_16/rgb.ckpt')
 
 
     for ipochs in range(int(1+0.6*num_epochs)):
@@ -207,9 +233,9 @@ with tf.Session(config=config) as sess:
             offset=(step*batch_size)%(train_size-batch_size)
             batch_indices=perm_indices[offset:(offset+batch_size)]
             l,_=sess.run([loss,optimizer2],feed_dict={sem_inputs:sem_data[batch_indices],
-                                                     sem_outputs:sem_data[batch_indices],
+                                                     sem_outputs:sem_labels[batch_indices],
                                                      depth_inputs:depth_data[batch_indices],
-                                                     depth_outputs:depth_data[batch_indices],
+                                                     depth_outputs:depth_labels[batch_indices],
                                                      depth_outmask:depth_mask[batch_indices],
                                                      rgb_inputs:rgb_data[batch_indices],
                                                      rgb_outputs:rgb_data[batch_indices]

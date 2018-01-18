@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.image as mpimg
 from process_data import  process_data
 batch_size=20
-num_epochs=100
+num_epochs=1
 hidden_size=1024
 RESTORE=0
 SEED = None

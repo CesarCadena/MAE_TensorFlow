@@ -8,7 +8,7 @@ from process_data import  process_data
 from depth_error import RMSE,ABSR
 tf.reset_default_graph()
 batch_size=20
-num_epochs=100
+num_epochs=1
 RESTORE=0
 SEED = None
 filter_size=16
@@ -80,7 +80,6 @@ with tf.variable_scope("Depth"):
 #now (batch,5,15,8)
 
 
-
 with tf.variable_scope("full"):
     full_in=tf.concat([rgb_pool2,depth_pool2,sem_pool2],axis=3)
 #now (batch,5,15,24)
@@ -91,7 +90,6 @@ with tf.variable_scope("full"):
                               activation=tf.nn.relu,name='full_out')
 #now (batch,5,15,24)
     rgb_pool2_out,depth_pool2_out,sem_pool2_out=tf.split(full_out,3,axis=3)
-
 
 
 with tf.variable_scope("Sem"):
@@ -112,7 +110,6 @@ with tf.variable_scope("Sem"):
 #now (batch,18,60,3)
 
 
-
 with tf.variable_scope("RGB"):
 #########################################################################################
     ### Decoder using high level modules 
@@ -130,7 +127,6 @@ with tf.variable_scope("RGB"):
                        activation=tf.nn.sigmoid,name='out')
 #now (batch,18,60,3)
 
-
 with tf.variable_scope("Depth"):
 #########################################################################################
     ### Decoder using high level modules 
@@ -147,7 +143,6 @@ with tf.variable_scope("Depth"):
     depth_out=tf.layers.conv2d(inputs=depth_upsample2,filters=1,kernel_size=(3,3),padding='same',
                        activation=tf.nn.relu,name='out')
 #now (batch,18,60,1)
-
 
 
 var_sem=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope='Sem')
