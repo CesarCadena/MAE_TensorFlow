@@ -174,8 +174,6 @@ class VariationalAutoencoder(object):
 		# Use ADAM optimizer
 		self.optimizer = \
 			tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
-			
-
 	def partial_fit(self, X):
 		"""
 		Train model based on mini-batch of input data.
@@ -186,30 +184,29 @@ class VariationalAutoencoder(object):
 		return cost
 
 
-	def train(self, batch_size=100, training_epochs=10, display_step=1):
-		print("training started ...")
-		train_indices=range(n_samples)
-		for epoch in range(training_epochs):
-			avg_cost = 0.
-			total_batch = int(n_samples / batch_size)
-			perm_indices=np.random.permutation(train_indices)
+
+def train(vae,batch_size,training_epochs,display_step=1):
+	print("training started ...")
+	train_indices=range(n_samples)
+	for epoch in range(training_epochs):
+		avg_cost = 0.
+		total_batch = int(n_samples / batch_size)
+		perm_indices=np.random.permutation(train_indices)
 		# Loop over all batches
-			for i in range(total_batch):
-				offset=(i*batch_size)%(n_samples-batch_size)
+		for i in range(total_batch):
+			offset=(i*batch_size)%(n_samples-batch_size)
 				# mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
-				batch_indices=perm_indices[offset:(offset+batch_size)]
+			batch_indices=perm_indices[offset:(offset+batch_size)]
 				# feed the data for full models 
-				batch_xs=z_in[batch_indices]
+			batch_xs=z_in[batch_indices]
 			# Fit training using batch data
-				cost = self.partial_fit(batch_xs)
+			cost =vae.partial_fit(batch_xs)
 			# Compute average loss
-				avg_cost += cost/n_samples*batch_size
+			avg_cost+=cost/n_samples*batch_size
 		# Display logs per epoch step
-			if epoch % display_step == 0:
-				print("Epoch:", '%04d' % (epoch+1), 
-					  "cost=", "{:.9f}".format(avg_cost))
-
-
+		if epoch % display_step == 0:
+			print("Epoch:", '%04d' % (epoch+1), 
+					"cost=", "{:.9f}".format(avg_cost))
 
 
 #Build  network for depth channel
@@ -270,13 +267,43 @@ saver_Sem=tf.train.Saver(var_Sem)
 
 
 ########################    Start build  shared information fusion   #############################
+with tf.variable_scope("Full"):
+	network_architecture_Full = \
+		dict(n_hidden_recog_1=50, # 1st layer encoder neurons
+		 n_hidden_recog_2=50, # 2nd layer encoder neurons
+		 n_hidden_gener_1=50, # 1st layer decoder neurons
+		 n_hidden_gener_2=50, # 2nd layer decoder neurons
+		 n_input=200, # MNIST data input (img shape: 28*28)
+		 n_z=2)  # dimensionality of latent space
+	#vae_Sem= VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4, batch_size=100)
+	vae_Full=VariationalAutoencoder(network_architecture_Full,learning_rate=1e-4,batch_size=100)
+########################    Finish building  shared information fusion   #############################
 
 
 
-########################    Start build  shared information fusion   #############################
+### Initialization
+init=tf.global_variables_initializer()
+sess=tf.Session(config=config)
+sess.run(init)
+
+###Load  other models 
+saver_depth.restore(sess,"vae_models/depth_100_epochs/model")
+print("loaded model weights from "+"models/depth_100_epochs/model")
+
+saver_rgb.restore(sess,"vae_models/RGB_100_epochs/model")
+print("loaded model weights from "+"models/RGB_100_epochs/model")
+
+saver_Sem.restore(sess,"vae_models/sem_100_epochs/model")
+print("loaded model weights from "+"models/sem_100_epochs/model")
+
+
 ############## Load data ####################
 depth_data=np.load("../Data/depth_data.npy")
+depthmask_data=np.load("../Data/depth_mask.npy")
 Depth_input=depth_data[:,:,:,0].reshape(-1,1080)# shape [size,1080]
+Depthmask_input=depthmask_data[:,:,:,0].reshape(-1,1080)
+
+
 
 RGB_data=np.load("../Data/rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
@@ -294,39 +321,7 @@ Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
 Sem_input=np.concatenate((Ground_input,Objects_input,
 						  Building_input,Vegetation_input,Sky_input),
 						  axis=1)# shape[size,5*1080]
-
 n_samples=Sem_input.shape[0] # size 
-############## Finish Load data ####################
-
-
-
-with tf.variable_scope("Full"):
-	network_architecture_Full = \
-		dict(n_hidden_recog_1=50, # 1st layer encoder neurons
-		 n_hidden_recog_2=50, # 2nd layer encoder neurons
-		 n_hidden_gener_1=50, # 1st layer decoder neurons
-		 n_hidden_gener_2=50, # 2nd layer decoder neurons
-		 n_input=200, # MNIST data input (img shape: 28*28)
-		 n_z=2)  # dimensionality of latent space
-	#vae_Sem= VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4, batch_size=100)
-	vae_Full=VariationalAutoencoder(network_architecture_Full,learning_rate=1e-4,batch_size=100)
-
-
-
-### Initialization
-init=tf.global_variables_initializer()
-sess=tf.Session(config=config)
-sess.run(init)
-
-###Load  other models 
-saver_depth.restore(sess,"vae_models/depth_1_epochs/model")
-print("loaded model weights from "+"models/depth_5_epochs/model")
-
-saver_rgb.restore(sess,"vae_models/RGB_1_epochs/model")
-print("loaded model weights from "+"models/RGB_1_epochs/model")
-
-saver_Sem.restore(sess,"vae_models/sem_1_epochs/model")
-print("loaded model weights from "+"models/sem_1_epochs/model")
 
 
 ###Build data for full model 
@@ -335,6 +330,9 @@ z_rgb=sess.run(vae_rgb.z_mean,feed_dict={vae_rgb.x:RGB_input})
 z_sem=sess.run(vae_Sem.z_mean,feed_dict={vae_Sem.x:Sem_input})
 #z_in is the data required 
 z_in=np.concatenate((z_rgb,z_depth,z_sem),axis=1)
+
+print("shape of full model is :")
+print(z_in.shape)
 
 
 ######################## variables list #########################
@@ -348,14 +346,14 @@ saver_Full=tf.train.Saver(var_Full)
 
 train_new_model=True
 if train_new_model:    
-	vae_Full.train(batch_size=100, training_epochs=100)
+	train(vae_Full,batch_size=100, training_epochs=100)
 	saver_Full.save(sess,"vae_models/full_100_epochs/model")
-	print("saved the vae model weights to "+"models/full_1_epochs/model")
+	print("saved the vae model weights to "+"models/full_100_epochs/model")
 else:
 	saver_Full.restore(sess,"vae_models/full_100_epochs/model")
-	print("loaded the vae model weights from"+"models/full_1_epochs/model")
+	print("loaded the vae model weights from"+"models/full_100_epochs/model")
 
-sess.close()
+
 
 """
 	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})

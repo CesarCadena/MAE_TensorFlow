@@ -171,7 +171,7 @@ class VariationalAutoencoder(object):
                            axis=1)
         """
         # 1) gaussian distribution
-        reconstr_error=self.x-self.x_reconstr_mean
+        reconstr_error=(self.x-self.x_reconstr_mean)*self.mask
         reconstr_loss=tf.reduce_sum(tf.square(reconstr_error),axis=1)
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         ##    between the distribution in latent space induced by the encoder on 
@@ -229,32 +229,34 @@ class VariationalAutoencoder(object):
     def load(self, check_point_file = 'model.ckpt'):
         self.saver_d.restore(self.sess, check_point_file)
         print("loaded model weights from "+check_point_file)
+
+      
+def train(vae,batch_size,training_epochs,display_step=1):
+    print("training started ...")
+    train_indices=range(n_samples)
         
-    def train(self, batch_size=100,training_epochs=1,display_step=1):
-        print("training started ...")
-        train_indices=range(n_samples)
-        
-        for epoch in range(training_epochs):
-            avg_cost = 0.
-            total_batch = int(n_samples / batch_size)
-            perm_indices=np.random.permutation(train_indices)
+    for epoch in range(training_epochs):
+        avg_cost = 0.
+        total_batch = int(n_samples / batch_size)
+        perm_indices=np.random.permutation(train_indices)
         # Loop over all batches
-            for i in range(total_batch):  
-                offset=(i*batch_size)%(n_samples-batch_size)
+        for i in range(total_batch):  
+            offset=(i*batch_size)%(n_samples-batch_size)
                 # mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
-                batch_indices=perm_indices[offset:(offset+batch_size)]
-                batch_xs=Depth_input[batch_indices]
-                batch_mask=Depthmask_input[batch_indices]
+            batch_indices=perm_indices[offset:(offset+batch_size)]
+            batch_xs=Depth_input[batch_indices]
+            batch_mask=Depthmask_input[batch_indices]
             # Fit training using batch data
-                _,cost=self.sess.run((self.optimizer, self.cost), 
-                                  feed_dict={self.x:batch_xs,self.mask:batch_mask})
-                #cost = self.partial_fit(batch_xs)
+            _,cost=vae.sess.run((vae.optimizer,vae.cost), 
+                                  feed_dict={vae.x:batch_xs,vae.mask:batch_mask})
+            #cost = self.partial_fit(batch_xs)
             # Compute average loss
-                avg_cost += cost / n_samples * batch_size
+            avg_cost += cost / n_samples * batch_size
         # Display logs per epoch step
-            if epoch % display_step == 0:
-                print("Epoch:", '%04d' % (epoch+1), 
-                      "cost=", "{:.9f}".format(avg_cost))
+        if epoch % display_step == 0:
+            print("Epoch:", '%04d' % (epoch+1), 
+                "cost=", "{:.9f}".format(avg_cost))
+
 
 # Load depth data 
 depth_data=np.load("../Data/depth_data.npy")
@@ -276,7 +278,7 @@ with tf.variable_scope("depth"):
 
 train_new_model =True
 if train_new_model:    
-    vae.train(batch_size=100,training_epochs=100)
+    train(vae,batch_size=100,training_epochs=100)
     vae.save("vae_models/depth_100_epochs/model")
 else:
     vae.load("vae_models/depth_100_epochs/model")

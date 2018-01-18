@@ -7,21 +7,6 @@ tf.set_random_seed(0)
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
 tf.reset_default_graph()
-
-#Load data 
-Sem_data=np.load("../Data/sem_data.npy")
-#Sem_input=np.transpose(Sem_data,(0,2,1,3))
-Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
-Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
-Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
-Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
-Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
-
-Sem_input=np.concatenate((Ground_input,Objects_input,
-                          Building_input,Vegetation_input,Sky_input),
-                          axis=1)
-
-n_samples=Sem_input.shape[0]
 #Build the model 
 def xavier_init(fan_in, fan_out, constant=1): 
     """ Xavier initialization of network weights"""
@@ -258,32 +243,31 @@ class VariationalAutoencoder(object):
         print("loaded model weights from "+check_point_file)
         
     
-    def train(self, batch_size=100, training_epochs=10, display_step=1):
-        print("training started ...")
-        train_indices=range(n_samples)
-        
-        for epoch in range(training_epochs):
-            avg_cost = 0.
-            total_batch = int(n_samples / batch_size)
-            perm_indices=np.random.permutation(train_indices)
+def train(vae,batch_size,training_epochs,display_step=1):
+    print("training started ...")
+    train_indices=range(n_samples)
+    for epoch in range(training_epochs):
+        avg_cost = 0.
+        total_batch = int(n_samples / batch_size)
+        perm_indices=np.random.permutation(train_indices)
         # Loop over all batches
-            for i in range(total_batch):
+        for i in range(total_batch):
                 
-                offset=(i*batch_size)%(n_samples-batch_size)
+            offset=(i*batch_size)%(n_samples-batch_size)
                 # mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
-                batch_indices=perm_indices[offset:(offset+batch_size)]
+            batch_indices=perm_indices[offset:(offset+batch_size)]
                 
-                batch_xs=Sem_input[batch_indices]
+            batch_xs=Sem_input[batch_indices]
             # Fit training using batch data
-                cost=self.partial_fit(batch_xs)
+            cost=vae.partial_fit(batch_xs)
             # Compute average loss
-                avg_cost += cost / n_samples * batch_size
+            avg_cost+= cost/n_samples * batch_size
 
         # Display logs per epoch step
-            if epoch % display_step == 0:
-                print("Epoch:", '%04d' % (epoch+1), 
-                      "cost=", "{:.9f}".format(avg_cost))
-n_samples=Sem_input.shape[0]
+        if epoch % display_step == 0:
+            print("Epoch:", '%04d' % (epoch+1), 
+                    "cost=", "{:.9f}".format(avg_cost))
+
 
 with tf.variable_scope("Sem"):
 
@@ -296,10 +280,24 @@ with tf.variable_scope("Sem"):
          n_z=100)  # dimensionality of latent space
     vae = VariationalAutoencoder(network_architecture,learning_rate=1e-4, batch_size=100)
 
+#Load data 
+Sem_data=np.load("../Data/sem_data.npy")
+#Sem_input=np.transpose(Sem_data,(0,2,1,3))
+Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
+Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
+Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
+Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
+Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
+
+Sem_input=np.concatenate((Ground_input,Objects_input,
+                          Building_input,Vegetation_input,Sky_input),
+                          axis=1)
+
+n_samples=Sem_input.shape[0]
 
 train_new_model =True
 if train_new_model:    
-    vae.train(batch_size=100, training_epochs=100)
+    train(vae,batch_size=100, training_epochs=100)
     vae.save("vae_models/sem_100_epochs/model")
 else:
     vae.load("vae_models/sem_100_epochs/model")

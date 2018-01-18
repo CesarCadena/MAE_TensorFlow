@@ -243,31 +243,31 @@ class VariationalAutoencoder(object):
         print("loaded model weights from "+check_point_file)
         
     
-    def train(self, batch_size=100, training_epochs=10, display_step=1):
-        print("training started ...")
-        train_indices=range(n_samples)
+def train(vae, batch_size, training_epochs, display_step=1):
+    print("training started ...")
+    train_indices=range(n_samples)
         
-        for epoch in range(training_epochs):
-            avg_cost = 0.
-            total_batch = int(n_samples / batch_size)
-            perm_indices=np.random.permutation(train_indices)
+    for epoch in range(training_epochs):
+        avg_cost = 0.
+        total_batch = int(n_samples/batch_size)
+        perm_indices=np.random.permutation(train_indices)
         # Loop over all batches
-            for i in range(total_batch):
+        for i in range(total_batch):
                 
-                offset=(i*batch_size)%(n_samples-batch_size)
+            offset=(i*batch_size)%(n_samples-batch_size)
                 # mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
-                batch_indices=perm_indices[offset:(offset+batch_size)]
+            batch_indices=perm_indices[offset:(offset+batch_size)]
                 
-                batch_xs=RGB_input[batch_indices]
+            batch_xs=RGB_input[batch_indices]
             # Fit training using batch data
-                cost = self.partial_fit(batch_xs)
+            cost =vae.partial_fit(batch_xs)
             # Compute average loss
-                avg_cost += cost/n_samples * batch_size
+            avg_cost += cost/n_samples * batch_size
 
         # Display logs per epoch step
-            if epoch % display_step == 0:
-                print("Epoch:", '%04d' % (epoch+1), 
-                      "cost=", "{:.9f}".format(avg_cost))
+        if epoch % display_step == 0:
+            print("Epoch:", '%04d' % (epoch+1), 
+                    "cost=", "{:.9f}".format(avg_cost))
 
 
 ##  Load Data 
@@ -291,10 +291,9 @@ with tf.variable_scope("RGB"):
 
     train_new_model =True
     if train_new_model:    
-       vae.train(batch_size=100,training_epochs=100)
+       train(vae,batch_size=100,training_epochs=100)
        vae.save("vae_models/RGB_100_epochs/model")
     else:
        vae.load("vae_models/RGB_100_epochs/model")
 
 vae.sess.close()
-
