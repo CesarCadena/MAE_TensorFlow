@@ -6,15 +6,16 @@ np.random.seed(0)
 tf.set_random_seed(0)
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
+tf.reset_default_graph()
 
 #Load data 
-Sem_data=np.load("../sem_data.npy")
-Sem_input=np.transpose(Sem_data,(0,2,1,3))
-Ground_input=Sem_input[:,:,:,0].reshape(-1,1080)
-Objects_input=Sem_input[:,:,:,1].reshape(-1,1080)
-Building_input=Sem_input[:,:,:,2].reshape(-1,1080)
-Vegetation_input=Sem_input[:,:,:,3].reshape(-1,1080)
-Sky_input=Sem_input[:,:,:,4].reshape(-1,1080)
+Sem_data=np.load("../Data/sem_data.npy")
+#Sem_input=np.transpose(Sem_data,(0,2,1,3))
+Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
+Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
+Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
+Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
+Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
 
 Sem_input=np.concatenate((Ground_input,Objects_input,
                           Building_input,Vegetation_input,Sky_input),
@@ -274,7 +275,7 @@ class VariationalAutoencoder(object):
                 
                 batch_xs=Sem_input[batch_indices]
             # Fit training using batch data
-                cost = self.partial_fit(batch_xs)
+                cost=self.partial_fit(batch_xs)
             # Compute average loss
                 avg_cost += cost / n_samples * batch_size
 
@@ -298,9 +299,9 @@ with tf.variable_scope("Sem"):
 
 train_new_model =True
 if train_new_model:    
-    vae.train(batch_size=100, training_epochs=1)
-    vae.save("models/sem_1_epochs/model")
+    vae.train(batch_size=100, training_epochs=100)
+    vae.save("vae_models/sem_100_epochs/model")
 else:
-    vae.load("models/sem_1_epochs/model")
+    vae.load("vae_models/sem_100_epochs/model")
 
-sess.close()
+vae.sess.close()

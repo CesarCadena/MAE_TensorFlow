@@ -6,6 +6,7 @@ np.random.seed(0)
 tf.set_random_seed(0)
 config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
+tf.reset_default_graph()
 
 
 def xavier_init(fan_in, fan_out, constant=1): 
@@ -274,22 +275,22 @@ saver_Sem=tf.train.Saver(var_Sem)
 
 ########################    Start build  shared information fusion   #############################
 ############## Load data ####################
-depth_data=np.load("../depth_data.npy")
-Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)# shape [size,1080]
+depth_data=np.load("../Data/depth_data.npy")
+Depth_input=depth_data[:,:,:,0].reshape(-1,1080)# shape [size,1080]
 
-RGB_data=np.load("../rgb_data.npy")
+RGB_data=np.load("../Data/rgb_data.npy")
 R_data=RGB_data[:,:,:,0].reshape(-1,1080)
 G_data=RGB_data[:,:,:,1].reshape(-1,1080)
 B_data=RGB_data[:,:,:,2].reshape(-1,1080)
 RGB_input=np.concatenate((R_data,G_data,B_data),axis=1) #shape[size,3*1080]
 
-Sem_data=np.load("../sem_data.npy")
-Sem_input=np.transpose(Sem_data,(0,2,1,3))
-Ground_input=Sem_input[:,:,:,0].reshape(-1,1080)
-Objects_input=Sem_input[:,:,:,1].reshape(-1,1080)
-Building_input=Sem_input[:,:,:,2].reshape(-1,1080)
-Vegetation_input=Sem_input[:,:,:,3].reshape(-1,1080)
-Sky_input=Sem_input[:,:,:,4].reshape(-1,1080)
+Sem_data=np.load("../Data/sem_data.npy")
+#Sem_input=np.transpose(Sem_data,(0,2,1,3))
+Ground_input=Sem_data[:,:,:,0].reshape(-1,1080)
+Objects_input=Sem_data[:,:,:,1].reshape(-1,1080)
+Building_input=Sem_data[:,:,:,2].reshape(-1,1080)
+Vegetation_input=Sem_data[:,:,:,3].reshape(-1,1080)
+Sky_input=Sem_data[:,:,:,4].reshape(-1,1080)
 Sem_input=np.concatenate((Ground_input,Objects_input,
 						  Building_input,Vegetation_input,Sky_input),
 						  axis=1)# shape[size,5*1080]
@@ -306,7 +307,7 @@ with tf.variable_scope("Full"):
 		 n_hidden_gener_1=50, # 1st layer decoder neurons
 		 n_hidden_gener_2=50, # 2nd layer decoder neurons
 		 n_input=200, # MNIST data input (img shape: 28*28)
-		 n_z=100)  # dimensionality of latent space
+		 n_z=2)  # dimensionality of latent space
 	#vae_Sem= VariationalAutoencoder(network_architecture_Sem,learning_rate=1e-4, batch_size=100)
 	vae_Full=VariationalAutoencoder(network_architecture_Full,learning_rate=1e-4,batch_size=100)
 
@@ -318,13 +319,13 @@ sess=tf.Session(config=config)
 sess.run(init)
 
 ###Load  other models 
-saver_depth.restore(sess,"models/depth_5_epochs/model")
+saver_depth.restore(sess,"vae_models/depth_1_epochs/model")
 print("loaded model weights from "+"models/depth_5_epochs/model")
 
-saver_rgb.restore(sess,"models/RGB_1_epochs/model")
+saver_rgb.restore(sess,"vae_models/RGB_1_epochs/model")
 print("loaded model weights from "+"models/RGB_1_epochs/model")
 
-saver_Sem.restore(sess,"models/sem_1_epochs/model")
+saver_Sem.restore(sess,"vae_models/sem_1_epochs/model")
 print("loaded model weights from "+"models/sem_1_epochs/model")
 
 
@@ -345,15 +346,18 @@ var_Full=(list(listvar4['weights_recog'].values())
 saver_Full=tf.train.Saver(var_Full)
 
 
-train_new_model=False
+train_new_model=True
 if train_new_model:    
-	vae_Full.train(batch_size=100, training_epochs=1)
-	saver_Full.save(sess,"models/full_1_epochs/model")
+	vae_Full.train(batch_size=100, training_epochs=100)
+	saver_Full.save(sess,"vae_models/full_100_epochs/model")
 	print("saved the vae model weights to "+"models/full_1_epochs/model")
 else:
-	saver_Full.restore(sess,"models/full_1_epochs/model")
+	saver_Full.restore(sess,"vae_models/full_100_epochs/model")
 	print("loaded the vae model weights from"+"models/full_1_epochs/model")
 
+sess.close()
+
+"""
 	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})
 	z_out_rgb,z_out_depth,z_out_sem=np.split(z_out, [50,100],axis=1)
 	rgb_out=sess.run(vae_rgb.x_reconstr_mean,feed_dict={vae_rgb.z:z_out_rgb})# shape [size,3240]
@@ -366,5 +370,5 @@ else:
 	G_out,O_out,V_out,B_out,S_out=np.split(sem_out,5,axis=1)
 	Sem_image=np.dstack((G_out,O_out,V_out,B_out,S_out))
 	plt.imshow(np.reshape(depth_image[0],(18,60)))
-
+"""
 sess.close()

@@ -9,7 +9,6 @@ config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
 
-
 # Initialization Function
 def xavier_init(fan_in, fan_out, constant=1): 
     """ Xavier initialization of network weights"""
@@ -27,7 +26,7 @@ class VariationalAutoencoder(object):
     """ Based on See "Auto-Encoding Variational Bayes" by Kingma and Welling
     """
     def __init__(self, network_architecture,
-                 transfer_fct=tf.nn.softplus,learning_rate=1e-3,batch_size=100):
+                 transfer_fct=tf.nn.relu,learning_rate=1e-3,batch_size=100):
         
         
         self.network_architecture=network_architecture# which is a dictionary 
@@ -36,6 +35,7 @@ class VariationalAutoencoder(object):
         self.batch_size=batch_size
         # tf Graph input
         self.x=tf.placeholder(tf.float32,[None, network_architecture["n_input"]])
+        self.mask=tf.placeholder(tf.float32,[None, network_architecture["n_input"]])
         # Create auotencoder 
         self.create_network()
         # define loss function based on variational upper bound 
@@ -141,8 +141,8 @@ class VariationalAutoencoder(object):
         
         # depth estimation mean 
         x_reconstr_mean = \
-           tf.add(tf.matmul(layer_2, weights['out_mean']), 
-                                 biases['out_mean'])
+           tf.nn.relu(tf.add(tf.matmul(layer_2, weights['out_mean']), 
+                                 biases['out_mean']))
             
         #x_reconstr_sigma= \
         #     tf.add(tf.matmul(layer_2, weights['out_log_sigma']), 
@@ -173,7 +173,6 @@ class VariationalAutoencoder(object):
         # 1) gaussian distribution
         reconstr_error=self.x-self.x_reconstr_mean
         reconstr_loss=tf.reduce_sum(tf.square(reconstr_error),axis=1)
-          
         # 2.) The latent loss, which is defined as the Kullback Leibler divergence 
         ##    between the distribution in latent space induced by the encoder on 
         #     the data and some prior. This acts as a kind of regularizer.
@@ -185,11 +184,11 @@ class VariationalAutoencoder(object):
                                            -tf.square(self.z_mean) 
                                            -tf.exp(self.z_log_sigma_sq), axis=1)
         
-        self.cost = tf.reduce_mean(reconstr_loss + latent_loss) # average over batch
+        self.cost=tf.reduce_mean(reconstr_loss+latent_loss)# average over batch
         # Use ADAM optimizer
         
-        self.optimizer = \
-            tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
+
+        self.optimizer=tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.cost)
         
     def partial_fit(self, X):
         """Train model based on mini-batch of input data.
@@ -240,15 +239,16 @@ class VariationalAutoencoder(object):
             total_batch = int(n_samples / batch_size)
             perm_indices=np.random.permutation(train_indices)
         # Loop over all batches
-            for i in range(total_batch):
-                
+            for i in range(total_batch):  
                 offset=(i*batch_size)%(n_samples-batch_size)
                 # mnist data  batch_xs, _ = mnist.train.next_batch(batch_size)
                 batch_indices=perm_indices[offset:(offset+batch_size)]
-                
                 batch_xs=Depth_input[batch_indices]
+                batch_mask=Depthmask_input[batch_indices]
             # Fit training using batch data
-                cost = self.partial_fit(batch_xs)
+                _,cost=self.sess.run((self.optimizer, self.cost), 
+                                  feed_dict={self.x:batch_xs,self.mask:batch_mask})
+                #cost = self.partial_fit(batch_xs)
             # Compute average loss
                 avg_cost += cost / n_samples * batch_size
         # Display logs per epoch step
@@ -256,13 +256,13 @@ class VariationalAutoencoder(object):
                 print("Epoch:", '%04d' % (epoch+1), 
                       "cost=", "{:.9f}".format(avg_cost))
 
-
 # Load depth data 
-depth_data=np.load("../depth_data.npy")
+depth_data=np.load("../Data/depth_data.npy")
+depthmask_data=np.load("../Data/depth_mask.npy")
 Depth_input=depth_data[:,:,:,0].reshape(-1,1080)
+Depthmask_input=depthmask_data[:,:,:,0].reshape(-1,1080)
 #Depth_input=np.transpose(depth_data,(0,2,1,3))[:,:,:,0].reshape(-1,1080)
 n_samples=Depth_input.shape[0]
-
 
 with tf.variable_scope("depth"):
     network_architecture = \
@@ -272,15 +272,13 @@ with tf.variable_scope("depth"):
          n_hidden_gener_2=1000, # 2nd layer decoder neurons
          n_input=1080, # MNIST data input (img shape: 28*28)
          n_z=50)  # dimensionality of latent space
-    vae = VariationalAutoencoder(network_architecture,learning_rate=1e-3,batch_size=100)
+    vae=VariationalAutoencoder(network_architecture,learning_rate=1e-3,batch_size=100)
 
-
-train_new_model =False
+train_new_model =True
 if train_new_model:    
-    vae.train(batch_size=100,training_epochs=1)
-    vae.save("models/depth_5_epochs/model")
+    vae.train(batch_size=100,training_epochs=100)
+    vae.save("vae_models/depth_100_epochs/model")
 else:
-    vae.load("models/depth_5_epochs/model")
+    vae.load("vae_models/depth_100_epochs/model")
 
-sess.close()
-
+vae.sess.close()
