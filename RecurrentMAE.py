@@ -658,7 +658,7 @@ class RecurrentMAE:
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
 
         #cost += 30*reg_term #basic rnn
-        cost += 30*reg_term
+        cost += reg_term
 
         return cost, loss
 
@@ -804,7 +804,7 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate = 1e-05 # lstm RNN
+            base_rate = 1e-04 # lstm RNN
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
         if self.rnn_option == 'basic':
@@ -1524,6 +1524,141 @@ class RecurrentMAE:
 
         sess.close()
         tf.reset_default_graph()
+
+    def evaluate_frequency(self,data_test,model_dir,frequency,option):
+
+        n_evaluations = len(data_test)
+
+        self.data_test = data_test
+        self.prepare_test_data()
+
+        input  = [self.imr_input,self.img_input,self.imb_input,self.depth_input,
+                  self.gnd_input,self.obj_input,self.bld_input,self.veg_input,self.sky_input]
+
+        output = self.network(input)
+
+        load_weights = tf.train.Saver()
+
+        dir = 'models/' + model_dir
+
+        error_rms = []
+        error_rel = []
+
+        with tf.Session() as sess:
+
+            sess.run(tf.global_variables_initializer())
+            load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
+
+            in_state =  np.zeros((1,self.state_size))
+
+            zeroing = np.zeros((1,self.n_rnn_steps,self.size_input))
+
+            if frequency == 1:
+                mask = np.concatenate((np.ones((1,1,self.size_input)),
+                                       np.zeros((1,self.n_rnn_steps-1,self.size_input))),
+                                      axis=1)
+
+            if frequency == 2:
+                mask = np.concatenate((np.ones((1,1,self.size_input)),
+                                       np.zeros((1,1,self.size_input)),
+                                       np.ones((1,1,self.size_input)),
+                                       np.zeros((1,self.n_rnn_steps-3,self.size_input))),
+                                      axis=1)
+
+            if frequency == 3:
+                mask = np.concatenate((np.ones((1,3,self.size_input)),
+                                       np.zeros((1,self.n_rnn_steps-3,self.size_input))),
+                                      axis=1)
+
+            if frequency == 4:
+                mask = np.concatenate((np.ones((1,4,self.size_input)),
+                                       np.zeros((1,self.n_rnn_steps-4,self.size_input))),
+                                      axis=1)
+
+
+
+            for i in range(0,n_evaluations):
+
+                imr_label = self.imr_test[i]
+                img_label = self.img_test[i]
+                imb_label = self.imb_test[i]
+                depth_label = self.depth_test[i]
+                gnd_label = self.gnd_test[i]
+                obj_label = self.obj_test[i]
+                bld_label = self.bld_test[i]
+                veg_label = self.veg_test[i]
+                sky_label = self.sky_test[i]
+
+
+                imr_in,img_in,imb_in,depth_in,gnd_in,obj_in,bld_in,veg_in,sky_in = input_distortion(copy(imr_label),
+                                                                                                    copy(img_label),
+                                                                                                    copy(imb_label),
+                                                                                                    copy(depth_label),
+                                                                                                    copy(gnd_label),
+                                                                                                    copy(obj_label),
+                                                                                                    copy(bld_label),
+                                                                                                    copy(veg_label),
+                                                                                                    copy(sky_label),
+                                                                                                    resolution=(18,60),
+                                                                                                    rnn=True,
+                                                                                                    singleframe=True)
+
+
+                if option == 'rgb-s':
+                    # taking only rgb as input
+                    depth_in = zeroing
+                    gnd_in = np.multiply(gnd_in,mask)
+                    obj_in = np.multiply(obj_in,mask)
+                    bld_in = np.multiply(bld_in,mask)
+                    veg_in = np.multiply(veg_in,mask)
+                    sky_in = np.multiply(sky_in,mask)
+
+                if option == 'rgb-d':
+                    depth_in = np.multiply(depth_in,mask)
+                    gnd_in = zeroing
+                    obj_in = zeroing
+                    bld_in = zeroing
+                    veg_in = zeroing
+                    sky_in = zeroing
+
+                if option == 'rgb-sd':
+                    depth_in = np.multiply(depth_in,mask)
+                    gnd_in = np.multiply(gnd_in,mask)
+                    obj_in = np.multiply(obj_in,mask)
+                    bld_in = np.multiply(bld_in,mask)
+                    veg_in = np.multiply(veg_in,mask)
+                    sky_in = np.multiply(sky_in,mask)
+
+
+
+                feed_dict = {self.imr_input:imr_in,
+                             self.img_input:img_in,
+                             self.imb_input:imb_in,
+                             self.depth_input:depth_in,
+                             self.gnd_input:gnd_in,
+                             self.obj_input:obj_in,
+                             self.bld_input:bld_in,
+                             self.veg_input:veg_in,
+                             self.sky_input:sky_in,
+                             self.init_states:in_state}
+
+                pred = sess.run(output,feed_dict=feed_dict)
+                depth_pred = pred[3]
+
+
+                inv_depth_pred = np.asarray(depth_pred)
+                inv_depth_label = np.asarray(depth_label[-1])
+
+                gt = BR.invert_depth(inv_depth_label)
+                est = BR.invert_depth(inv_depth_pred)
+
+                error_rms.append(copy(eval.rms_error(est,gt)))
+                error_rel.append(copy(eval.relative_error(est,gt)))
+
+        sess.close()
+        tf.reset_default_graph()
+
+        return error_rms,error_rel
 
     def evaluate_per_frame(self,data_test,model_dir,option):
 
