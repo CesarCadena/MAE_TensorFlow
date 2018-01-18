@@ -804,7 +804,7 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate = 1e-06# lstm RNN
+            base_rate = 1e-03# lstm RNN
             self.learning_rate = tf.train.exponential_decay(base_rate,global_step,10000, 0.96, staircase=True) # lstm configuration
 
         if self.rnn_option == 'basic':
