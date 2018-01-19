@@ -1384,17 +1384,6 @@ class RecurrentMAE:
                         saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
                         json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
 
-                    elif error_rel < rel_min:
-
-                        no_update_count = 0
-                        rel_min = error_rel
-                        self.specifications['number of epochs'] = epoch
-                        self.specifications['Validation Rel Error'] = error_rel
-
-                        saver.save(sess,self.model_dir+'/rnn_model.ckpt')
-                        saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
-                        json.dump(self.specifications, open(self.logs_dir+"/specs.txt",'w'))
-
                     else:
                         no_update_count += 1
                         if no_update_count == 40:
