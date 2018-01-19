@@ -198,7 +198,7 @@ class RecurrentMAE:
             veg_series_aug = copy(veg[series])
             sky_series_aug = copy(sky[series])
 
-            u = np.random.randint(0,10)
+            u = np.random.randint(0,11)
 
             for rnn_step in range(0,self.n_rnn_steps):
 
@@ -277,6 +277,8 @@ class RecurrentMAE:
 
                 if u == 6:
 
+                    # only rgb
+
                     depth_series_aug[rnn_step] = zeros
                     gnd_series_aug[rnn_step] = zeros
                     obj_series_aug[rnn_step] = zeros
@@ -304,6 +306,17 @@ class RecurrentMAE:
 
                     else:
                         pass
+
+                if u == 10:
+
+                    gnd_series_aug[rnn_step] = zeros
+                    obj_series_aug[rnn_step] = zeros
+                    bld_series_aug[rnn_step] = zeros
+                    veg_series_aug[rnn_step] = zeros
+                    sky_series_aug[rnn_step] = zeros
+
+
+
 
 
 
@@ -617,7 +630,7 @@ class RecurrentMAE:
             cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                    self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                    self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-                   10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+                   tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
                    self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                    self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                    self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
@@ -629,7 +642,7 @@ class RecurrentMAE:
             cost = self.c_r*tf.nn.l2_loss(label_series[0][-1]-output[0]) + \
                    self.c_g*tf.nn.l2_loss(label_series[1][-1]-output[1]) + \
                    self.c_b*tf.nn.l2_loss(label_series[2][-1]-output[2]) + \
-                   10*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
+                   100*tf.nn.l2_loss(tf.multiply(label_series[4][-1],label_series[3][-1])-tf.multiply(label_series[4][-1],output[3])) +\
                    self.c_w1*tf.nn.l2_loss(label_series[5][-1]-output[4]) + \
                    self.c_w2*tf.nn.l2_loss(label_series[6][-1]-output[5]) + \
                    self.c_w3*tf.nn.l2_loss(label_series[7][-1]-output[6]) + \
