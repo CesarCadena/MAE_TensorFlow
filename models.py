@@ -314,50 +314,68 @@ class LSTM_RNN:
                     self.b_f.append(tf.get_variable(name='b_f_'+str(step),
                                                     shape=[state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
+                                                    initializer=tf.zeros_initializer(),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                                 tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.U_f.append(tf.get_variable(name='U_f_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W_f.append(tf.get_variable(name='W_f_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
 
                     # internal state
                     self.b.append(tf.get_variable(name='b_'+str(step),
                                                   shape=[state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.zeros_initializer()))
+                                                  initializer=tf.zeros_initializer(),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.U.append(tf.get_variable(name='U_'+str(step),
                                                   shape=[coding_size,state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W.append(tf.get_variable(name='W_'+str(step),
                                                   shape=[state_size, state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001)))
+                                                  initializer=tf.random_normal_initializer(mean=0.001,stddev=0.001),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     # external input gate
                     self.b_g.append(tf.get_variable(name='b_g_'+str(step),
                                                     shape=[state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
+                                                    initializer=tf.zeros_initializer(),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.U_g.append(tf.get_variable(name='U_g_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.1,stddev=0.1)))
+                                                    initializer=tf.random_normal_initializer(mean=0.1,stddev=0.1),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W_g.append(tf.get_variable(name='W_g_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     # output gate
                     self.b_o.append(tf.get_variable(name='b_o_'+str(step),
@@ -368,12 +386,12 @@ class LSTM_RNN:
                     self.U_o.append(tf.get_variable(name='U_o_'+str(step),
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.1,stddev=0.1)))
+                                                    initializer=tf.random_normal_initializer(mean=0.1,stddev=0.001)))
 
                     self.W_o.append(tf.get_variable(name='W_o_'+str(step),
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0001,stddev=0.001)))
 
             if self.option == 'shared':
                 # forget gate
@@ -385,12 +403,16 @@ class LSTM_RNN:
                     self.U_f.append(tf.get_variable(name='U_f',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W_f.append(tf.get_variable(name='W_f',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
 
                     # internal state
@@ -402,44 +424,60 @@ class LSTM_RNN:
                     self.U.append(tf.get_variable(name='U',
                                                   shape=[coding_size,state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                  initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W.append(tf.get_variable(name='W',
                                                   shape=[state_size, state_size],
                                                   dtype=tf.float32,
-                                                  initializer=tf.random_normal_initializer(mean=0.,stddev=0.0001)))
+                                                  initializer=tf.random_normal_initializer(mean=0.,stddev=0.0001),
+                                                  collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     # external input gate
                     self.b_g.append(tf.get_variable(name='b_g',
                                                     shape=[state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
+                                                    initializer=tf.zeros_initializer(),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.U_g.append(tf.get_variable(name='U_g',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W_g.append(tf.get_variable(name='W_g',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     # output gate
                     self.b_o.append(tf.get_variable(name='b_o',
                                                     shape=[state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
+                                                    initializer=tf.zeros_initializer(),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.U_o.append(tf.get_variable(name='U_o',
                                                     shape=[coding_size,state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                     self.W_o.append(tf.get_variable(name='W_o',
                                                     shape=[state_size, state_size],
                                                     dtype=tf.float32,
-                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                    initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                    collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
 
 
@@ -447,12 +485,16 @@ class LSTM_RNN:
             self.O_w = tf.get_variable(name='O_w',
                                        shape=[state_size,coding_size],
                                        dtype=tf.float32,
-                                       initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001))
+                                       initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                       collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES])
 
             self.O_b = tf.get_variable(name='O_b',
                                        shape=[coding_size],
                                        dtype=tf.float32,
-                                       initializer=tf.zeros_initializer())
+                                       initializer=tf.zeros_initializer(),
+                                       collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES])
 
     def run(self,inputs,init_states=None):
 
@@ -536,47 +578,65 @@ class Gated_RNN:
                 self.W_z.append(tf.get_variable(name='W_z',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.U_z.append(tf.get_variable(name='U_z',
                                                 shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.b_z.append(tf.get_variable(name='b_z',
                                                 shape=[self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.zeros_initializer(),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.W_r.append(tf.get_variable(name='W_r',
                                                 shape=[self.size_states,self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.U_r.append(tf.get_variable(name='U_r',
                                                 shape=[coding_size,state_size],
                                                 dtype=tf.float32,
-                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                                initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.b_r.append(tf.get_variable(name='b_r',
                                                 shape=[self.size_states],
                                                 dtype=tf.float32,
-                                                initializer=tf.zeros_initializer()))
+                                                initializer=tf.zeros_initializer(),
+                                                collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.W.append(tf.get_variable(name='W',
                                               shape=[self.size_states,self.size_states],
                                               dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                              initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                              collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.U.append(tf.get_variable(name='U',
                                               shape=[coding_size,state_size],
                                               dtype=tf.float32,
-                                              initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001)))
+                                              initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                              collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
                 self.b.append(tf.get_variable(name='b',
                                               shape=[self.size_states],
                                               dtype=tf.float32,
-                                              initializer=tf.zeros_initializer()))
+                                              initializer=tf.zeros_initializer(),
+                                              collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES]))
 
 
             if self.option == 'nonshared':
@@ -627,12 +687,16 @@ class Gated_RNN:
             self.W_o_t = tf.get_variable(name='W_o_t',
                                          shape=[state_size,coding_size],
                                          dtype=tf.float32,
-                                         initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001))
+                                         initializer=tf.random_normal_initializer(mean=0.0,stddev=0.0001),
+                                         collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES])
 
             self.b_o_t = tf.get_variable(name='W_b_t',
                                          shape=[coding_size],
                                          dtype=tf.float32,
-                                         initializer=tf.zeros_initializer())
+                                         initializer=tf.zeros_initializer(),
+                                         collections=[tf.GraphKeys.GLOBAL_VARIABLES,
+                                                               tf.GraphKeys.REGULARIZATION_LOSSES])
 
     def run(self,inputs,init_states=None):
 
@@ -641,16 +705,14 @@ class Gated_RNN:
 
         h_init = init_states
 
-        if self.option == 'shared':
+        def step(i,h_t,x):
+            z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(inputs[0],self.U_z[0]))
+            r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(inputs[0],self.U_r[0]))
+            r_t_tilde = tf.multiply(r_t,h_t)
+            h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(inputs[0],self.U[0]))
 
-            def step(i,h_t,x):
-                z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(inputs[0],self.U_z[0]))
-                r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(inputs[0],self.U_r[0]))
-                r_t_tilde = tf.multiply(r_t,h_t)
-                h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(inputs[0],self.U[0]))
-
-                h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
-                return i+1,h_t,x
+            h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
+            return i+1,h_t,x
 
 
 
