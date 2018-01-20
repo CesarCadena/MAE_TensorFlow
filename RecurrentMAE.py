@@ -672,6 +672,8 @@ class RecurrentMAE:
         self.batch_size = 60
         self.n_batches = int(len(self.train_sequences)/self.batch_size)
 
+        print(self.n_batches)
+
 
         input = [self.imr_input,self.img_input,
                  self.imb_input,self.depth_input,
@@ -785,8 +787,8 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate1 = 1e-05 # lstm RNN
-            base_rate2 = 1e-06
+            base_rate1 = 1e-04 # lstm RNN
+            base_rate2 = 1e-05
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
             self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True) # GRU configuration
 
@@ -802,7 +804,7 @@ class RecurrentMAE:
 
         if self.rnn_option == 'gated':
             base_rate1 = 1e-04 # gated RNN
-            base_rate2 = 1e-06
+            base_rate2 = 1e-05
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
             self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
 
