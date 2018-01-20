@@ -818,8 +818,10 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate = 1e-06# lstm RNN
-            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.96, staircase=True) # lstm configuration
+            base_rate1 = 1e-05 # lstm RNN
+            base_rate2 = 1e-07
+            self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
+            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
 
         if self.rnn_option == 'basic':
             base_rate = 1e-06 # basic RNN
@@ -841,7 +843,7 @@ class RecurrentMAE:
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
-        if self.rnn_option == 'gated':
+        if self.rnn_option == 'gated' or self.rnn_option == 'lstm':
             optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate1)
             optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate2)
 
