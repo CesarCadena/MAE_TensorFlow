@@ -788,7 +788,7 @@ class RecurrentMAE:
             base_rate1 = 1e-05 # lstm RNN
             base_rate2 = 1e-06
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
-            self.learning_rate1 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True) # GRU configuration
+            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True) # GRU configuration
 
         if self.rnn_option == 'basic':
             base_rate = 1e-06 # basic RNN
