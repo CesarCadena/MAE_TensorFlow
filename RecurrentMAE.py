@@ -198,17 +198,19 @@ class RecurrentMAE:
             veg_series_aug = copy(veg[series])
             sky_series_aug = copy(sky[series])
 
-            u = np.random.randint(0,11)
+            u = np.random.randint(1,8)
 
             for rnn_step in range(0,self.n_rnn_steps):
 
 
                 zeros = np.zeros(np.asarray(imr_series_aug[rnn_step]).shape)
 
+
+
+
                 if u == 1:
 
-                    # only rgb
-                    if rnn_step < 2:
+                    if rnn_step%2 == 0:
 
                         depth_series_aug[rnn_step] = zeros
                         gnd_series_aug[rnn_step] = zeros
@@ -217,13 +219,13 @@ class RecurrentMAE:
                         veg_series_aug[rnn_step] = zeros
                         sky_series_aug[rnn_step] = zeros
 
-                    if rnn_step < 4:
-
+                    else:
                         depth_series_aug[rnn_step] = zeros
+
 
                 if u == 2:
 
-                    if rnn_step < 2:
+                    if rnn_step%2 == 0:
 
                         depth_series_aug[rnn_step] = zeros
                         gnd_series_aug[rnn_step] = zeros
@@ -232,50 +234,15 @@ class RecurrentMAE:
                         veg_series_aug[rnn_step] = zeros
                         sky_series_aug[rnn_step] = zeros
 
-                    if rnn_step < 4:
+                    else:
 
                         gnd_series_aug[rnn_step] = zeros
                         obj_series_aug[rnn_step] = zeros
                         bld_series_aug[rnn_step] = zeros
                         veg_series_aug[rnn_step] = zeros
                         sky_series_aug[rnn_step] = zeros
-
 
                 if u == 3:
-
-                    if rnn_step%2 == 0:
-
-                        depth_series_aug[rnn_step] = zeros
-                        gnd_series_aug[rnn_step] = zeros
-                        obj_series_aug[rnn_step] = zeros
-                        bld_series_aug[rnn_step] = zeros
-                        veg_series_aug[rnn_step] = zeros
-                        sky_series_aug[rnn_step] = zeros
-
-                    else:
-                        depth_series_aug[rnn_step] = zeros
-
-
-                if u == 5:
-
-                    if rnn_step%2 == 0:
-
-                        depth_series_aug[rnn_step] = zeros
-                        gnd_series_aug[rnn_step] = zeros
-                        obj_series_aug[rnn_step] = zeros
-                        bld_series_aug[rnn_step] = zeros
-                        veg_series_aug[rnn_step] = zeros
-                        sky_series_aug[rnn_step] = zeros
-
-                    else:
-
-                        gnd_series_aug[rnn_step] = zeros
-                        obj_series_aug[rnn_step] = zeros
-                        bld_series_aug[rnn_step] = zeros
-                        veg_series_aug[rnn_step] = zeros
-                        sky_series_aug[rnn_step] = zeros
-
-                if u == 6:
 
                     # only rgb
 
@@ -286,14 +253,14 @@ class RecurrentMAE:
                     veg_series_aug[rnn_step] = zeros
                     sky_series_aug[rnn_step] = zeros
 
-                if u == 7:
+                if u == 4:
 
                     depth_series_aug[rnn_step] = zeros
 
-                if u == 8:
+                if u == 5:
                     pass
 
-                if u == 9:
+                if u == 6:
 
                     if rnn_step%2 == 0:
 
@@ -307,7 +274,7 @@ class RecurrentMAE:
                     else:
                         pass
 
-                if u == 10:
+                if u == 7:
 
                     gnd_series_aug[rnn_step] = zeros
                     obj_series_aug[rnn_step] = zeros
@@ -819,9 +786,7 @@ class RecurrentMAE:
 
         if self.rnn_option == 'lstm':
             base_rate1 = 1e-05 # lstm RNN
-            base_rate2 = 1e-07
-            self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
-            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
+            self.learning_rate = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
 
         if self.rnn_option == 'basic':
             base_rate = 1e-06 # basic RNN
@@ -843,7 +808,7 @@ class RecurrentMAE:
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
-        if self.rnn_option == 'gated' or self.rnn_option == 'lstm':
+        if self.rnn_option == 'gated':
             optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate1)
             optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate2)
 
