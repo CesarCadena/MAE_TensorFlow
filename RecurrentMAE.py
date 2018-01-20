@@ -631,7 +631,7 @@ class RecurrentMAE:
         if self.rnn_option == 'basic':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0005) #basic rnn
         if self.rnn_option == 'lstm':
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001) #lstm rnn
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.00001) #lstm rnn
         if self.rnn_option == 'gated':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.001) #lstm rnn
 
@@ -787,10 +787,10 @@ class RecurrentMAE:
 
 
         if self.rnn_option == 'lstm':
-            base_rate1 = 1e-04 # lstm RNN
-            base_rate2 = 1e-05
+            base_rate1 = 1e-05 # lstm RNN
+            #base_rate2 = 1e-05
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
-            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True) # GRU configuration
+            #self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True) # GRU configuration
 
         if self.rnn_option == 'basic':
             base_rate = 1e-06 # basic RNN
