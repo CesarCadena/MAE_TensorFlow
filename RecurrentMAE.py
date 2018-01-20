@@ -666,7 +666,7 @@ class RecurrentMAE:
         if self.rnn_option == 'lstm':
             regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001) #lstm rnn
         if self.rnn_option == 'gated':
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.001) #lstm rnn
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001) #lstm rnn
 
         reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         reg_term = tf.contrib.layers.apply_regularization(regularizer, reg_variables)
