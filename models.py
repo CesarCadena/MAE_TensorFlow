@@ -667,7 +667,7 @@ class Gated_RNN:
             r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(xi,self.U_r[0]))
             r_t_tilde = tf.multiply(r_t,h_t)
             h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(xi,self.U[0]))
-            H_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
+            H_t = tf.multiply(z_t,h_t) - tf.multiply(z_t,h_t_tilde) + h_t_tilde
             return i+1,H_t,x
 
 
@@ -755,7 +755,7 @@ def full_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky):
     output = [imr_hat,img_hat,imb_hat,dpt_hat,gnd_hat,obj_hat,bld_hat,veg_hat,sky_hat]
     return output
 
-def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None,option=None,sharing='nonshared'):
+def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=None,option=None,sharing=None):
 
     if n_rnn_steps == None:
         raise ValueError('no number of rnn steps passed')
