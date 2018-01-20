@@ -832,29 +832,51 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate = 1e-08 # gated RNN
-            self.learning_rate = tf.train.exponential_decay(base_rate,global_step,1000, 0.96, staircase=True) # GRU configuration
+            base_rate1 = 1e-06 # gated RNN
+            base_rate2 = 1e-08
+            self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
+            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
 
 
 
         summary_lr = tf.summary.scalar('Learning Rate',self.learning_rate)
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        if self.rnn_option == 'gated':
+            optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate1)
+            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate2)
 
-        gvs0 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
-        gvs1 = gvs0
-        gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
-        gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+            gvs0 = optimizer1.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+            gvs1 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+            gvs2 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+            gvs3 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
-        capped_gvs0 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs0]
-        capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
-        capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
-        capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
+            capped_gvs0 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs0]
+            capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
+            capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
+            capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
 
-        train_op0 = optimizer.apply_gradients(capped_gvs0,global_step=global_step)
-        train_op1 = optimizer.apply_gradients(capped_gvs1,global_step=global_step)
-        train_op2 = optimizer.apply_gradients(capped_gvs2,global_step=global_step)
-        train_op3 = optimizer.apply_gradients(capped_gvs3,global_step=global_step)
+            train_op0 = optimizer1.apply_gradients(capped_gvs0,global_step=global_step)
+            train_op1 = optimizer2.apply_gradients(capped_gvs1,global_step=global_step)
+            train_op2 = optimizer2.apply_gradients(capped_gvs2,global_step=global_step)
+            train_op3 = optimizer2.apply_gradients(capped_gvs3,global_step=global_step)
+
+        else:
+            optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+
+            gvs0 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+            gvs1 = gvs0
+            gvs2 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
+            gvs3 = optimizer.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
+
+            capped_gvs0 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs0]
+            capped_gvs1 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs1]
+            capped_gvs2 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs2]
+            capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
+
+            train_op0 = optimizer.apply_gradients(capped_gvs0,global_step=global_step)
+            train_op1 = optimizer.apply_gradients(capped_gvs1,global_step=global_step)
+            train_op2 = optimizer.apply_gradients(capped_gvs2,global_step=global_step)
+            train_op3 = optimizer.apply_gradients(capped_gvs3,global_step=global_step)
 
 
         validations = np.arange(0, self.n_training_validations)
