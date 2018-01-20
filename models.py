@@ -639,50 +639,6 @@ class Gated_RNN:
                                                                tf.GraphKeys.REGULARIZATION_LOSSES]))
 
 
-            if self.option == 'nonshared':
-                for step in range(0,self.n_rnn_steps):
-
-                    self.W_z.append(tf.get_variable(name='W_z_'+str(step),
-                                                    shape=[self.size_states,self.size_states],
-                                                    dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
-
-                    self.U_z.append(tf.get_variable(name='U_z_'+str(step),
-                                                    dtype=tf.float32,
-                                                    initializer=initializer_U))
-
-                    self.b_z.append(tf.get_variable(name='b_z_'+str(step),
-                                                    shape=[self.size_states],
-                                                    dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
-
-                    self.W_r.append(tf.get_variable(name='W_r_'+str(step),
-                                                    shape=[self.size_states,self.size_states],
-                                                    dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
-
-                    self.U_r.append(tf.get_variable(name='U_r_'+str(step),
-                                                    dtype=tf.float32,
-                                                    initializer=initializer_U))
-
-                    self.b_r.append(tf.get_variable(name='b_r_'+str(step),
-                                                    shape=[self.size_states],
-                                                    dtype=tf.float32,
-                                                    initializer=tf.zeros_initializer()))
-
-                    self.W.append(tf.get_variable(name='W_'+str(step),
-                                                  shape=[self.size_states,self.size_states],
-                                                  dtype=tf.float32,
-                                                  initializer=tf.zeros_initializer()))
-
-                    self.U.append(tf.get_variable(name='U_'+str(step),
-                                                  dtype=tf.float32,
-                                                  initializer=initializer_U))
-
-                    self.b.append(tf.get_variable(name='b_'+str(step),
-                                                  shape=[self.size_states],
-                                                  dtype=tf.float32,
-                                                  initializer=tf.zeros_initializer()))
 
             self.W_o_t = tf.get_variable(name='W_o_t',
                                          shape=[state_size,coding_size],
@@ -722,7 +678,7 @@ class Gated_RNN:
 
 
 
-        output = tf.add(tf.matmul(h_fin,self.W_o_t),self.b_o_t)
+        output = tf.nn.relu(tf.add(tf.matmul(h_fin,self.W_o_t),self.b_o_t))
 
         return output
 
@@ -828,7 +784,7 @@ def RNN_MAE(imr,img,imb,dpt,gnd,obj,bld,veg,sky,n_rnn_steps=None,init_states=Non
     if option == 'lstm':
         RNN = LSTM_RNN(state_size=1024, coding_size=1024, n_rnn_steps=n_rnn_steps, scope='RNN',option=sharing)
     if option == 'gated':
-        RNN = Gated_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN')
+        RNN = Gated_RNN(state_size=1024,coding_size=1024,n_rnn_steps=n_rnn_steps,scope='RNN',option=sharing)
 
     SHD_DC = Decoding(activation='relu',shape_coding=1024,shape_decoding=5*1024,name='full')
 
