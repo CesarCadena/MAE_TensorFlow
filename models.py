@@ -512,9 +512,9 @@ class LSTM_RNN:
             g_t = tf.tanh(tf.add(tf.add(self.b[0],tf.matmul(xi,self.U[0])),tf.matmul(h_t,self.W[0])))
             s_t = tf.add(tf.multiply(f_t,s_t),tf.multiply(i_t,g_t))
             o_t = tf.sigmoid(tf.add(tf.add(self.b_o[0],tf.matmul(xi,self.U_o[0])),tf.matmul(h_t,self.W_o[0])))
-            h_t = tf.multiply(o_t,tf.tanh(s_t))
+            H_t = tf.multiply(o_t,tf.tanh(s_t))
 
-            return i+1,s_t,h_t,x
+            return i+1,s_t,H_t,x
 
         _, s_fin, h_fin, _ = tf.while_loop(lambda i,s,h,x: tf.less(i,self.n_rnn_steps),
                                            step,
@@ -667,9 +667,8 @@ class Gated_RNN:
             r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(xi,self.U_r[0]))
             r_t_tilde = tf.multiply(r_t,h_t)
             h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(xi,self.U[0]))
-
-            h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
-            return i+1,h_t,x
+            H_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
+            return i+1,H_t,x
 
 
 

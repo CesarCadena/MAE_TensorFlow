@@ -1378,7 +1378,7 @@ class RecurrentMAE:
 
 
 
-                if epoch%5 == 0 and epoch > 40:
+                if epoch%5 == 0:
 
                     if error_rms < rmse_min:
 
@@ -1398,8 +1398,8 @@ class RecurrentMAE:
                             tf.reset_default_graph()
                             break
 
-            saver.save(sess,self.model_dir+'/rnn_model.ckpt')
-            saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
+        saver.save(sess,self.model_dir+'/rnn_model.ckpt')
+        saver.save(sess,'models/rnn/previous/rnn_model.ckpt')
 
         sess.close()
         tf.reset_default_graph()
@@ -1429,7 +1429,7 @@ class RecurrentMAE:
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
-            load_weights.restore(sess,dir+'/rnn_model.ckpt') # runs from 06112017 it ist fullmodel_rnn
+            load_weights.restore(sess,dir+'/rnn_model.ckpt')
 
             print('Size of Test Set:',n_evaluations)
 
