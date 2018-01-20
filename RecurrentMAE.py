@@ -803,7 +803,7 @@ class RecurrentMAE:
                                                              [base_rate,lr1,lr2,lr3,lr4])
 
         if self.rnn_option == 'gated':
-            base_rate1 = 1e-06 # gated RNN
+            base_rate1 = 1e-05 # gated RNN
             #base_rate2 = 1e-05
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
             #self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
@@ -1570,6 +1570,10 @@ class RecurrentMAE:
                 mask = np.concatenate((np.ones((1,4,self.size_input)),
                                        np.zeros((1,self.n_rnn_steps-4,self.size_input))),
                                       axis=1)
+
+
+            if frequency == 5:
+                mask = np.ones((1,self.n_rnn_steps,self.size_input))
 
 
 
