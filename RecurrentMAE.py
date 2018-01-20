@@ -1772,7 +1772,6 @@ class RecurrentMAE:
 
         return error_rms,error_rel
 
-
     def evaluate_sequence(self,sequence,n_rnn_steps=None,option=None,frequency=None,run=None):
 
         if run == None:

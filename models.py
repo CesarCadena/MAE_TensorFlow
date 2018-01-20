@@ -662,8 +662,9 @@ class Gated_RNN:
         h_init = init_states
 
         def step(i,h_t,x):
-            z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(inputs[0],self.U_z[0]))
-            r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(inputs[0],self.U_r[0]))
+            xi = tf.gather(x,i)
+            z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(xi,self.U_z[0]))
+            r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(xi,self.U_r[0]))
             r_t_tilde = tf.multiply(r_t,h_t)
             h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(inputs[0],self.U[0]))
 
