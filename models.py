@@ -666,7 +666,7 @@ class Gated_RNN:
             z_t = tf.sigmoid(self.b_z[0] + tf.matmul(h_t,self.W_z[0]) + tf.matmul(xi,self.U_z[0]))
             r_t = tf.sigmoid(self.b_r[0] + tf.matmul(h_t,self.W_r[0]) + tf.matmul(xi,self.U_r[0]))
             r_t_tilde = tf.multiply(r_t,h_t)
-            h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(inputs[0],self.U[0]))
+            h_t_tilde = tf.tanh(self.b[0] + tf.matmul(r_t_tilde,self.W[0]) + tf.matmul(xi,self.U[0]))
 
             h_t = h_t - tf.multiply(z_t,h_t) + tf.multiply(z_t,h_t_tilde)
             return i+1,h_t,x
