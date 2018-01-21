@@ -804,9 +804,9 @@ class RecurrentMAE:
 
         if self.rnn_option == 'gated':
             base_rate1 = 1e-05 # gated RNN
-            #base_rate2 = 1e-05
+            base_rate2 = 1e-07
             self.learning_rate1 = tf.train.exponential_decay(base_rate1,global_step,1000, 0.96, staircase=True) # GRU configuration
-            #self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
+            self.learning_rate2 = tf.train.exponential_decay(base_rate2,global_step,1000, 0.96, staircase=True)
 
 
 
@@ -814,10 +814,10 @@ class RecurrentMAE:
 
         if self.rnn_option == 'gated' or self.rnn_option=='lstm':
             optimizer1 = tf.train.AdamOptimizer(learning_rate=self.learning_rate1)
-            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate1)
+            optimizer2 = tf.train.AdamOptimizer(learning_rate=self.learning_rate2)
 
             gvs0 = optimizer1.compute_gradients(self.training_cost,var_list=self.rnn_variables)
-            gvs1 = optimizer1.compute_gradients(self.training_cost,var_list=self.rnn_variables)
+            gvs1 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables)
             gvs2 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables)
             gvs3 = optimizer2.compute_gradients(self.training_cost,var_list=self.rnn_variables+self.decoder_variables+self.encoder_variables)
 
@@ -827,7 +827,7 @@ class RecurrentMAE:
             capped_gvs3 = [(tf.clip_by_norm(grad,2), var) for grad, var in gvs3]
 
             train_op0 = optimizer1.apply_gradients(capped_gvs0,global_step=global_step)
-            train_op1 = optimizer1.apply_gradients(capped_gvs1,global_step=global_step)
+            train_op1 = optimizer2.apply_gradients(capped_gvs1,global_step=global_step)
             train_op2 = optimizer2.apply_gradients(capped_gvs2,global_step=global_step)
             train_op3 = optimizer2.apply_gradients(capped_gvs3,global_step=global_step)
 
