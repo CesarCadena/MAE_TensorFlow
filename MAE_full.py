@@ -4,7 +4,7 @@
 # this code is developed by Yi Liu 
 #run the code under the folder ~/project
 #this version has converged!
-
+import time
 import tensorflow as tf
 import numpy as np
 import os
@@ -18,7 +18,7 @@ tf.reset_default_graph()
 batch_size=128
 num_epochs=50
 hidden_size=1024
-RESTORE=0
+RESTORE=1
 
 
 print("###########loading data.........##########")
@@ -323,6 +323,24 @@ with tf.Session(config=config) as sess:
   if RESTORE:
 
     saver_full.restore(sess,'../model_full/MAE.ckpt')
+
+    feed_dict={Ground_input:Ground_data[0:1,:],
+                       Objects_input:Objects_data[0:1,:],
+                       Vegetation_input:Vegetation_data[0:1,:],
+                       Building_input:Building_data[0:1,:],
+                       Sky_input:Sky_data[0:1,:],
+                       Red_input:Red_data[0:1,:],
+                       Green_input:Green_data[0:1,:],
+                       Blue_input:Blue_data[0:1,:],
+                       Depth_input:Depth_data[0:1,:],
+                       #Depthmask_input:Depthmask_data[batch_indices,:]
+                      }   
+    t1=time.time()
+    sess.run(Depth_out,feed_dict=feed_dict)
+    t2=time.time()
+    print (t2-t1)
+
+
 
   else:
 
