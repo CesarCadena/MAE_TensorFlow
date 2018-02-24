@@ -7,12 +7,11 @@ import matplotlib.image as mpimg
 from process_data import  process_data
 from depth_error import RMSE,ABSR
 tf.reset_default_graph()
-import time 
 batch_size=20
 num_epochs=100
 RESTORE=0
 SEED = None
-filter_size=32
+filter_size=16
 tf.reset_default_graph()
 fullpath='./CNN_models/full_'+str(num_epochs)+'_'+str(filter_size)+'/full.ckpt'
 
@@ -176,22 +175,14 @@ config.gpu_options.per_process_gpu_memory_fraction =0.4
 with tf.Session(config=config) as sess:
     sess.run(init)
     saver_full.restore(sess,fullpath)
-    feed_dict={sem_inputs:sem_data[0:1]*0,
+    prediction=sess.run(depth_out,feed_dict={sem_inputs:sem_data[0:1000]*0,#*0,
                                         #sem_outputs:sem_data[batch_indices],
-                                        depth_inputs:depth_data[0:1]*0,
-                                        depth_outputs:depth_data[0:1]*0,
-                                        depth_outmask:depth_mask[0:1],
-                                        rgb_inputs:rgb_data[0:1],
+                                        depth_inputs:depth_data[0:1000]*0,
+                                        depth_outputs:depth_data[0:1000]*0,
+                                        depth_outmask:depth_mask[0:1000],
+                                        rgb_inputs:rgb_data[0:1000],
                                         #rgb_outputs:rgb_data[batch_indices]
-                                                     }
-    t1=time.time()
-    sess.run(depth_out,feed_dict=feed_dict)
-    t2=time.time()
-    print(t2-t1)
-
-
-
-    """
+                                                     })
     print(prediction.shape)
     prediction=prediction*depth_mask[0:1000]
     truth=depth_data[0:1000]
@@ -201,5 +192,5 @@ with tf.Session(config=config) as sess:
     absr=ABSR(truth,prediction)
     print("relative error for depth estimation is :",absr)
     print("RMSE error for depth estimation is :",rmse)
-    """
+
 

@@ -7,7 +7,7 @@ import matplotlib.image as mpimg
 from process_data import  process_data
 tf.reset_default_graph()
 batch_size=20
-num_epochs=1
+num_epochs=100
 RESTORE=0
 SEED = None
 filter_size=16
@@ -202,7 +202,7 @@ train_size=rgb_data.shape[0]
 train_indices=range(train_size)
 
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction =0.4
+config.gpu_options.per_process_gpu_memory_fraction =0.9
 
 
 with tf.Session(config=config) as sess:
