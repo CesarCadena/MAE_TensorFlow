@@ -9,7 +9,7 @@ config=tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
 batch_size=100
-num_epochs=1
+num_epochs=100
 depthpath="vae_models/depth_"+str(num_epochs)+"_epochs/model"
 
 

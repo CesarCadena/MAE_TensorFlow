@@ -7,7 +7,7 @@ tf.set_random_seed(0)
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction =0.4
 tf.reset_default_graph()
-num_epochs=1
+num_epochs=100
 sempath="vae_models/sem_"+str(num_epochs)+"_epochs/model"
 batch_size=100
 
