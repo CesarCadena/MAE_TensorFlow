@@ -1,19 +1,18 @@
 # README #
 
-Multimodal Autoencoders on TensorFlow.
+Probabilistic Multimodal Autoencoders on TensorFlow.
 
 The data for training, validation and testing can be found here:
 
-https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
+https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK  
+# How to run  ...
+1.run VAE_full_test.py    
+should give you 0.24 relative error and 6.58 RMSE error   
+
 
 # loss function   
 
-for semantic channels ,use log likelihood loss   
-
-# How to run  ...
-1.run MAE_pretraining_sep.py  
-2.run MAE_pretraining_sem_shared.py  
-3.run fullMAE.py  
+for semantic channels ,use log likelihood loss    
 
 # visualize 
 RGB  :
