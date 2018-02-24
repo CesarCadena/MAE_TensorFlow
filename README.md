@@ -6,6 +6,7 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 # How to run  ...
 1.run CAE_full_2_test.py  
+should give you RMSE 7.57 relative 0.29 error .
 
 
 
