@@ -9,12 +9,14 @@ config.gpu_options.per_process_gpu_memory_fraction=0.4
 tf.reset_default_graph()
 batch_size=100
 num_epochs=1
+
+# this is the path 
 depthpath="vae_models/depth_"+str(num_epochs)+"_epochs/model"
 rgbpath="vae_models/rgb_"+str(num_epochs)+"_epochs/model"
 sempath="vae_models/sem_"+str(num_epochs)+"_epochs/model"
 fullpath="vae_models/full_"+str(num_epochs)+"_epochs/model"
 
-
+# initialization
 def xavier_init(fan_in, fan_out, constant=1): 
 	""" Xavier initialization of network weights"""
 	# https://stackoverflow.com/questions/33640581/how-to-do-xavier-initialization-on-tensorflow
@@ -273,8 +275,6 @@ var_Sem=(list(listvar3['weights_recog'].values())
 	+list(listvar3['weights_gener'].values())
 	+list(listvar3['biases_gener'].values()))
 saver_Sem=tf.train.Saver(var_Sem)
-
-
 ########################    Start build  shared information fusion   #############################
 with tf.variable_scope("Full"):
 	network_architecture_Full=\
@@ -293,9 +293,6 @@ var_Full=(list(listvar4['weights_recog'].values())
 	+list(listvar4['weights_gener'].values())
 	+list(listvar4['biases_gener'].values()))
 saver_Full=tf.train.Saver(var_Full)
-
-
-
 ### Initialization
 init=tf.global_variables_initializer()
 sess=tf.Session(config=config)
@@ -307,7 +304,6 @@ saver_rgb.restore(sess,rgbpath)
 print("loaded model weights from"+rgbpath)
 saver_Sem.restore(sess,sempath)
 print("loaded model weights from"+sempath)
-
 ######################### Loading  data  ###################################
 depth_data=np.load("../Data/depth_data.npy")
 depthmask_data=np.load("../Data/depth_mask.npy")
@@ -354,16 +350,4 @@ if train_new_model:
 else:
 	saver_Full.restore(sess,fullpath)
 	print("loaded the vae model weights from"+fullpath)
-"""
-	z_out=sess.run(vae_Full.x_reconstr_mean,feed_dict={vae_Full.x:z_in[0:100,:]})
-	z_out_rgb,z_out_depth,z_out_sem=np.split(z_out, [50,100],axis=1)
-	rgb_out=sess.run(vae_rgb.x_reconstr_mean,feed_dict={vae_rgb.z:z_out_rgb})# shape [size,3240]
-	depth_image=sess.run(vae_depth.x_reconstr_mean,feed_dict={vae_depth.z:z_out_depth})# shape [size,1080]
-	sem_out=sess.run(vae_Sem.x_reconstr_mean,feed_dict={vae_Sem.z:z_out_sem})# shape[size,5400]
-	red_out,green_out,blue_out=np.split(rgb_out,3,axis=1)
-	RGB_image=np.dstack((red_out,green_out,blue_out))
-	G_out,O_out,V_out,B_out,S_out=np.split(sem_out,5,axis=1)
-	Sem_image=np.dstack((G_out,O_out,V_out,B_out,S_out))
-	plt.imshow(np.reshape(depth_image[0],(18,60)))
-"""
 sess.close()
