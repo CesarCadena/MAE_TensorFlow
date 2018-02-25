@@ -6,7 +6,9 @@ https://polybox.ethz.ch/index.php/s/CNaOah6Ydq7WrRK
 
 # How to run  ...
 1.run CAE_full_2_test.py  
-should give you RMSE 7.57 relative 0.29 error (filter size 16) .
+should give you RMSE 7.57 relative 0.29 error (filter size 16) .  
+To change size , change filtersize in CAE_full_2_test.py and CAE_full_2.py.  
+
 
 
 
