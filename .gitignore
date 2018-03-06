@@ -58,3 +58,12 @@ __pycache__
 *.meta
 *.index
 checkpoint
+MAE_2015/models/full/20180105-133937/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20180103-112915/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20180104-101318/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20171125-175601/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20171130-101151/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20171204-112636/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20171127-120921/fullmodel.ckpt.data-00000-of-00001
+MAE_2015/models/full/20171123-153406/fullmodel.ckpt.data-00000-of-00001
+.git/objects/pack/pack-74f1ed14925360a045c434b3f4c4dc03c3e9e115.pack
